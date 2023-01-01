@@ -9,8 +9,15 @@ jobs:
             - name: "TODO to Issue"
               uses: "alstr/todo-to-issue-action@v4"
               
-            - run: |
+            - name: "pull request empty"
+              if: ${{ github.event.pull_request.number == '' }}
+              run: |
                 echo ${{ github.event.pull_request.number }}
+                
+            - name: "pull request exists"
+              if: ${{ github.event.pull_request.number != '' }}
+              run: |
+                echo ${{ 'hi' }}
               
             - name: Find Comment
               uses: peter-evans/find-comment@v2
