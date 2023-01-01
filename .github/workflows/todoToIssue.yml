@@ -9,7 +9,7 @@ jobs:
             - name: "TODO to Issue"
               uses: "alstr/todo-to-issue-action@v4"
               
-            - name: "pull request empty"
+            - name: "Workflow run manually, new issue created"
               if: ${{ github.event.pull_request.number == '' }}
               uses: JasonEtco/create-an-issue@v2
               env:
@@ -19,35 +19,20 @@ jobs:
             - run: |
                 echo "ISSUE_NUMBER=${{ steps.create-issue.outputs.number }}" >> $GITHUB_ENV
               if: ${{ github.event.pull_request.number == '' }}
-                
-            - name: "pull request exists"
-              if: ${{ github.event.pull_request.number != '' }}
-              run: |
-                echo ${{ github.event.pull_request.number }}
+            
+            - run: |
                 echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-                
-            - run: |
-                echo issue number is ${{env.ISSUE_NUMBER}}
+              if: ${{ github.event.pull_request.number != '' }}
               
-            - name: Find Comment
-              uses: peter-evans/find-comment@v2
-              id: fc
-              with:
-                issue-number: 1
-                body-includes: this is a
             - run: |
-                echo ${{ steps.fc.outputs.comment-id }}
-                echo ${{ steps.fc.outputs.comment-body }}
-                echo ${{ steps.fc.outputs.comment-author }}
-                echo ${{ steps.fc.outputs.comment-created-at }}
-          
+                echo Issue Number: ${{env.ISSUE_NUMBER}}
               
             - name: Create comment
               uses: peter-evans/create-or-update-comment@v2
               with:
-                  issue-number: 1
+                  issue-number: ${{env.ISSUE_NUMBER}}
                   body: |
-                    This is a multi-line test comment2
+                    This is a multi-line test comment3
                     - With GitHub **Markdown** :sparkles:
                     - Created by [create-or-update-comment][1]
                   reactions: '+1'
