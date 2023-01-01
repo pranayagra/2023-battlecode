@@ -16,8 +16,7 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               id: create-issue                 
             
-            - name: "set local variable"
-              run: |
+            - run: |
                 echo "ISSUE_NUMBER=${{ steps.create-issue.outputs.number }}" >> $GITHUB_ENV
               if: ${{ github.event.pull_request.number == '' }}
                 
@@ -28,7 +27,7 @@ jobs:
                 echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
                 
             - run: |
-                'echo issue number is ${{env.ISSUE_NUMBER}}'
+                echo issue number is ${{env.ISSUE_NUMBER}}
               
             - name: Find Comment
               uses: peter-evans/find-comment@v2
