@@ -24,9 +24,6 @@ jobs:
                 echo "ISSUE_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
               if: ${{ github.event.pull_request.number != '' }}
               
-            - run: |
-                echo Issue Number: ${{env.ISSUE_NUMBER}}
-              
             - name: Create comment
               uses: peter-evans/create-or-update-comment@v2
               with:
