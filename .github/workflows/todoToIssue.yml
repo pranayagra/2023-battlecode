@@ -13,7 +13,7 @@ jobs:
               uses: peter-evans/find-comment@v2
               id: fc
               with:
-                issue-number: 1
+                issue-number: 2
                 body-includes: This is a
             - run: |
                 echo ${{ steps.fc.outputs.comment-id }}
