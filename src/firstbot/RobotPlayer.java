@@ -23,7 +23,8 @@ public strictfp class RobotPlayer {
         while (true) {
             try {
                 Robot robot = Robot.fromRC(rc);
-                robot.runLoop();
+                robot.runLoop(); 
+				// TODO pls work bruh
             } catch (Exception e) {
                 System.out.println("FATAL ERROR - " + rc.getLocation());
                 e.printStackTrace();
