@@ -12,9 +12,9 @@ jobs:
             - name: Create comment
               uses: peter-evans/create-or-update-comment@v2
               with:
-                  issue-number: 2
+                  issue-number: 1
                   body: |
-                    This is a multi-line test comment
+                    This is a multi-line test comment2
                     - With GitHub **Markdown** :sparkles:
                     - Created by [create-or-update-comment][1]
                   reactions: '+1'
