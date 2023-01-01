@@ -15,9 +15,9 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               id: create-issue                 
-              
-            - run: |
-                'echo Created issue number ${{ steps.create-issue.outputs.number }}'
+            
+            - name: "set local variable"
+              run: |
                 echo "ISSUE_NUMBER=${{ steps.create-issue.outputs.number }}" >> $GITHUB_ENV
               if: ${{ github.event.pull_request.number == '' }}
                 
