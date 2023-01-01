@@ -11,13 +11,17 @@ jobs:
               
             - name: "pull request empty"
               if: ${{ github.event.pull_request.number == '' }}
-              run: |
-                echo ${{ github.event.pull_request.number }}
+              uses: JasonEtco/create-an-issue@v2
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              id: create-issue
+              
+            - run: 'echo Created issue number ${{ steps.create-issue.outputs.number }}'
                 
             - name: "pull request exists"
               if: ${{ github.event.pull_request.number != '' }}
               run: |
-                echo ${{ 'hi' }}
+                echo ${{ github.event.pull_request.number }}
               
             - name: Find Comment
               uses: peter-evans/find-comment@v2
