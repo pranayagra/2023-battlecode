@@ -24,7 +24,6 @@ public strictfp class RobotPlayer {
             try {
                 Robot robot = Robot.fromRC(rc);
                 robot.runLoop(); 
-				// TODO pls work bruh
             } catch (Exception e) {
                 System.out.println("FATAL ERROR - " + rc.getLocation());
                 e.printStackTrace();
