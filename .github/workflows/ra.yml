@@ -14,3 +14,4 @@ jobs:
       with:
         artifacts: "release.tar.gz,foo/*.txt"
         bodyFile: "body.md"
+        tag: "pls"
