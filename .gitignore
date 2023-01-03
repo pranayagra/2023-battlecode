@@ -21,6 +21,7 @@ build/*
 *.iws
 /.idea/
 
+!/gradle/*/*.jar
 
 # User-specific stuff:
 battlecode-scaffold.iws
