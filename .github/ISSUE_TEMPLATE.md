@@ -1,6 +1,6 @@
 ---
-title: Someone just pushed
+title: Run Matches Result
 assignees: pranayagra
-labels: bug, enhancement
+labels: documentation
 ---
-Someone just pushed, oh no! Here's who did it: {{ payload.sender.login }}.
+{{ payload.sender.login }} manually ran run matches workflow!
