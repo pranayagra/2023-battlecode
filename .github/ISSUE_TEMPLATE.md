@@ -1,6 +1,6 @@
 ---
 title: Run Matches Result
-assignees: {{ payload.sender.login }}
+assignees: pranayagra
 labels: documentation
 ---
 {{ payload.sender.login }} manually ran run matches workflow!
