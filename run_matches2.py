@@ -46,7 +46,6 @@ def run_match(bot, map):
     start_time = time.time()
     try:
         procs = [subprocess.Popen(i, stdout=subprocess.PIPE) for i in commands]
-        # print("before: ", time.time() - start_time)
         for p in procs:     
             out, err = p.communicate()
             print('after: ', time.time() - start_time)
@@ -59,16 +58,11 @@ def run_match(bot, map):
         winBString = '{} (B) wins'.format(currentBot)
         loseAString = '{} (B) wins'.format(bot)
         loseBString = '{} (A) wins'.format(bot)
-        # print('else: ', time.time() - start_time)
+
         numWins = 0
         outputA = outputs[0]
         outputB = outputs[1]
 
-        # print("testing type: {}".format(type(testing)))
-        # print("outputaA type: {}, {}".format(type(outputA), outputA))
-        
-        # print("testing: {}".format(testing))
-        # print("outputaA: {}".format(outputA))
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
         
