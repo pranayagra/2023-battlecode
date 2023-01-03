@@ -39,12 +39,18 @@ def retrieveGameLength(output):
 
 def run_match(bot, map):
     print("Running {} vs {} on {}".format(currentBot, bot, map))
+    command1 = ['./gradlew', 'run', '-PteamA=' + currentBot, '-PteamB=' + bot, '-Pmaps=' + map, '-Pport=60000']
+    command2 = ['./gradlew', 'run', '-PteamA=' + bot, '-PteamB=' + currentBot, '-Pmaps=' + map, '-Pport=60001']
+    commands = [command1, command2]
+    outputs = []
     start_time = time.time()
     try:
-        outputA = str(subprocess.check_output(['./gradlew', 'run', '-PteamA=' + currentBot, '-PteamB=' + bot, '-Pmaps=' + map]))
-        print('after: ', time.time() - start_time)
-        outputB = str(subprocess.check_output(['./gradlew', 'run', '-PteamA=' + bot, '-PteamB=' + currentBot, '-Pmaps=' + map]))
-        print('after: ', time.time() - start_time)
+        procs = [subprocess.Popen(i, stdout=subprocess.PIPE) for i in commands]
+        # print("before: ", time.time() - start_time)
+        for p in procs:     
+            out, err = p.communicate()
+            print('after: ', time.time() - start_time)
+            outputs.append(str(out))
     except subprocess.CalledProcessError as exc:
         print("Status: FAIL", exc.returncode, exc.output)
         return 'Error'
@@ -53,10 +59,16 @@ def run_match(bot, map):
         winBString = '{} (B) wins'.format(currentBot)
         loseAString = '{} (B) wins'.format(bot)
         loseBString = '{} (A) wins'.format(bot)
+        # print('else: ', time.time() - start_time)
+        numWins = 0
+        outputA = outputs[0]
+        outputB = outputs[1]
+
+        # print("testing type: {}".format(type(testing)))
         # print("outputaA type: {}, {}".format(type(outputA), outputA))
         
-        numWins = 0
-        
+        # print("testing: {}".format(testing))
+        # print("outputaA: {}".format(outputA))
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
         
@@ -72,14 +84,12 @@ def run_match(bot, map):
                 return 'Error'
         return numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
 
-
 results = {}
 # Run matches
 for bot, map in matches:
     # Verify match is valid
     if not bot in botsSet or not map in mapsSet:
         errors.append('Unable to parse bot={}, map={}'.format(bot, map))
-    # run run_match.py
     
     results[(bot, map)] = run_match(bot, map)
 
