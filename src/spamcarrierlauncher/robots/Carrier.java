@@ -1,9 +1,9 @@
-package basicbot.robots;
+package spamcarrierlauncher.robots;
 
-import basicbot.communications.Communicator;
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import spamcarrierlauncher.communications.Communicator;
+import spamcarrierlauncher.utils.Cache;
+import spamcarrierlauncher.utils.Printer;
+import spamcarrierlauncher.utils.Utils;
 import battlecode.common.*;
 
 public class Carrier extends Robot {

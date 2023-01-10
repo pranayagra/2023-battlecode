@@ -1,9 +1,9 @@
-package basicbot.communications;
+package spamcarrierlauncher.communications;
 
-import basicbot.robots.HeadQuarters;
-import basicbot.utils.Cache;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
+import spamcarrierlauncher.robots.HeadQuarters;
+import spamcarrierlauncher.utils.Cache;
+import spamcarrierlauncher.utils.Global;
+import spamcarrierlauncher.utils.Printer;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.ResourceType;

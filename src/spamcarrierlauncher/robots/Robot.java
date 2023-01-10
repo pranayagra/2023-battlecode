@@ -1,12 +1,12 @@
-package basicbot.robots;
+package spamcarrierlauncher.robots;
 
-import basicbot.communications.Communicator;
-import basicbot.communications.Message;
-import basicbot.pathfinding.Pathing;
-import basicbot.utils.Cache;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import spamcarrierlauncher.communications.Communicator;
+import spamcarrierlauncher.communications.Message;
+import spamcarrierlauncher.pathfinding.Pathing;
+import spamcarrierlauncher.utils.Cache;
+import spamcarrierlauncher.utils.Global;
+import spamcarrierlauncher.utils.Printer;
+import spamcarrierlauncher.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Robot {

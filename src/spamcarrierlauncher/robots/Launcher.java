@@ -1,6 +1,6 @@
-package basicbot.robots;
+package spamcarrierlauncher.robots;
 
-import basicbot.utils.Cache;
+import spamcarrierlauncher.utils.Cache;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
