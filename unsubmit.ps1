@@ -22,7 +22,9 @@ if (Test-Path -Path "$destination") {
 Write-Output "Unzipping $sourceZip to $destination"
 Expand-Archive $sourceZip $destination
 
-$dstSrc = "$destination/firstbot"
+
+$dstSrc = Get-ChildItem $destination | Select -ExpandProperty FullName
+$dstSrc = "$dstSrc"
 $dstSrcParam = "$dstSrc/*"
 $finalDst = $destination
 Write-Output "Copying $dstSrc to $finalDst"
