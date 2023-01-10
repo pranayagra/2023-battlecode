@@ -23,4 +23,5 @@ while (Test-Path -Path "$destinationParent$dstName$destinationNum.zip") {
 }
 $destination = "$destinationParent$dstName$destinationNum.zip"
 Write-Output "Zipping $sourceFolder to $destination"
-Compress-Archive $sourceFolder $destination
+# Compress-Archive $sourceFolder $destination
+wsl.exe -- zip -r $destination $sourceFolder

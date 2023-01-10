@@ -1,4 +1,4 @@
-package basicbot.containers;
+package donothing.containers;
 
 public class Node<T> {
     public Node<T> next;

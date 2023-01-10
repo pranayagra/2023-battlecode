@@ -1,4 +1,4 @@
-package basicbot.containers;
+package donothing.containers;
 
 public class LinkedList<T> {
     public int size = 0;

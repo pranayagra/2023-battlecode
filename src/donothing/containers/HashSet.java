@@ -1,4 +1,4 @@
-package basicbot.containers;
+package donothing.containers;
 
 public class HashSet<T> {
     LinkedList<T>[] table;
