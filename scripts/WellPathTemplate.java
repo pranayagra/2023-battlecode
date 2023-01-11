@@ -12,17 +12,21 @@ public class CarrierWellPathing {
    * Returns a 9-length array of maplocations specifying the path. The 0th index is the last position (leaving position).
    */
   public static MapLocation[] getPathForWell(MapLocation wellCenter, Direction directionToHQ) {
-    MapLocation[] offset = getOffset(directionToHQ);
-    MapLocation[] path = new MapLocation[9];
-    for(int i = 0; i < offset.length; i++) {
-      // TODO: change to directions
-      MapLocation o = offset[i]; // maybe remove for bytecode optimization?
-      path[i] = wellCenter.translate(o.x, o.y);
-    }
-    return path;
+    Direction[] offset = getOffset(directionToHQ);
+    return new MapLocation[] {
+        wellCenter.add(offset[0]),
+        wellCenter.add(offset[1]),
+        wellCenter.add(offset[2]),
+        wellCenter.add(offset[3]),
+        wellCenter.add(offset[4]),
+        wellCenter.add(offset[5]),
+        wellCenter.add(offset[6]),
+        wellCenter.add(offset[7]),
+        wellCenter.add(offset[8]),
+    };
   }
 
-  private static MapLocation[] getOffset(Direction directionToHQ) {
+  private static Direction[] getOffset(Direction directionToHQ) {
     switch(directionToHQ) {
       case NORTH:
         return NORTH_OFFSET;

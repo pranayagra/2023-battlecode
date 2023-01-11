@@ -5,7 +5,6 @@ import spamcarrierlauncher.utils.Cache;
 import spamcarrierlauncher.utils.Printer;
 import spamcarrierlauncher.utils.Utils;
 import battlecode.common.*;
-import battlecode.world.Inventory;
 
 import static battlecode.common.GameActionExceptionType.NOT_ENOUGH_RESOURCE;
 
