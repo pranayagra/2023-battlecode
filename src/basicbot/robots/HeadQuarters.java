@@ -10,7 +10,7 @@ import battlecode.world.Inventory;
 import static battlecode.common.GameActionExceptionType.NOT_ENOUGH_RESOURCE;
 
 public class HeadQuarters extends Robot {
-  public final int hqID;
+  private int hqID;
   public final WellInfo closestAdamantium;
   public final WellInfo closestMana;
 
@@ -23,14 +23,13 @@ public class HeadQuarters extends Robot {
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
-    this.hqID = (Cache.Permanent.ID >> 1) - 1;
     this.closestAdamantium = getClosestWell(ResourceType.ADAMANTIUM);
     this.closestMana = getClosestWell(ResourceType.MANA);
     this.closestWell = this.closestAdamantium;
     if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
       this.closestWell = this.closestMana;
     }
-    communicator.registerHQ(this, this.closestAdamantium, this.closestMana);
+    this.hqID = communicator.registerHQ(this, this.closestAdamantium, this.closestMana);
     determineRole();
   }
 
@@ -52,6 +51,10 @@ public class HeadQuarters extends Robot {
       rc.setIndicatorString("Spawn towards enemy");
       spawnLauncherTowardsEnemyHQ();
     }
+    if (this.role == HQRole.BUILD_ANCHORS || canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
+      rc.setIndicatorString("Build anchor");
+      createAnchors();
+    }
   }
 
   private void determineRole() throws GameActionException {
@@ -71,9 +74,12 @@ public class HeadQuarters extends Robot {
   }
 
   private boolean spawnCarrierTowardsWell(MapLocation targetWell) throws GameActionException {
+    if (rc.senseNearbyRobots(targetWell, RobotType.CARRIER.actionRadiusSquared, Cache.Permanent.OUR_TEAM).length > 12) return false;
+
     MapLocation goal = targetWell;
     MapLocation toSpawn = goal;
     while (!buildRobot(RobotType.CARRIER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
+//      rc.setIndicatorString("Attempted spawn at " + toSpawn);
       if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
         Direction dir = Utils.randomDirection();
         goal = goal.add(dir).add(dir);
@@ -98,6 +104,10 @@ public class HeadQuarters extends Robot {
       toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
     }
     return true;
+  }
+
+  private boolean createAnchors() throws GameActionException {
+    return buildAnchor(Anchor.ACCELERATING) || buildAnchor(Anchor.STANDARD);
   }
 
   private void determineTargetWell() throws GameActionException {
@@ -141,10 +151,21 @@ public class HeadQuarters extends Robot {
     return true;
   }
 
+  private boolean canAfford(Anchor anchorType) {
+    for (ResourceType rType : ResourceType.values()) {
+      if (rType == ResourceType.NO_RESOURCE)
+        continue;
+      if (rc.getResourceAmount(rType) < anchorType.getBuildCost(rType)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
-   * build the specified robot type in the specified direction
+   * build the specified robot type at the specified location
    * @param type the robot type to build
-   * @param location where to build it (if null, choose random direction)
+   * @param location where to build it
    * @return method success
    * @throws GameActionException when building fails
    */
@@ -156,8 +177,17 @@ public class HeadQuarters extends Robot {
     return false;
   }
 
+  protected boolean buildAnchor(Anchor type) throws GameActionException {
+    if (rc.canBuildAnchor(type)) {
+      rc.buildAnchor(type);
+      return true;
+    }
+    return false;
+  }
+
   private enum HQRole {
     MAKE_CARRIERS,
-    MAKE_LAUNCHERS;
+    MAKE_LAUNCHERS,
+    BUILD_ANCHORS;
   }
 }
