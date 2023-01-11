@@ -43,12 +43,31 @@ public abstract class Pathing {
     }
 
     public void forceMoveTo(MapLocation mapLocation) throws GameActionException {
-        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation)) {
-            Printer.print("Can only force move to adjacent locations" + Cache.PerTurn.CURRENT_LOCATION + "->" + mapLocation);
-        }
+//        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation)) {
+//            Printer.print("Can only force move to adjacent locations" + Cache.PerTurn.CURRENT_LOCATION + "->" + mapLocation);
+//        }
         assert Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation);
         rc.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(mapLocation));
         Cache.PerTurn.whenMoved();
+    }
+
+    /**
+     * requires adjacency -- same logic as above
+     * @param center
+     * @return
+     * @throws GameActionException
+     */
+    public boolean moveToOrAdjacent(MapLocation center) throws GameActionException {
+        assert Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(center);
+        return move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.NORTH)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.SOUTH)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.EAST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.WEST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.NORTHEAST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.NORTHWEST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.SOUTHEAST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.SOUTHWEST)));
     }
 
     /**

@@ -2,6 +2,8 @@ package basicbot.communications;
 
 import basicbot.robots.HeadQuarters;
 import basicbot.utils.Cache;
+import basicbot.utils.Global;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -12,6 +14,7 @@ public class Communicator {
     public static final int HQ_EXISTS = 1;
 
     public int hqCount;
+    public MapLocation[] hqLocations;
   }
 
   public class MapInfo {
@@ -61,19 +64,40 @@ public class Communicator {
     public HQInfo hqInfo;
     public MapInfo mapInfo;
 
-    public MetaInfo() {
+    public MetaInfo() throws GameActionException {
       this.hqInfo = new HQInfo();
       this.mapInfo = new MapInfo();
+      init();
     }
 
     public void init() throws GameActionException {
       hqInfo.hqCount = commsHandler.readHqCount();
+      hqInfo.hqLocations = new MapLocation[hqInfo.hqCount];
+      switch (hqInfo.hqCount) {
+        case 4:
+          hqInfo.hqLocations[3] = commsHandler.readOurHqLocation(3);
+        case 3:
+          hqInfo.hqLocations[2] = commsHandler.readOurHqLocation(2);
+        case 2:
+          hqInfo.hqLocations[1] = commsHandler.readOurHqLocation(1);
+        case 1:
+          hqInfo.hqLocations[0] = commsHandler.readOurHqLocation(0);
+          break;
+        default:
+//          if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS) {
+//            Global.rc.setIndicatorString("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
+//            Printer.print("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
+//          }
+          if (Cache.Permanent.ROBOT_TYPE != RobotType.HEADQUARTERS || Cache.PerTurn.ROUNDS_ALIVE > 1) {
+            throw new RuntimeException("Invalid HQ count: " + hqInfo.hqCount);
+          }
+      }
     }
 
-    public int registerHQ(HeadQuarters hq, WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
+    public int registerHQ(WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
       int hqID = hqInfo.hqCount;
       hqInfo.hqCount++;
-      commsHandler.writeHqCount(hqID);
+      commsHandler.writeHqCount(hqInfo.hqCount);
       commsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
       if (closestAdamantium != null) {
         commsHandler.writeAdamantiumWellLocation(hqID, closestAdamantium.getMapLocation());
@@ -87,6 +111,7 @@ public class Communicator {
     }
 
     public void reinitForHQ() throws GameActionException {
+//      Global.rc.setIndicatorString("HQ reinit!");
       init();
     }
 

@@ -41,6 +41,7 @@ public abstract class Robot {
     Cache.setup();
     Printer.cleanPrint();
     this.rc = rc;
+    Global.configureCommunicator();
     this.communicator = Global.communicator;
 
     pathing = Pathing.create(rc);
@@ -203,6 +204,37 @@ public abstract class Robot {
     if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
 
     // TODO: actually do the computation
+  }
+
+  /**
+   * gets the closeset HQ to the specified location based on comms info
+   * @param location where to center the search for closest HQ
+   * @return the hqID of the closest HQ
+   */
+  protected int getClosestHQ(MapLocation location) {
+    int closest = 0;
+    // optimized switch statement to use as little jvm/java bytecode as possible
+    switch (communicator.metaInfo.hqInfo.hqCount) {
+      case 4:
+        if (location.distanceSquaredTo(communicator.metaInfo.hqInfo.hqLocations[3]) <
+            location.distanceSquaredTo(communicator.metaInfo.hqInfo.hqLocations[closest])) {
+          closest = 3;
+        }
+      case 3:
+        if (location.distanceSquaredTo(communicator.metaInfo.hqInfo.hqLocations[2]) <
+            location.distanceSquaredTo(communicator.metaInfo.hqInfo.hqLocations[closest])) {
+          closest = 2;
+        }
+      case 2:
+        if (location.distanceSquaredTo(communicator.metaInfo.hqInfo.hqLocations[1]) <
+            location.distanceSquaredTo(communicator.metaInfo.hqInfo.hqLocations[closest])) {
+          closest = 1;
+        }
+        return closest;
+      case 1:
+        return 0;
+    }
+    throw new RuntimeException("hqCount is not 1, 2, 3, or 4. Got=" + communicator.metaInfo.hqInfo.hqCount);
   }
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {

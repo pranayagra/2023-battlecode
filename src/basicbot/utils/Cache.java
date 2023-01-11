@@ -153,7 +153,7 @@ public class Cache {
 
     public static class PerTurn {
         public static int ROUND_NUM;
-        public static int ROUNDS_ALIVE;
+        public static int ROUNDS_ALIVE; // round num - round spawned (=0 on first turn)
         public static RobotInfo[] ALL_NEARBY_ROBOTS;
         public static RobotInfo[] ALL_NEARBY_FRIENDLY_ROBOTS;
         public static RobotInfo[] ALL_NEARBY_ENEMY_ROBOTS;

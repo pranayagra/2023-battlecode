@@ -1,13 +1,9 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
 import basicbot.utils.Cache;
-import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
-
-import static battlecode.common.GameActionExceptionType.NOT_ENOUGH_RESOURCE;
 
 public class HeadQuarters extends Robot {
   private int hqID;
@@ -29,13 +25,14 @@ public class HeadQuarters extends Robot {
     if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
       this.closestWell = this.closestMana;
     }
-    this.hqID = communicator.metaInfo.registerHQ(this, this.closestAdamantium, this.closestMana);
+    this.hqID = communicator.metaInfo.registerHQ(this.closestAdamantium, this.closestMana);
     determineRole();
   }
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM == 2) communicator.metaInfo.reinitForHQ();
+    if (Cache.PerTurn.ROUNDS_ALIVE == 1) communicator.metaInfo.reinitForHQ();
+//    if (Cache.PerTurn.ROUND_NUM == 50) rc.resign();
     if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
       if (this.closestWell != null) {
         rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
@@ -86,7 +83,7 @@ public class HeadQuarters extends Robot {
 
     MapLocation goal = targetWell;
     MapLocation toSpawn = goal;
-    while (!buildRobot(RobotType.CARRIER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
+    while (!buildRobotAtOrAround(RobotType.CARRIER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
 //      rc.setIndicatorString("Attempted spawn at " + toSpawn);
       if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
         Direction dir = Utils.randomDirection();
@@ -181,6 +178,17 @@ public class HeadQuarters extends Robot {
       return true;
     }
     return false;
+  }
+  protected boolean buildRobotAtOrAround(RobotType type, MapLocation center) throws GameActionException {
+    return buildRobot(type, center)
+        || buildRobot(type, center.add(Direction.NORTH))
+        || buildRobot(type, center.add(Direction.EAST))
+        || buildRobot(type, center.add(Direction.SOUTH))
+        || buildRobot(type, center.add(Direction.WEST))
+        || buildRobot(type, center.add(Direction.NORTHEAST))
+        || buildRobot(type, center.add(Direction.SOUTHEAST))
+        || buildRobot(type, center.add(Direction.SOUTHWEST))
+        || buildRobot(type, center.add(Direction.NORTHWEST));
   }
 
   protected boolean buildAnchor(Anchor type) throws GameActionException {

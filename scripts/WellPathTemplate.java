@@ -6,7 +6,8 @@ import battlecode.common.*;
 
 public class CarrierWellPathing {
 
-  public static final int WELL_PATH_FILL_ORDER[] = {0,8,7,6,5,4,3,2,1};
+  public static final int WELL_PATH_FILL_ORDER[] = {0,1,2,3,4,5,6,7,8};
+//  public static final int WELL_PATH_FILL_ORDER[] = {0,8,7,6,5,4,3,2,1};
 //  public static final int WELL_PATH_FILL_ORDER[] = {8,1,7,2,6,3,5,4,0};
 
   // CONSTS
