@@ -111,9 +111,7 @@ public abstract class Robot {
    * wrap intern run turn method with generic actions for all robots
    */
   private void runTurnWrapper() throws GameActionException {
-//        System.out.println("\nvery start - " + rc.readSharedArray(Communicator.MetaInfo.META_INT_START));
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
-//        stolenbfs.initTurn();
 
     Cache.updateOnTurn();
     if (!dontYield) {
@@ -127,20 +125,10 @@ public abstract class Robot {
 
 //        pathing.initTurn();
 
-//    System.out.println("Update cache -- " + Clock.getBytecodeNum());
-//    communicator.cleanStaleMessages();
-    Utils.startByteCodeCounting("reading");
-//        pendingMessages = communicator.readAndAckAllMessages();
-//    System.out.println("# messages: " + pendingMessages + " -- " + Clock.getBytecodeNum());
-//    while (pendingMessages > 0) {
-//      Message message = communicator.getNthLastReceivedMessage(pendingMessages);
-//      ackMessage(message);
-//      pendingMessages--;
-//    }
-    Utils.finishByteCodeCounting("reading");
-//    if (pendingMessages > 0) System.out.println("Got " + pendingMessages + " messages!");
+    Utils.startByteCodeCounting("updating-comm-metainfo");
+    communicator.metaInfo.updateOnTurnStart();
+    Utils.finishByteCodeCounting("updating-comm-metainfo");
 
-//    System.out.println("After acking: " + Clock.getBytecodeNum());
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
     runTurnTypeWrapper();
 
@@ -148,10 +136,7 @@ public abstract class Robot {
     if (!initial.equals(Cache.PerTurn.CURRENT_LOCATION)) {
       afterTurnWhenMoved();
     }
-    //      int b = Clock.getBytecodeNum();
-    //      int updatedChunks =
-//    updateVisibleChunks();
-    //      System.out.println("updateVisibleChunks(" + updatedChunks + ") cost: " + (Clock.getBytecodeNum() - b));
+
     commNearbyEnemies();
 
 
@@ -159,14 +144,8 @@ public abstract class Robot {
       rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,0,255); // MAGENTA IF RAN OUT OF BYTECODE
       turnCount = rc.getRoundNum() - Cache.Permanent.ROUND_SPAWNED;
       dontYield = true;
-    } else { // still on our turn logic
+    } else { // still on our turn logic -- finish turn with last few potentially expensive things
 //    if (Clock.getBytecodesLeft() >= MIN_BYTECODES_TO_SEND) {
-      Utils.startByteCodeCounting("sending");
-//      System.out.println("Bytecodes before send all messages: " + (Clock.getBytecodeNum()));
-//      communicator.sendQueuedMessages();
-//      communicator.updateMetaIntsIfNeeded();
-//      System.out.println("Bytecodes after send all messages: " + (Clock.getBytecodeNum()));
-      Utils.finishByteCodeCounting("sending");
 //    }
     }
 //    System.out.println("\nvery end - " + rc.readSharedArray(Communicator.MetaInfo.META_INT_START));
@@ -217,13 +196,10 @@ public abstract class Robot {
    * @throws GameActionException if sensing fails
    */
   protected void updateSymmetryComms() throws GameActionException {
-    // TODO: do it based on how many robots we have spawned (or total friends alive) or something
-//    if (Cache.PerTurn.HEALTH > 20 && communicator.metaInfo.knownSymmetry == null && Cache.PerTurn.ROUND_NUM < MAX_TURNS_FIGURE_SYMMETRY) {
-//      RubbleAtLocationMessage rubbleAtLocationMessage = new RubbleAtLocationMessage(Cache.PerTurn.CURRENT_LOCATION, rc.senseRubble(Cache.PerTurn.CURRENT_LOCATION));
-//      ackRubbleAtLocationMessage(rubbleAtLocationMessage);
-//      if (communicator.metaInfo.knownSymmetry == null) communicator.enqueueMessage(rubbleAtLocationMessage);
-////      if (communicator.metaInfo.knownSymmetry == null) communicator.enqueueMessage(rubbleAtLocationMessage);
-//    }
+    if (communicator.metaInfo.mapInfo.knownSymmetry != null) return;
+    if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
+
+    // TODO: actually do the computation
   }
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {

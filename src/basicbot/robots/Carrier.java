@@ -105,7 +105,7 @@ public class Carrier extends Robot {
         rc.transferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType));
       }
     } else if (this.targetWell != null) {
-      // collect adamantium
+      // collect resource
       while (collectResource(targetWell, targetWellUpgraded ? GameConstants.WELL_ACCELERATED_RATE : GameConstants.WELL_STANDARD_RATE)) {
         if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
           break;
@@ -120,6 +120,7 @@ public class Carrier extends Robot {
       }
     } else {
       while (moveRandomly()) {}
+      // periodically check comms for new target
     }
   }
 
@@ -132,39 +133,65 @@ public class Carrier extends Robot {
   }
 
   private void determineTargetWell(ResourceType resourceType) throws GameActionException {
-    int sharedArrayOffset = Communicator.CLOSEST_ADAMANTIUM_WELL_INFO_START;
-    switch (resourceType) {
-      case ADAMANTIUM:
-        sharedArrayOffset = Communicator.CLOSEST_ADAMANTIUM_WELL_INFO_START;
-        break;
-      case MANA:
-        sharedArrayOffset = Communicator.CLOSEST_MANA_WELL_INFO_START;
-        break;
-    }
+//    int sharedArrayOffset = Communicator.CLOSEST_ADAMANTIUM_WELL_INFO_START;
+//    switch (resourceType) {
+//      case ADAMANTIUM:
+//        sharedArrayOffset = Communicator.CLOSEST_ADAMANTIUM_WELL_INFO_START;
+//        break;
+//      case MANA:
+//        sharedArrayOffset = Communicator.CLOSEST_MANA_WELL_INFO_START;
+//        break;
+//    }
     int hqWithClosestWell = 0;
     boolean closestUpgraded = false;
-    int closestWellDistance = 0b111;
+    int closestWellDistance = Integer.MAX_VALUE;
+    MapLocation closestWellLocation = null;
+    MapLocation tmpLocation;
     for (int i = 0; i < 4; i++) {
-      int data = rc.readSharedArray(i + sharedArrayOffset);
-      int dist = data & 0b111;
+//      int data = rc.readSharedArray(i + sharedArrayOffset);
+      switch (resourceType) {
+        case ADAMANTIUM:
+          tmpLocation = communicator.commsHandler.readOurHqClosestAdamantiumLocation(i);
+          break;
+        case MANA:
+          tmpLocation = communicator.commsHandler.readOurHqClosestManaLocation(i);
+          break;
+        case ELIXIR:
+          tmpLocation = communicator.commsHandler.readOurHqClosestElixirLocation(i);
+          break;
+        default:
+          throw new RuntimeException("unknown resource type: " + resourceType);
+      }
+      int dist = tmpLocation.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
 //      Printer.print("READ(" + (i+sharedArrayOffset) + "): dist=" + dist);
       if (dist >= closestWellDistance) continue;
       closestWellDistance = dist;
       hqWithClosestWell = i;
-      closestUpgraded = (data & 0b1000) != 0;
+      closestWellLocation = tmpLocation;
+      switch (resourceType) {
+        case ADAMANTIUM:
+          closestUpgraded = communicator.commsHandler.readOurHqAdamantiumUpgraded(i);
+          break;
+        case MANA:
+          closestUpgraded = communicator.commsHandler.readOurHqManaUpgraded(i);
+          break;
+        case ELIXIR:
+          closestUpgraded = communicator.commsHandler.readOurHqElixirUpgraded(i);
+          break;
+      }
     }
-    targetHQ = communicator.readLocationTopBits(hqWithClosestWell);
-    if (closestWellDistance == 0b111) {
+    targetHQ = communicator.commsHandler.readOurHqLocation(hqWithClosestWell);
+    if (closestWellLocation == null) {
       targetWell = null;
       if (resourceType == ResourceType.MANA) {
 //      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
         hqWithClosestWell++;
-        hqWithClosestWell %= rc.readSharedArray(Communicator.NUM_HQS);
-        targetHQ = communicator.readLocationTopBits(hqWithClosestWell);
+        hqWithClosestWell %= rc.readSharedArray(communicator.metaInfo.hqInfo.hqCount);
+        targetHQ = communicator.commsHandler.readOurHqLocation(hqWithClosestWell);
 //      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
       }
     } else {
-      targetWell = communicator.readLocationTopBits(hqWithClosestWell + sharedArrayOffset);
+      targetWell = closestWellLocation;
       targetWellUpgraded = closestUpgraded;
     }
   }

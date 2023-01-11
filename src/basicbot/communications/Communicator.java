@@ -2,78 +2,103 @@ package basicbot.communications;
 
 import basicbot.robots.HeadQuarters;
 import basicbot.utils.Cache;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.ResourceType;
-import battlecode.common.WellInfo;
-import battlecode.world.Well;
+import basicbot.utils.Utils;
+import battlecode.common.*;
+
 
 public class Communicator {
-  public static final int NUM_HQS = 4;
-  public static final int CLOSEST_ADAMANTIUM_WELL_INFO_START = 5;
-  public static final int CLOSEST_MANA_WELL_INFO_START = 9;
+  public class HQInfo {
+    public static final int HQ_DOESNT_EXIST = 0;
+    public static final int HQ_EXISTS = 1;
 
-  /**
-   * registers a new head quarters into the comms array
-   * @param hq the headquarters
-   * @param closestAdamantium the closest Ad well in vision
-   * @param closestMana closest Ma well in vision
-   * @return the ID of this HQ
-   * @throws GameActionException any game error
-   */
-  public int registerHQ(HeadQuarters hq, WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
-    int hqID = getFirstEmptyHQID();
-    if (hqID == 0) {
-      for (int i = 0; i < 4; i++) {
-//        Global.rc.writeSharedArray(i, 0b111111111111111);
-        Global.rc.writeSharedArray(i+CLOSEST_ADAMANTIUM_WELL_INFO_START, 0b111111111111111);
-        Global.rc.writeSharedArray(i+CLOSEST_MANA_WELL_INFO_START, 0b111111111111111);
+    public int hqCount;
+  }
+
+  public class MapInfo {
+    public final Utils.MapSymmetry[] symmetryKnownMap = {
+        null,
+        null,
+        null,
+        Utils.MapSymmetry.HORIZONTAL,
+        null,
+        Utils.MapSymmetry.VERTICAL,
+        Utils.MapSymmetry.ROTATIONAL,
+//      null,
+    };
+    public final Utils.MapSymmetry[] symmetryGuessMap = {
+        Utils.MapSymmetry.ROTATIONAL, // 000
+        Utils.MapSymmetry.HORIZONTAL, // 001
+        Utils.MapSymmetry.ROTATIONAL, // 010
+        Utils.MapSymmetry.HORIZONTAL, // 011
+        Utils.MapSymmetry.ROTATIONAL, // 100
+        Utils.MapSymmetry.VERTICAL,   // 101
+        Utils.MapSymmetry.ROTATIONAL, // 110
+//        Utils.MapSymmetry.ROTATIONAL, // 111
+    };
+
+    public Utils.MapSymmetry knownSymmetry; // determined by next three bools
+    public Utils.MapSymmetry guessedSymmetry; // determined by next three bools
+    private static final int NOT_HORIZ_MASK = 0b100;
+    public boolean notHorizontal;     // 0-1               -- 1 bit  [3]
+    private static final int NOT_VERT_MASK = 0b10;
+    public boolean notVertical;       // 0-1               -- 1 bit  [2]
+    private static final int NOT_ROT_MASK = 0b1;
+    public boolean notRotational;     // 0-1               -- 1 bit  [1]
+    private static final int ALL_SYM_INFO_MASK = NOT_HORIZ_MASK | NOT_VERT_MASK | NOT_ROT_MASK;
+    private static final int SYM_INFO_INVERTED_MASK = ~ALL_SYM_INFO_MASK;
+
+    public void updateSymmetry(int symmetryInfo) {
+      if (knownSymmetry != null) return;
+      knownSymmetry = symmetryKnownMap[(symmetryInfo & ALL_SYM_INFO_MASK) >> 1];
+      notHorizontal = (symmetryInfo & NOT_HORIZ_MASK) > 0;
+      notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
+      notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
+      guessedSymmetry = knownSymmetry != null ? knownSymmetry : symmetryGuessMap[(symmetryInfo & ALL_SYM_INFO_MASK) >> 1];
+    }
+  }
+
+  public class MetaInfo {
+    public HQInfo hqInfo;
+    public MapInfo mapInfo;
+
+    public MetaInfo() {
+      this.hqInfo = new HQInfo();
+      this.mapInfo = new MapInfo();
+    }
+
+    public void init() throws GameActionException {
+      hqInfo.hqCount = commsHandler.readHqCount();
+    }
+
+    public int registerHQ(HeadQuarters hq, WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
+      int hqID = hqInfo.hqCount;
+      hqInfo.hqCount++;
+      commsHandler.writeHqCount(hqID);
+      commsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
+      if (closestAdamantium != null) {
+        commsHandler.writeOurHqClosestAdamantiumLocation(hqID, closestAdamantium.getMapLocation());
       }
-    }
-    Global.rc.writeSharedArray(NUM_HQS, hqID+1);
-    Printer.print("Total HQs: " + (hqID+1));
-    writeLocationTopBitsWithExtraData(hqID,
-        Cache.Permanent.START_LOCATION, 0b1);
-    if (closestAdamantium != null) {
-      int dist = (int) Math.sqrt(closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION));
-      int wellUpgraded = closestAdamantium.isUpgraded() ? 1 : 0;
-      writeLocationTopBitsWithExtraData(hqID + CLOSEST_ADAMANTIUM_WELL_INFO_START,
-          closestAdamantium.getMapLocation(),
-          wellUpgraded << 3 | dist);
-    }
-    if (closestMana != null) {
-      int dist = (int) Math.sqrt(closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION));
-      int wellUpgraded = closestMana.isUpgraded() ? 1 : 0;
-      writeLocationTopBitsWithExtraData(hqID + CLOSEST_MANA_WELL_INFO_START,
-          closestMana.getMapLocation(),
-          wellUpgraded << 3 | dist);
-    }
-    return hqID;
-  }
-
-  private int getFirstEmptyHQID() throws GameActionException {
-    for (int i = 0; i < NUM_HQS; i++) {
-      if (Global.rc.readSharedArray(i) == 0) {
-        return i;
+      if (closestMana != null) {
+        commsHandler.writeOurHqClosestManaLocation(hqID, closestMana.getMapLocation());
       }
+      return hqID;
     }
-    return 0;
+
+    public void reinitForHQ() throws GameActionException {
+      init();
+    }
+
+    public void updateOnTurnStart() throws GameActionException {
+      mapInfo.updateSymmetry(commsHandler.readMapSymmetry());
+    }
   }
 
-  public void writeLocationTopBits(int index, MapLocation location) throws GameActionException {
-    Printer.print("WRITE (" + index + "): " + location);
-    Global.rc.writeSharedArray(index, location.x << 10 | location.y << 4);
-  }
+  public CommsHandler commsHandler;
 
-  public void writeLocationTopBitsWithExtraData(int index, MapLocation location, int otherData) throws GameActionException {
-    Printer.print("WRITE (" + index + "): " + location + "," + otherData);
-    Global.rc.writeSharedArray(index, location.x << 10 | location.y << 4 | otherData);
-  }
+  public MetaInfo metaInfo;
 
-  public MapLocation readLocationTopBits(int index) throws GameActionException {
-    int data = Global.rc.readSharedArray(index);
-    return new MapLocation(data >> 10, (data >> 4) & 0b111111);
+  public Communicator(RobotController rc) throws GameActionException {
+    this.commsHandler = new CommsHandler(rc);
+    this.metaInfo = new MetaInfo();
   }
 }

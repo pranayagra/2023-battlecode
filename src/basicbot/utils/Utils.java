@@ -64,26 +64,7 @@ public class Utils {
    * vert = 101 = 5
    * rot = 110 = 6
    */
-  public static final MapSymmetry[] commsSymmetryMap = {
-      null,
-      null,
-      null,
-      MapSymmetry.HORIZONTAL,
-      null,
-      MapSymmetry.VERTICAL,
-      MapSymmetry.ROTATIONAL,
-//      null,
-  };
-  public static final MapSymmetry[] commsSymmetryGuessMap = {
-      MapSymmetry.ROTATIONAL, // 000
-      MapSymmetry.HORIZONTAL, // 001
-      MapSymmetry.ROTATIONAL, // 010
-      MapSymmetry.HORIZONTAL, // 011
-      MapSymmetry.ROTATIONAL, // 100
-      MapSymmetry.VERTICAL,   // 101
-      MapSymmetry.ROTATIONAL, // 110
-//      MapSymmetry.ROTATIONAL, // 111
-  };
+
 
   /** The number of chunks that the map should be split into */
   public static final int MAX_MAP_CHUNKS = 100;

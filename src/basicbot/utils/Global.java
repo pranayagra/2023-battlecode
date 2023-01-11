@@ -1,5 +1,6 @@
 package basicbot.utils;
 
+import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 import basicbot.communications.Communicator;
 import basicbot.robots.Robot;
@@ -9,9 +10,9 @@ public class Global {
   public static Robot robot;
   public static Communicator communicator;
 
-  public static void setupGlobals(RobotController rc, Robot robot) {
+  public static void setupGlobals(RobotController rc, Robot robot) throws GameActionException {
     Global.rc = rc;
     Global.robot = robot;
-    Global.communicator = new Communicator();
+    Global.communicator = new Communicator(rc);
   }
 }

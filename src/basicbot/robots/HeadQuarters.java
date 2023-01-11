@@ -29,12 +29,13 @@ public class HeadQuarters extends Robot {
     if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
       this.closestWell = this.closestMana;
     }
-    this.hqID = communicator.registerHQ(this, this.closestAdamantium, this.closestMana);
+    this.hqID = communicator.metaInfo.registerHQ(this, this.closestAdamantium, this.closestMana);
     determineRole();
   }
 
   @Override
   protected void runTurn() throws GameActionException {
+    if (Cache.PerTurn.ROUND_NUM == 2) communicator.metaInfo.reinitForHQ();
     if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
       if (this.closestWell != null) {
         rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
@@ -111,31 +112,49 @@ public class HeadQuarters extends Robot {
   }
 
   private void determineTargetWell() throws GameActionException {
-    int sharedArrayOffset = Communicator.CLOSEST_ADAMANTIUM_WELL_INFO_START;
-    switch (role) {
-      case MAKE_CARRIERS:
-        sharedArrayOffset = Communicator.CLOSEST_ADAMANTIUM_WELL_INFO_START;
-        break;
-      case MAKE_LAUNCHERS:
-        sharedArrayOffset = Communicator.CLOSEST_MANA_WELL_INFO_START;
-        break;
-    }
+    ResourceType resourceType = role.getResourceType();
     int hqWithClosestWell = 0;
     boolean closestUpgraded = false;
-    int closestWellDistance = 0b111;
+    int closestWellDistance = Integer.MAX_VALUE;
+    MapLocation closestWellLocation = null;
+    MapLocation tmpLocation;
     for (int i = 0; i < 4; i++) {
-      int data = rc.readSharedArray(i+sharedArrayOffset);
-      int dist = data & 0b111;
+//      int data = rc.readSharedArray(i + sharedArrayOffset);
+      switch (resourceType) {
+        case ADAMANTIUM:
+          tmpLocation = communicator.commsHandler.readOurHqClosestAdamantiumLocation(i);
+          break;
+        case MANA:
+          tmpLocation = communicator.commsHandler.readOurHqClosestManaLocation(i);
+          break;
+        case ELIXIR:
+          tmpLocation = communicator.commsHandler.readOurHqClosestElixirLocation(i);
+          break;
+        default:
+          throw new RuntimeException("unknown resource type: " + resourceType);
+      }
+      int dist = tmpLocation.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
 //      Printer.print("READ(" + (i+sharedArrayOffset) + "): dist=" + dist);
       if (dist >= closestWellDistance) continue;
       closestWellDistance = dist;
       hqWithClosestWell = i;
-      closestUpgraded = (data & 0b1000) != 0;
+      closestWellLocation = tmpLocation;
+      switch (resourceType) {
+        case ADAMANTIUM:
+          closestUpgraded = communicator.commsHandler.readOurHqAdamantiumUpgraded(i);
+          break;
+        case MANA:
+          closestUpgraded = communicator.commsHandler.readOurHqManaUpgraded(i);
+          break;
+        case ELIXIR:
+          closestUpgraded = communicator.commsHandler.readOurHqElixirUpgraded(i);
+          break;
+      }
     }
-    if (closestWellDistance == 0b111) {
-      targetWell = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, Utils.MapSymmetry.ROTATIONAL);
+    if (closestWellLocation == null) {
+      targetWell = null;
     } else {
-      targetWell = communicator.readLocationTopBits(hqWithClosestWell + sharedArrayOffset);
+      targetWell = closestWellLocation;
       targetWellUpgraded = closestUpgraded;
     }
   }
@@ -189,5 +208,14 @@ public class HeadQuarters extends Robot {
     MAKE_CARRIERS,
     MAKE_LAUNCHERS,
     BUILD_ANCHORS;
+
+    public ResourceType getResourceType() {
+      switch (this) {
+        case MAKE_CARRIERS: return ResourceType.ADAMANTIUM;
+        case MAKE_LAUNCHERS: return ResourceType.MANA;
+        case BUILD_ANCHORS: return ResourceType.ELIXIR;
+      }
+      throw new RuntimeException("unknown role: " + this);
+    }
   }
 }
