@@ -1,5 +1,6 @@
 package basicbot.robots;
 
+import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.utils.Cache;
 import basicbot.utils.Printer;
@@ -113,43 +114,23 @@ public class HeadQuarters extends Robot {
 
   private void determineTargetWell() throws GameActionException {
     ResourceType resourceType = role.getResourceType();
+    CommsHandler.ResourceTypeReaderWriter resourceTypeReaderWriter = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     int hqWithClosestWell = 0;
     boolean closestUpgraded = false;
     int closestWellDistance = Integer.MAX_VALUE;
     MapLocation closestWellLocation = null;
     MapLocation tmpLocation;
     for (int i = 0; i < 4; i++) {
-//      int data = rc.readSharedArray(i + sharedArrayOffset);
-      switch (resourceType) {
-        case ADAMANTIUM:
-          tmpLocation = communicator.commsHandler.readOurHqClosestAdamantiumLocation(i);
-          break;
-        case MANA:
-          tmpLocation = communicator.commsHandler.readOurHqClosestManaLocation(i);
-          break;
-        case ELIXIR:
-          tmpLocation = communicator.commsHandler.readOurHqClosestElixirLocation(i);
-          break;
-        default:
-          throw new RuntimeException("unknown resource type: " + resourceType);
-      }
+      if (!resourceTypeReaderWriter.readWellExists(i)) continue;
+
+      tmpLocation = resourceTypeReaderWriter.readWellLocation(i);
       int dist = tmpLocation.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
-//      Printer.print("READ(" + (i+sharedArrayOffset) + "): dist=" + dist);
       if (dist >= closestWellDistance) continue;
+
       closestWellDistance = dist;
       hqWithClosestWell = i;
       closestWellLocation = tmpLocation;
-      switch (resourceType) {
-        case ADAMANTIUM:
-          closestUpgraded = communicator.commsHandler.readOurHqAdamantiumUpgraded(i);
-          break;
-        case MANA:
-          closestUpgraded = communicator.commsHandler.readOurHqManaUpgraded(i);
-          break;
-        case ELIXIR:
-          closestUpgraded = communicator.commsHandler.readOurHqElixirUpgraded(i);
-          break;
-      }
+      closestUpgraded = resourceTypeReaderWriter.readWellUpgraded(i);
     }
     if (closestWellLocation == null) {
       targetWell = null;

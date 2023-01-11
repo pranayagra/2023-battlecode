@@ -5,6 +5,7 @@ import sys
 NUM_INTS = 100
 BITS_PER_INT = 16
 MAX_BITS = NUM_INTS * BITS_PER_INT
+RESOURCES = ['adamantium', 'mana', 'elixir']
 
 LOCATION_KEY = 'loc'
 BOOL_KEY = 'bool'
@@ -14,13 +15,16 @@ SUFFIX_TO_GENERAL = {
   LOCATION_KEY: {
     'datatype': 'MapLocation',
     'new_suffixes': {
-      'x': [6,'({}).x'], # format string to write property to comms
-      'y': [6,'({}).y'],
+      'x': [6,'({}).x+1'], # format string to write property to comms
+      'y': [6,'({}).y+1'],
     },
-    'read_conversion': 'new MapLocation({})',
+    'read_conversion': 'new MapLocation({}-1,{}-1)',
     # 'read_method_prefix': 'read',
     # 'write_method_prefix': 'write',
     'method_suffix': 'location',
+    'extra_read_suffixes': {
+      'exists': ['boolean','!(({}).equals(new MapLocation(0,0)))'], # type, format string analyze result of reading
+    }
   },
   BOOL_KEY: {
     'datatype': 'boolean',
@@ -49,6 +53,11 @@ METAINFO = {
   },
 }
 
+WELL_SCHEMA = {
+  'loc': LOCATION_BITS,
+  'upgraded_bool': BOOL_BITS,
+}
+
 SCHEMA = {
   '': {
     'slots': 1,
@@ -57,17 +66,28 @@ SCHEMA = {
   'our_hq': {
     'slots': 4,
     'bits': {
-      'exists_bool': BOOL_BITS,
       'loc': LOCATION_BITS,
-      'closest_adamantium_loc': LOCATION_BITS,
-      'adamantium_upgraded_bool': BOOL_BITS,
-      'closest_mana_loc': LOCATION_BITS,
-      'mana_upgraded_bool': BOOL_BITS,
-      'closest_elixir_loc': LOCATION_BITS,
-      'elixir_upgraded_bool': BOOL_BITS,
     }
   },
-  'attack_pods': {
+  'adamantium_well': {
+    'slots': 4,
+    'bits': {
+      **WELL_SCHEMA,
+    }
+  },
+  'mana_well': {
+    'slots': 4,
+    'bits': {
+      **WELL_SCHEMA,
+    }
+  },
+  'elixir_well': {
+    'slots': 4,
+    'bits': {
+      **WELL_SCHEMA,
+    }
+  },
+  'attack_pod': {
     'slots': 10,
     'bits': {
       'amp_alive_bool': BOOL_BITS,
@@ -98,7 +118,7 @@ def special_to_general(attr: str) -> list[str]:
     if attr.endswith(f"{suffix}"):
       return [f"{attr[:-len(suffix)]}{new_suffix}" for new_suffix in SUFFIX_TO_GENERAL[suffix]['new_suffixes'].keys()]
   print('ERROR: special attr not found')
-def get_generated_attrs(schema_datatype: dict) -> list[tuple[str,int]]:
+def get_raw_attrs(schema_datatype: dict) -> list[tuple[str,int,str]]:
   # [*SCHEMA[datatype]['bits'], 'all']
   attr_list = schema_datatype['bits'].keys()
   attrs = []
@@ -112,7 +132,23 @@ def get_generated_attrs(schema_datatype: dict) -> list[tuple[str,int]]:
     else:
       attrs.append((attr, schema_datatype['bits'][attr], 'public'))
   # attrs.append(('all',sum(schema_datatype['bits'].values()),'public'))
-  print('attrs:', attrs)
+  # print('attrs:', attrs)
+  return attrs
+
+def get_generated_attrs(schema_datatype: dict) -> list[str]:
+  attr_list = schema_datatype['bits'].keys()
+  attrs = []
+  for attr in attr_list:
+    if is_special_attr(attr):
+      if is_suffix_special(attr):
+        suffix,special_attr_info = get_suffix_info(attr)
+        prefix = attr[:-len(suffix)]
+        attrs.append((f"{prefix}{special_attr_info['method_suffix']}", special_attr_info['datatype']))
+        if 'extra_read_suffixes' in special_attr_info:
+          for extra_suffix, (extra_type, _) in special_attr_info['extra_read_suffixes'].items():
+            attrs.append((f"{prefix}{extra_suffix}", extra_type))
+    else:
+      attrs.append((attr, 'int'))
   return attrs
 
 def gen_constants():
@@ -123,33 +159,16 @@ def gen_constants():
   public static final int {name}_SLOTS = {SCHEMA[datatype]['slots']};"""
   return out+"\n"
 
-def get_metainfo_update():
-  out = """"""
-  for metadatum,metainfo in METAINFO.items():
-    if 'update' in metainfo and metainfo['update']:
-      # print(metadatum.partition('_'))
-      subInfo = metadatum.partition('_')[0] + 'Info'
-      datum = capitalize(metadatum.partition('_')[2])
-      out += f"""      {subInfo}.update{datum}(read{capitalize(metadatum)}());
-"""
-  return out
-
 def gen():
   out = """"""""
   bits_so_far = 0
   for datatype in SCHEMA:
     datatype_bits = sum(SCHEMA[datatype]['bits'].values())
-    print(f"{datatype} has {datatype_bits} bits")
+    # print(f"{datatype} has {datatype_bits} bits")
     prefix_bits = 0
 
-    for attribute,attribute_bits,publicity in get_generated_attrs(SCHEMA[datatype]):
-      # if attribute == 'all':
-      #   attribute_bits = datatype_bits
-      #   prefix_bits = 0
-      # else:
-      #   attribute_bits = SCHEMA[datatype]['bits'][attribute]
-
-      print(f"  {attribute} has {attribute_bits} bits and publicity {publicity}")
+    for attribute,attribute_bits,publicity in get_raw_attrs(SCHEMA[datatype]):
+      # print(f"  {attribute} has {attribute_bits} bits and publicity {publicity}")
       # read function
       rets = []
       for idx in range(SCHEMA[datatype]['slots']):
@@ -250,12 +269,26 @@ def gen():
         if SCHEMA[datatype]['slots'] == 1:
           out += f"""
   public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}() throws GameActionException {{
-    return {read_conversion_format_str.format(', '.join(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}()" for new_suffix in special_attr_info['new_suffixes']))};
+    return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}()" for new_suffix in special_attr_info['new_suffixes']))};
   }}"""
         else:
           out += f"""
   public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}(int idx) throws GameActionException {{
-    return {read_conversion_format_str.format(', '.join(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx)" for new_suffix in special_attr_info['new_suffixes']))};
+    return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx)" for new_suffix in special_attr_info['new_suffixes']))};
+  }}"""
+
+        if 'extra_read_suffixes' in special_attr_info:
+          for extra_suffix,(extra_type,analyzer_format_str) in special_attr_info['extra_read_suffixes'].items():
+            # print(suffix,extra_suffix,extra_type,analyzer_format_str)
+            if SCHEMA[datatype]['slots'] == 1:
+              out += f"""
+  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}() throws GameActionException {{
+    return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}()")};
+  }}"""
+            else:
+              out += f"""
+  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}(int idx) throws GameActionException {{
+    return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}(idx)")};
   }}"""
         #write
         if SCHEMA[datatype]['slots'] == 1:
@@ -284,6 +317,108 @@ def gen():
   print("Total bit usage: " + str(bits_so_far))
   return out.rstrip() + "\n"
 
+def gen_resource():
+  out = """"""
+  resource_datatypes = list(set([re.sub(re.compile(f"({'|'.join(RESOURCES)})"), '{}', datatype) for datatype in SCHEMA if any(rss in datatype for rss in RESOURCES)]))
+  print('schemas for resources:',resource_datatypes)
+  for datatype_fmt in resource_datatypes:
+    valid_rss = [rss for rss in RESOURCES if datatype_fmt.format(rss) in SCHEMA]
+    if not valid_rss:
+      continue
+    # ensure all rss have same format
+    assert all(SCHEMA[datatype_fmt.format(rss)] == SCHEMA[datatype_fmt.format(valid_rss[0])] for rss in valid_rss[1:])
+
+    print(f'{datatype_fmt}:  RSS:{valid_rss}')
+    generic_name = re.sub(r'_?\{\}_?', '', datatype_fmt)
+    base_type = datatype_fmt.format(valid_rss[0])
+    for attribute,out_type in get_generated_attrs(SCHEMA[base_type]):
+      print(f"  {attribute} can be specialized by rss under schema for {generic_name}")
+
+      # read
+      if SCHEMA[base_type]['slots'] == 1:
+        out += f"""
+    public {out_type} read{capitalize(generic_name)}{capitalize(attribute)}() throws GameActionException {{
+      switch (this) {{"""
+        for rss in valid_rss:
+          out += f"""
+        case {rss.upper()}:
+          return Global.communicator.commsHandler.read{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}();"""
+        out += f"""
+        default:
+          throw new RuntimeException("read{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
+      }}
+    }}
+"""
+      else:
+        out += f"""
+    public {out_type} read{capitalize(generic_name)}{capitalize(attribute)}(int idx) throws GameActionException {{
+      switch (this) {{"""
+        for rss in valid_rss:
+          out += f"""
+        case {rss.upper()}:
+          return Global.communicator.commsHandler.read{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(idx);"""
+        out += f"""
+        default:
+          throw new RuntimeException("read{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
+      }}
+    }}
+"""
+    break
+
+    # special attrs
+    for attribute in get_special_attrs(SCHEMA[datatype]['bits']):
+      if is_suffix_special(attribute):
+        suffix,special_attr_info = get_suffix_info(attribute)
+        prefix = attribute[:-len(suffix)]
+        read_conversion_format_str = special_attr_info['read_conversion']
+        method_name_attr = prefix + special_attr_info['method_suffix']
+        # read
+        if SCHEMA[datatype]['slots'] == 1:
+          out += f"""
+  public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}() throws GameActionException {{
+    return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}()" for new_suffix in special_attr_info['new_suffixes']))};
+  }}"""
+        else:
+          out += f"""
+  public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}(int idx) throws GameActionException {{
+    return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx)" for new_suffix in special_attr_info['new_suffixes']))};
+  }}"""
+
+        if 'extra_read_suffixes' in special_attr_info:
+          for extra_suffix,(extra_type,analyzer_format_str) in special_attr_info['extra_read_suffixes'].items():
+            # print(suffix,extra_suffix,extra_type,analyzer_format_str)
+            if SCHEMA[datatype]['slots'] == 1:
+              out += f"""
+  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}() throws GameActionException {{
+    return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}()")};
+  }}"""
+            else:
+              out += f"""
+  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}(int idx) throws GameActionException {{
+    return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}(idx)")};
+  }}"""
+        #write
+        if SCHEMA[datatype]['slots'] == 1:
+          out += f"""
+  public void write{capitalize(datatype)}{capitalize(method_name_attr)}({special_attr_info['datatype']} value) throws GameActionException {{"""
+          for new_suffix,suffix_info in special_attr_info['new_suffixes'].items():
+            suffix_write_format_str = suffix_info[1]
+            out += f"""
+    write{capitalize(datatype)}{capitalize(prefix + new_suffix)}({suffix_write_format_str.format('value')});"""
+          out += f"""
+  }}"""
+        else:
+          out += f"""
+  public void write{capitalize(datatype)}{capitalize(method_name_attr)}(int idx, {special_attr_info['datatype']} value) throws GameActionException {{"""
+          for new_suffix,suffix_info in special_attr_info['new_suffixes'].items():
+            suffix_write_format_str = suffix_info[1]
+            out += f"""
+    write{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx, {suffix_write_format_str.format('value')});"""
+          out += f"""
+  }}"""
+
+  return out.rstrip() + "\n"
+
 def capitalize(s):
   return ''.join(x.capitalize() for x in s.split('_'))
 
@@ -293,14 +428,15 @@ if __name__ == '__main__':
   out_file = Path('./src/') / sys.argv[1] / 'communications' / 'CommsHandler.java'
   with open(template_file, 'r') as t:
     with open(out_file, 'w') as f:
+      old_root_pkg = None
       for line in t:
         if line.strip().startswith('package') and line.strip().endswith(';'):
-          f.write(re.sub(r'(?<=package )\w+',sys.argv[1],line,count=1))
-        elif '// CONSTS' in line:
+          old_root_pkg = re.search(r'(?<=package )\w+', line).group(0)
+        if '// CONSTS' in line:
           f.write(gen_constants())
-        # elif '// METAINFO UPDATE' in line:
-        #   f.write(get_metainfo_update())
         elif '// MAIN READ AND WRITE METHODS' in line:
           f.write(gen())
+        elif '// RESOURCE READERS AND WRITERS' in line:
+          f.write(gen_resource())
         else:
-          f.write(line)
+          f.write(line.replace(old_root_pkg, sys.argv[1]))

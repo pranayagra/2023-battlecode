@@ -76,10 +76,12 @@ public class Communicator {
       commsHandler.writeHqCount(hqID);
       commsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
       if (closestAdamantium != null) {
-        commsHandler.writeOurHqClosestAdamantiumLocation(hqID, closestAdamantium.getMapLocation());
+        commsHandler.writeAdamantiumWellLocation(hqID, closestAdamantium.getMapLocation());
+//        commsHandler.writeOurHqClosestAdamantiumLocation(hqID, closestAdamantium.getMapLocation());
       }
       if (closestMana != null) {
-        commsHandler.writeOurHqClosestManaLocation(hqID, closestMana.getMapLocation());
+        commsHandler.writeManaWellLocation(hqID, closestMana.getMapLocation());
+//        commsHandler.writeOurHqClosestManaLocation(hqID, closestMana.getMapLocation());
       }
       return hqID;
     }
