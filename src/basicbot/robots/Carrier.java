@@ -32,6 +32,9 @@ public class Carrier extends Robot {
 
   private int maxResourceToCarry;
 
+  int fleeingCounter;
+  MapLocation lastEnemyLocation;
+
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
     this.turnsSinceRoleChange = Integer.MAX_VALUE;
@@ -45,6 +48,37 @@ public class Carrier extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM == 400) {
 //      rc.resign();
 //    }
+//    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
+    if (enemyExists()) {
+        RobotInfo enemyToAttack = enemyToAttackIfWorth();
+        if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
+//        Printer.print("enemyToAttack - " + enemyToAttack);
+        if (enemyToAttack != null && rc.isActionReady()) {
+          // todo: attack it!
+          if (rc.canAttack(enemyToAttack.location)) {
+//            Printer.print("it can attack w/o moving");
+            rc.attack(enemyToAttack.location);
+          } else {
+            // move and then attack
+            pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
+//            Printer.print("moved to attack... " + rc.canAttack(enemyToAttack.location), "loc=" + enemyToAttack.location, "canAct=" + rc.canActLocation(enemyToAttack.location), "robInfo=" + rc.senseRobotAtLocation(enemyToAttack.location));
+            if (rc.canAttack(enemyToAttack.location)) {
+              rc.attack(enemyToAttack.location);
+            }
+          }
+        }
+        updateLastEnemy();
+    }
+
+    if (fleeingCounter > 0) {
+      // run from lastEnemyLocation
+      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
+      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
+      // todo: move towards fleeDirection
+      pathing.moveInDirLoose(away);
+      fleeingCounter--;
+    }
+
     switch (this.role) {
       case ADAMANTIUM_COLLECTION:
       case MANA_COLLECTION:
@@ -331,37 +365,134 @@ public class Carrier extends Robot {
     setTargetWell(targetWell.getMapLocation(), targetWell.isUpgraded());
   }
 
-//  private RobotInfo shouldAttackEnemy() throws GameActionException {
-//    // if enemy launcher, consider attacking 1) closest
-//    RobotInfo bestEnemyToAttack = null;
-//    int bestValue = 0;
-//
-//    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-//      RobotType type = enemyRobot.getType();
-//      int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
-//      int carryingResourceValue = enemyRobot.inventory.getWeight();
-//      int enemyValue = costToBuild + carryingResourceValue;
-//      //todo: maybe make if-statement always true for launchers depending on if we have launchers or not
-//      if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
-//        // determine if we have enough to attack it...
-//        int totalDmg = 0;
-//        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); //assume this returns this robot as well
-//        for (RobotInfo friendlyRobot : robotInfos) {
-//          //todo: maybe dont consider launchers in dmg calculation here
-//          totalDmg += (friendlyRobot.inventory.getWeight() * GameConstants.CARRIER_DAMAGE_FACTOR) + friendlyRobot.type.damage;
-//        }
-//        Printer.print("enemy location: " + enemyRobot.location + " can deal: " + totalDmg);
-//        // todo: consider allowing only launcher to attack or smth?
-//        if (totalDmg > enemyRobot.health) { // we can kill it
-//          if (bestEnemyToAttack == null || enemyValue > bestValue || (enemyValue == bestValue && bestEnemyToAttack.health < enemyRobot.health)) {
-//            bestEnemyToAttack = enemyRobot;
-//            bestValue = enemyValue;
-//          }
-//        }
-//      }
-//    }
-//    return bestEnemyToAttack;
-//  }
+  /*
+  CARRIER BEHAVIOR AGAINST OPPONENT
+  1) if we can kill it effectively, kill it
+  2) if we cannot kill it
+    2.1) attempt to run away. if we are going die (or maybe easy health is <= 7)
+  * */
+
+  private boolean enemyExists() throws GameActionException {
+    return Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0;
+  }
+
+  private int getInvWeight(RobotInfo ri) {
+    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() == 0 ? 0 : 40));
+  }
+
+  private RobotInfo enemyToAttackIfWorth() throws GameActionException {
+//    Printer.print("enemyToAttackIfWorth()");
+    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA) + rc.getResourceAmount(ResourceType.ELIXIR) + (rc.getAnchor() != null ? 40 : 0));
+    if (myInvSize <= 4) {
+//      Printer.print("null bc invSize <= 4");
+      return null;
+    }
+
+    // if enemy launcher, consider attacking 1) closest
+    RobotInfo bestEnemyToAttack = null;
+    int bestValue = 0;
+
+    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      RobotType type = enemyRobot.getType();
+      int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
+      int carryingResourceValue = getInvWeight(enemyRobot);
+      int enemyValue = costToBuild + carryingResourceValue;
+      //todo: maybe make if-statement always true for launchers depending on if we have launchers or not
+      if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
+        // determine if we have enough to attack it...
+        int totalDmg = 0;
+        totalDmg += myInvSize * GameConstants.CARRIER_DAMAGE_FACTOR;
+        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); //assume this returns this robot as well
+        for (RobotInfo friendlyRobot : robotInfos) {
+          //todo: maybe dont consider launchers in dmg calculation here
+          totalDmg += (getInvWeight(friendlyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR) + friendlyRobot.type.damage;
+        }
+
+//        Printer.print("enemy location: " + enemyRobot.location + " we deal: " + totalDmg);
+        // todo: consider allowing only launcher to attack or smth?
+        if (totalDmg > enemyRobot.health) { // we can kill it
+          if (bestEnemyToAttack == null || enemyValue > bestValue || (enemyValue == bestValue && bestEnemyToAttack.health < enemyRobot.health)) {
+            bestEnemyToAttack = enemyRobot;
+            bestValue = enemyValue;
+          }
+        }
+      }
+    }
+//    Printer.print("bestEnemyToAttack=" + bestEnemyToAttack + ", value=" + bestValue);
+    return bestEnemyToAttack;
+    //todo: perform the attack here?
+  }
+
+  private int numMoves() {
+    int moves = 0;
+    int cd = rc.getMovementCooldownTurns();
+    while (cd < 10 && moves < 5) {
+      cd += rc.getType().movementCooldown;
+      ++moves;
+    }
+    return moves;
+  }
+
+  private RobotInfo attackEnemyIfCannotRun() {
+//    Printer.print("attackEnemyIfCannotRun()");
+    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA) + rc.getResourceAmount(ResourceType.ELIXIR) + (rc.getAnchor() != null ? 40 : 0));
+    if (myInvSize <= 4) {
+//      Printer.print("null bc invSize <= 4");
+      return null;
+    }
+
+    // sum damage based on how many enemies can currently attack me (this bot must be within action radius of enemy's bot)
+    int enemyDamage = 0;
+    RobotInfo enemyToAttack = null;
+//    int numMoves = numMoves();
+    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, enemyRobot.type.actionRadiusSquared)) {
+        enemyDamage += getInvWeight(enemyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR + enemyRobot.type.damage;
+      }
+      if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, rc.getType().actionRadiusSquared)) { // todo: need to consider movement here
+        if (enemyToAttack == null || (enemyToAttack.type != RobotType.LAUNCHER && enemyRobot.type == RobotType.LAUNCHER))
+        enemyToAttack = enemyRobot;
+      }
+    }
+
+    if (enemyToAttack == null) {
+//      Printer.print("enemyToAttack=null" + ", enemies can deal: " + enemyDamage);
+    } else {
+//      Printer.print("enemyToAttack loc:" + enemyToAttack.location + ", enemies can deal: " + enemyDamage);
+    }
+
+    if (enemyDamage > rc.getHealth() - 1) {
+//      Printer.print("attack bc no option!!");
+      return enemyToAttack;
+    }
+//    Printer.print("I not die, return null");
+    return null;
+  }
+
+  private void updateLastEnemy() {
+    // get nearest enemy
+    // set fleeing to 6
+    // todo: consider whether or not to run away from enemy carriers
+    MapLocation nearestCombatEnemy = null;
+    int distanceToEnemy = Integer.MAX_VALUE;
+    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (enemyRobot.type == RobotType.LAUNCHER) {
+        int dist = rc.getLocation().distanceSquaredTo(enemyRobot.location);
+        if (dist < distanceToEnemy) {
+          nearestCombatEnemy = enemyRobot.location;
+          distanceToEnemy = dist;
+        }
+      }
+    }
+//    Printer.print("updateLastEnemy()");
+    if (nearestCombatEnemy != null) {
+//      Printer.print("lastEnemyLocation=" + lastEnemyLocation);
+      lastEnemyLocation = nearestCombatEnemy;
+      fleeingCounter = 6;
+    } else {
+      fleeingCounter = 0;
+    }
+  }
 
   private enum CarrierRole {
     ADAMANTIUM_COLLECTION,

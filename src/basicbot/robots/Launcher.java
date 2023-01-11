@@ -24,6 +24,7 @@ public class Launcher extends Robot {
   }
 
   private boolean attack(MapLocation loc) throws GameActionException {
+//    if (rc.canAttack(loc)) return false; //todo : Remove after!
     if (rc.canAttack(loc)) {
       rc.attack(loc);
       return true;
