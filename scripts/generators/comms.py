@@ -363,59 +363,6 @@ def gen_resource():
       }}
     }}
 """
-    break
-
-    # special attrs
-    for attribute in get_special_attrs(SCHEMA[datatype]['bits']):
-      if is_suffix_special(attribute):
-        suffix,special_attr_info = get_suffix_info(attribute)
-        prefix = attribute[:-len(suffix)]
-        read_conversion_format_str = special_attr_info['read_conversion']
-        method_name_attr = prefix + special_attr_info['method_suffix']
-        # read
-        if SCHEMA[datatype]['slots'] == 1:
-          out += f"""
-  public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}() throws GameActionException {{
-    return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}()" for new_suffix in special_attr_info['new_suffixes']))};
-  }}"""
-        else:
-          out += f"""
-  public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}(int idx) throws GameActionException {{
-    return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx)" for new_suffix in special_attr_info['new_suffixes']))};
-  }}"""
-
-        if 'extra_read_suffixes' in special_attr_info:
-          for extra_suffix,(extra_type,analyzer_format_str) in special_attr_info['extra_read_suffixes'].items():
-            # print(suffix,extra_suffix,extra_type,analyzer_format_str)
-            if SCHEMA[datatype]['slots'] == 1:
-              out += f"""
-  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}() throws GameActionException {{
-    return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}()")};
-  }}"""
-            else:
-              out += f"""
-  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}(int idx) throws GameActionException {{
-    return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}(idx)")};
-  }}"""
-        #write
-        if SCHEMA[datatype]['slots'] == 1:
-          out += f"""
-  public void write{capitalize(datatype)}{capitalize(method_name_attr)}({special_attr_info['datatype']} value) throws GameActionException {{"""
-          for new_suffix,suffix_info in special_attr_info['new_suffixes'].items():
-            suffix_write_format_str = suffix_info[1]
-            out += f"""
-    write{capitalize(datatype)}{capitalize(prefix + new_suffix)}({suffix_write_format_str.format('value')});"""
-          out += f"""
-  }}"""
-        else:
-          out += f"""
-  public void write{capitalize(datatype)}{capitalize(method_name_attr)}(int idx, {special_attr_info['datatype']} value) throws GameActionException {{"""
-          for new_suffix,suffix_info in special_attr_info['new_suffixes'].items():
-            suffix_write_format_str = suffix_info[1]
-            out += f"""
-    write{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx, {suffix_write_format_str.format('value')});"""
-          out += f"""
-  }}"""
 
   return out.rstrip() + "\n"
 
