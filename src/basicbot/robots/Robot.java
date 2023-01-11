@@ -2,7 +2,7 @@ package basicbot.robots;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.Message;
-import basicbot.pathfinding.Pathing;
+import basicbot.robots.pathfinding.Pathing;
 import basicbot.utils.Cache;
 import basicbot.utils.Global;
 import basicbot.utils.Printer;
@@ -266,71 +266,6 @@ public abstract class Robot {
     }
   }
 
-  /**
-   * Wrapper for move() of RobotController that ensures enough bytecodes
-   * @param dir where to move
-   * @return if the robot moved
-   * @throws GameActionException if movement failed
-   */
-  public boolean move(Direction dir) throws GameActionException {
-    if (Clock.getBytecodesLeft() < 25) Clock.yield(); // todo: this should be larger? whenMoved takes a bit longer...
-    if (rc.canMove(dir)) {
-      rc.move(dir);
-      Cache.PerTurn.whenMoved();
-//      updateSymmetryComms();
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   *
-   * @param loc the location to test
-   * @return if the robot is closer to the enemy archon than ours
-   */
-  protected boolean onEnemySide(MapLocation loc) {
-    return true;
-  }
-
-  /**
-   * if the robot can move, choose a random direction and move
-   * will try 16 times in case some directions are blocked
-   * @return if moved
-   * @throws GameActionException if movement fails
-   */
-  protected boolean moveRandomly() throws GameActionException {
-    return move(Utils.randomDirection()) || move(Utils.randomDirection()); // try twice in case many blocked locs
-//    if (rc.isMovementReady()) {
-//      int failedTries = 0;
-//      Direction dir;
-//      do {
-//        dir = Utils.randomDirection();
-//      } while (!rc.canMove(dir) && ++failedTries < 16);
-//      if (failedTries < 16) { // only move if we didnt fail 16 times and never find a valid direction to move
-//        rc.move(dir);
-//      }
-//    }
-  }
-
-  /**
-   * move in this direction or an adjacent direction if can't move
-   * @param dir the direction to move in
-   * @return if moved
-   * @throws GameActionException if movement fails
-   */
-  protected boolean moveInDirLoose(Direction dir) throws GameActionException {
-    return move(dir) || move(dir.rotateLeft()) || move(dir.rotateRight());
-  }
-
-  /**
-   * move randomly in this general direction
-   * @param dir the direction to move in
-   * @return if moved
-   * @throws GameActionException if movement fails
-   */
-  protected boolean moveInDirRandom(Direction dir) throws GameActionException {
-    return move(Utils.randomSimilarDirectionPrefer(dir)) || move(Utils.randomSimilarDirection(dir));
-  }
 
 
   /**

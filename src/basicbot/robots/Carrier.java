@@ -2,6 +2,7 @@ package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
+import basicbot.containers.HashMap;
 import basicbot.utils.Cache;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
@@ -11,6 +12,8 @@ public class Carrier extends Robot {
   private MapLocation targetWell;
   private boolean targetWellUpgraded;
   private MapLocation targetHQ;
+
+  HashMap<MapLocation, Direction> wellApproachDirection;
 
   private CarrierRole role;
   private static final CarrierRole DEFAULT_ROLE = CarrierRole.ADAMANTIUM_COLLECTION;
@@ -22,6 +25,7 @@ public class Carrier extends Robot {
     super(rc);
     this.role = DEFAULT_ROLE;
     this.turnsSinceRoleChange = Integer.MAX_VALUE;
+    wellApproachDirection = new HashMap<>(3);
     determineRole();
     switch (this.role) {
       case ADAMANTIUM_COLLECTION:
@@ -64,7 +68,7 @@ public class Carrier extends Robot {
   }
 
   private boolean searchForTargetWell() throws GameActionException {
-    while (moveRandomly()) {
+    while (pathing.moveRandomly()) {
       WellInfo well = getClosestWell(role.getResourceCollectionType());
       if (well != null) {
         rc.setIndicatorString("found well: " + well);
@@ -100,8 +104,9 @@ public class Carrier extends Robot {
           targetPosition = targetPosition.add(Utils.randomSimilarDirectionPrefer(toHQ));
         }
       }
-      while (moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetPosition))) {}
-      while (moveRandomly()) {}
+      while (pathing.moveTowards(targetPosition)) {}
+//      while (pathing.moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetPosition))) {}
+      while (pathing.moveRandomly()) {}
       if (rc.canTransferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType))) {
         rc.transferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType));
       }
@@ -112,15 +117,16 @@ public class Carrier extends Robot {
           break;
         }
       }
-      while (moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell))) {}
-      while (moveRandomly()) {}
+      while (pathing.moveTowards(targetWell)) {}
+//      while (pathing.moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell))) {}
+      while (pathing.moveRandomly()) {}
       while (collectResource(targetWell, targetWellUpgraded ? GameConstants.WELL_ACCELERATED_RATE : GameConstants.WELL_STANDARD_RATE)) {
         if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
           break;
         }
       }
     } else {
-      while (moveRandomly()) {}
+      while (pathing.moveRandomly()) {}
       // periodically check comms for new target
     }
   }
@@ -168,37 +174,37 @@ public class Carrier extends Robot {
     }
   }
 
-  private RobotInfo shouldAttackEnemy() throws GameActionException {
-    // if enemy launcher, consider attacking 1) closest
-    RobotInfo bestEnemyToAttack = null;
-    int bestValue = 0;
-
-    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      RobotType type = enemyRobot.getType();
-      int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
-      int carryingResourceValue = enemyRobot.inventory.getWeight();
-      int enemyValue = costToBuild + carryingResourceValue;
-      //todo: maybe make if-statement always true for launchers depending on if we have launchers or not
-      if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
-        // determine if we have enough to attack it...
-        int totalDmg = 0;
-        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); //assume this returns this robot as well
-        for (RobotInfo friendlyRobot : robotInfos) {
-          //todo: maybe dont consider launchers in dmg calculation here
-          totalDmg += (friendlyRobot.inventory.getWeight() * GameConstants.CARRIER_DAMAGE_FACTOR) + friendlyRobot.type.damage;
-        }
-        Printer.print("enemy location: " + enemyRobot.location + " can deal: " + totalDmg);
-        // todo: consider allowing only launcher to attack or smth?
-        if (totalDmg > enemyRobot.health) { // we can kill it
-          if (bestEnemyToAttack == null || enemyValue > bestValue || (enemyValue == bestValue && bestEnemyToAttack.health < enemyRobot.health)) {
-            bestEnemyToAttack = enemyRobot;
-            bestValue = enemyValue;
-          }
-        }
-      }
-    }
-    return bestEnemyToAttack;
-  }
+//  private RobotInfo shouldAttackEnemy() throws GameActionException {
+//    // if enemy launcher, consider attacking 1) closest
+//    RobotInfo bestEnemyToAttack = null;
+//    int bestValue = 0;
+//
+//    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+//      RobotType type = enemyRobot.getType();
+//      int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
+//      int carryingResourceValue = enemyRobot.inventory.getWeight();
+//      int enemyValue = costToBuild + carryingResourceValue;
+//      //todo: maybe make if-statement always true for launchers depending on if we have launchers or not
+//      if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
+//        // determine if we have enough to attack it...
+//        int totalDmg = 0;
+//        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); //assume this returns this robot as well
+//        for (RobotInfo friendlyRobot : robotInfos) {
+//          //todo: maybe dont consider launchers in dmg calculation here
+//          totalDmg += (friendlyRobot.inventory.getWeight() * GameConstants.CARRIER_DAMAGE_FACTOR) + friendlyRobot.type.damage;
+//        }
+//        Printer.print("enemy location: " + enemyRobot.location + " can deal: " + totalDmg);
+//        // todo: consider allowing only launcher to attack or smth?
+//        if (totalDmg > enemyRobot.health) { // we can kill it
+//          if (bestEnemyToAttack == null || enemyValue > bestValue || (enemyValue == bestValue && bestEnemyToAttack.health < enemyRobot.health)) {
+//            bestEnemyToAttack = enemyRobot;
+//            bestValue = enemyValue;
+//          }
+//        }
+//      }
+//    }
+//    return bestEnemyToAttack;
+//  }
 
   private enum CarrierRole {
     ADAMANTIUM_COLLECTION,
