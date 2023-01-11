@@ -6,14 +6,14 @@ import battlecode.common.*;
 
 public class CarrierWellPathing {
 
-    MapLocation[] NORTHEAST_OFFSET = {new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(0, 0), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0)};
-    MapLocation[] SOUTHEAST_OFFSET = {new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(0, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1)};
-    MapLocation[] SOUTHWEST_OFFSET = {new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(0, 0), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0)};
-    MapLocation[] NORTHWEST_OFFSET = {new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(0, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1)};
-    MapLocation[] NORTH_OFFSET = {new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(0, 0), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1)};
-    MapLocation[] EAST_OFFSET = {new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, 0), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1)};
-    MapLocation[] SOUTH_OFFSET = {new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(0, 0), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1)};
-    MapLocation[] WEST_OFFSET = {new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 0), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1)};
+  public static MapLocation[] NORTHEAST_OFFSET = {new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(0, 0), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0)};
+  public static MapLocation[] SOUTHEAST_OFFSET = {new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(0, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1)};
+  public static MapLocation[] SOUTHWEST_OFFSET = {new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(0, 0), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0)};
+  public static MapLocation[] NORTHWEST_OFFSET = {new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(0, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1)};
+  public static MapLocation[] NORTH_OFFSET = {new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(0, 0), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1)};
+  public static MapLocation[] EAST_OFFSET = {new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, 0), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1)};
+  public static MapLocation[] SOUTH_OFFSET = {new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(0, 0), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1)};
+  public static MapLocation[] WEST_OFFSET = {new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 0), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1)};
 
   /**
    * Returns a 9-length array of maplocations specifying the path. The 0th index is the last position (leaving position).
@@ -31,25 +31,25 @@ public class CarrierWellPathing {
 
   private static MapLocation[] getOffset(Direction directionToHQ) {
     switch(directionToHQ) {
-      case Direction.NORTH:
+      case NORTH:
         return NORTH_OFFSET;
-      case Direction.NORTHEAST:
+      case NORTHEAST:
         return NORTHEAST_OFFSET;
-      case Direction.EAST:
+      case EAST:
         return EAST_OFFSET;
-      case Direction.SOUTHEAST:
+      case SOUTHEAST:
         return SOUTHEAST_OFFSET;
-      case Direction.SOUTH:
+      case SOUTH:
         return SOUTH_OFFSET;
-      case Direction.SOUTHWEST:
+      case SOUTHWEST:
         return SOUTHWEST_OFFSET;
-      case Direction.WEST:
+      case WEST:
         return WEST_OFFSET;
-      case Direction.NORTHWEST:
+      case NORTHWEST:
         return NORTHWEST_OFFSET;
-      case Direction.CENTER: // assume north if center
+      case CENTER: // assume north if center
       default:
-        return NORTH_OFFSET
+        return NORTH_OFFSET;
     }
   }
   

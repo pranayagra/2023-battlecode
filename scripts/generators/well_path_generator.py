@@ -34,7 +34,7 @@ def gen_constants():
   path = copy(NORTH_PATH)
   for dir in DIAGONAL_DIRECTIONS:
     
-    out += f"""    MapLocation[] {dir}_OFFSET = {{"""
+    out += f"""  public static MapLocation[] {dir}_OFFSET = {{"""
     for offset in diagonal_path:
       out += f"""new MapLocation({offset[0]}, {offset[1]}), """
     out = out[:-2]
@@ -43,7 +43,7 @@ def gen_constants():
     diagonal_path = rotate_90_deg_clockwise(diagonal_path)
   for dir in CARDINAL_DIRECTIONS:
     
-    out += f"""    MapLocation[] {dir}_OFFSET = {{"""
+    out += f"""  public static MapLocation[] {dir}_OFFSET = {{"""
     for offset in path:
       out += f"""new MapLocation({offset[0]}, {offset[1]}), """
     out = out[:-2]

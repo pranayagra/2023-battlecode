@@ -24,25 +24,25 @@ public class CarrierWellPathing {
 
   private static MapLocation[] getOffset(Direction directionToHQ) {
     switch(directionToHQ) {
-      case Direction.NORTH:
+      case NORTH:
         return NORTH_OFFSET;
-      case Direction.NORTHEAST:
+      case NORTHEAST:
         return NORTHEAST_OFFSET;
-      case Direction.EAST:
+      case EAST:
         return EAST_OFFSET;
-      case Direction.SOUTHEAST:
+      case SOUTHEAST:
         return SOUTHEAST_OFFSET;
-      case Direction.SOUTH:
+      case SOUTH:
         return SOUTH_OFFSET;
-      case Direction.SOUTHWEST:
+      case SOUTHWEST:
         return SOUTHWEST_OFFSET;
-      case Direction.WEST:
+      case WEST:
         return WEST_OFFSET;
-      case Direction.NORTHWEST:
+      case NORTHWEST:
         return NORTHWEST_OFFSET;
-      case Direction.CENTER: // assume north if center
+      case CENTER: // assume north if center
       default:
-        return NORTH_OFFSET
+        return NORTH_OFFSET;
     }
   }
   
