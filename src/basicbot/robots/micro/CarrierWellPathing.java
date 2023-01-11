@@ -6,29 +6,32 @@ import battlecode.common.*;
 
 public class CarrierWellPathing {
 
+  public static final int WELL_PATH_FILL_ORDER[] = {0,8,7,6,5,4,3,2,1};
+//  public static final int WELL_PATH_FILL_ORDER[] = {8,1,7,2,6,3,5,4,0};
+
   public static Direction[] NORTHEAST_OFFSET = {
-      Direction.NORTH, Direction.NORTHEAST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH
+      Direction.NORTHEAST, Direction.NORTH, Direction.CENTER, Direction.NORTHWEST, Direction.WEST, Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTHEAST, Direction.EAST
     };
   public static Direction[] SOUTHEAST_OFFSET = {
-      Direction.EAST, Direction.SOUTHEAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST
+      Direction.SOUTHEAST, Direction.EAST, Direction.CENTER, Direction.NORTHEAST, Direction.NORTH, Direction.NORTHWEST, Direction.WEST, Direction.SOUTHWEST, Direction.SOUTH
     };
   public static Direction[] SOUTHWEST_OFFSET = {
-      Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH
+      Direction.SOUTHWEST, Direction.SOUTH, Direction.CENTER, Direction.SOUTHEAST, Direction.EAST, Direction.NORTHEAST, Direction.NORTH, Direction.NORTHWEST, Direction.WEST
     };
   public static Direction[] NORTHWEST_OFFSET = {
-      Direction.WEST, Direction.NORTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST
+      Direction.NORTHWEST, Direction.WEST, Direction.CENTER, Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTHEAST, Direction.EAST, Direction.NORTHEAST, Direction.NORTH
     };
   public static Direction[] NORTH_OFFSET = {
-      Direction.NORTHEAST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH
+      Direction.NORTH, Direction.NORTHEAST, Direction.CENTER, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST
     };
   public static Direction[] EAST_OFFSET = {
-      Direction.SOUTHEAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST
+      Direction.EAST, Direction.SOUTHEAST, Direction.CENTER, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST
     };
   public static Direction[] SOUTH_OFFSET = {
-      Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH
+      Direction.SOUTH, Direction.SOUTHWEST, Direction.CENTER, Direction.WEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST
     };
   public static Direction[] WEST_OFFSET = {
-      Direction.NORTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST
+      Direction.WEST, Direction.NORTHWEST, Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST
     };
 
   /**

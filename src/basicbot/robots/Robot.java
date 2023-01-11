@@ -27,6 +27,9 @@ public abstract class Robot {
 
   protected final Pathing pathing;
 
+
+  public int testCount;
+
   /**
    * Create a Robot with the given controller
    * Perform various setup tasks generic to ny robot (building/droid)
@@ -339,5 +342,10 @@ public abstract class Robot {
     }
 
     return weakestEnemy;
+  }
+
+
+  protected void becomeDoNothingBot() {
+    while (true) Clock.yield();
   }
 }

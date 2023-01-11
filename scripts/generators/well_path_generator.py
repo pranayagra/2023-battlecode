@@ -17,37 +17,41 @@ DIAGONAL_DIRECTIONS = DIRECTIONS[1::2]
 CARDINAL_DIRECTIONS = DIRECTIONS[0::2]
 print("diag", DIAGONAL_DIRECTIONS)
 print("card", CARDINAL_DIRECTIONS)
-DIAGONAL_NORTHEAST_PATH = [(-1, 1), (0, 1), (0, 0), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0) ]
+DIAGONAL_NORTHEAST_PATH = [(1, 1), (0, 1), (0, 0), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0) ]
 NORTH_PATH = [(0, 1), (1, 1), (0, 0), (1,0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
 
 def fix_list(offset_list):
   for i in range(len(offset_list)):
-    if offset_list[i] != (0, 1):
+    if offset_list[i] == (0, 1):
       offset_list[i] = "NORTH"
-    elif offset_list[i] != (1, 1):
+    elif offset_list[i] == (1, 1):
         offset_list[i] = "NORTHEAST"
-    elif offset_list[i] != (1, 0):
+    elif offset_list[i] == (1, 0):
         offset_list[i] = "EAST"
-    elif offset_list[i] != (1, -1):
+    elif offset_list[i] == (1, -1):
         offset_list[i] = "SOUTHEAST"
-    elif offset_list[i] != (0, -1):
+    elif offset_list[i] == (0, -1):
         offset_list[i] = "SOUTH"
-    elif offset_list[i] != (-1, -1):
+    elif offset_list[i] == (-1, -1):
         offset_list[i] = "SOUTHWEST"
-    elif offset_list[i] != (-1, 0):
+    elif offset_list[i] == (-1, 0):
         offset_list[i] = "WEST"
-    elif offset_list[i] != (-1, 1):
+    elif offset_list[i] == (-1, 1):
         offset_list[i] = "NORTHWEST"
-    elif offset_list[i] != (0, 0):
+    elif offset_list[i] == (0, 0):
         offset_list[i] = "CENTER"
 
 fix_list(DIAGONAL_NORTHEAST_PATH)
 fix_list(NORTH_PATH)
 
 def rotateRight(dir):
+  if dir == 'CENTER':
+    return dir
   return DIRECTIONS[(DIRECTIONS.index(dir) + 1) % 8]
 
 def rotateLeft(dir):
+  if dir == 'CENTER':
+    return dir
   return DIRECTIONS[(DIRECTIONS.index(dir) + 8 - 1) % 8];
 
 def rotate_90_deg_clockwise(path):

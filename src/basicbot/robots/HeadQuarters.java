@@ -39,11 +39,18 @@ public class HeadQuarters extends Robot {
     if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
       if (this.closestWell != null) {
         rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
-        spawnCarrierTowardsWell(this.closestWell);
+        if (spawnCarrierTowardsWell(this.closestWell)) {
+//          testCount++;
+//          if (testCount >= 10) {
+//            becomeDoNothingBot();
+//          }
+        }
       } else if (this.targetWell != null) {
+//        rc.disintegrate();
         rc.setIndicatorString("Spawn towards target: " + this.targetWell);
         spawnCarrierTowardsWell(this.targetWell);
       } else {
+//        rc.disintegrate();
         rc.setIndicatorString("Find target well");
         determineTargetWell();
       }

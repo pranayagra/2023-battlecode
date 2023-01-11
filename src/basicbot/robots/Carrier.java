@@ -3,42 +3,48 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.containers.HashMap;
+import basicbot.containers.LinkedList;
+import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.utils.Cache;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
+import java.util.Arrays;
+
 public class Carrier extends Robot {
-  private MapLocation targetWell;
-  private boolean targetWellUpgraded;
+  private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
+
   private MapLocation targetHQ;
 
+  private MapLocation targetWell;
+  private boolean targetWellUpgraded;
+
   HashMap<MapLocation, Direction> wellApproachDirection;
+  MapLocation[] wellPathToFollow;
+  int wellPathTargetIndex;
+  private int lastEmptyRobotID;
+  private int lastEmptyRobotDistance;
+  private int emptyRobotsSeen;
 
   private CarrierRole role;
-  private static final CarrierRole DEFAULT_ROLE = CarrierRole.ADAMANTIUM_COLLECTION;
   private int turnsSinceRoleChange;
 
   private int maxResourceToCarry;
 
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
-    this.role = DEFAULT_ROLE;
     this.turnsSinceRoleChange = Integer.MAX_VALUE;
     wellApproachDirection = new HashMap<>(3);
-    determineRole();
-    switch (this.role) {
-      case ADAMANTIUM_COLLECTION:
-        initAdamantiumCollection();
-        break;
-      case MANA_COLLECTION:
-        initManaCollection();
-        break;
-    }
+    wellPathToFollow = null;
+    resetRole();
   }
 
   @Override
   protected void runTurn() throws GameActionException {
+//    if (Cache.PerTurn.ROUND_NUM == 400) {
+//      rc.resign();
+//    }
     switch (this.role) {
       case ADAMANTIUM_COLLECTION:
       case MANA_COLLECTION:
@@ -46,15 +52,32 @@ public class Carrier extends Robot {
         if (this.targetWell != null) runCollection(role.getResourceCollectionType());
         break;
       default:
-        determineRole();
+        resetRole();
     }
     if (turnCount % 10 == 9) {
-      determineRole();
+      resetRole();
     }
     turnsSinceRoleChange++;
   }
 
-  private void determineRole() throws GameActionException {
+  private void resetRole() throws GameActionException {
+    CarrierRole newRole = determineRole();
+    if (newRole != this.role) {
+      this.role = newRole;
+      turnsSinceRoleChange = 0;
+      switch (this.role) {
+        case ADAMANTIUM_COLLECTION:
+          initAdamantiumCollection();
+          break;
+        case MANA_COLLECTION:
+          initManaCollection();
+          break;
+      }
+    }
+  }
+
+  private CarrierRole determineRole() throws GameActionException {
+    if (this.role == null) return CarrierRole.DEFAULT_ROLE;
 //    this.role = CarrierRole.ADAMANTIUM_COLLECTION;
     int numLocalCarriers = 0;
     for (RobotInfo friend : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
@@ -63,8 +86,9 @@ public class Carrier extends Robot {
       }
     }
     if (numLocalCarriers > 10 && turnsSinceRoleChange >= 100) {
-      this.role = this.role.toggleCollectionType();
+      return this.role.toggleCollectionType();
     }
+    return this.role;
   }
 
   private boolean searchForTargetWell() throws GameActionException {
@@ -72,8 +96,7 @@ public class Carrier extends Robot {
       WellInfo well = getClosestWell(role.getResourceCollectionType());
       if (well != null) {
         rc.setIndicatorString("found well: " + well);
-        this.targetWell = well.getMapLocation();
-        this.targetWellUpgraded = well.isUpgraded();
+        setTargetWell(well);
         return true;
       }
     }
@@ -91,15 +114,15 @@ public class Carrier extends Robot {
   }
 
   private void runCollection(ResourceType resourceType) throws GameActionException {
-    rc.setIndicatorString("COL " + resourceType + ": " + targetWell + "->" + targetHQ);
     if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
+      rc.setIndicatorString("RET " + resourceType + ": " + targetWell + "->" + targetHQ);
       if (rc.canTransferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType))) {
         rc.transferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType));
       }
       MapLocation targetPosition = targetHQ;
       if (targetWell != null) {
         targetPosition = targetWell;
-        while (!targetPosition.isWithinDistanceSquared(targetHQ, RobotType.CARRIER.actionRadiusSquared)) {
+        while (!targetPosition.isAdjacentTo(targetHQ)) {
           Direction toHQ = targetPosition.directionTo(targetHQ);
           targetPosition = targetPosition.add(Utils.randomSimilarDirectionPrefer(toHQ));
         }
@@ -109,28 +132,147 @@ public class Carrier extends Robot {
       while (pathing.moveRandomly()) {}
       if (rc.canTransferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType))) {
         rc.transferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType));
+      } else {
+//        rc.setIndicatorString("FAILED TO TRANSFER" + targetHQ + " " + resourceType + " " + rc.getResourceAmount(resourceType));
       }
     } else if (this.targetWell != null) {
-      // collect resource
-      while (collectResource(targetWell, targetWellUpgraded ? GameConstants.WELL_ACCELERATED_RATE : GameConstants.WELL_STANDARD_RATE)) {
-        if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
-          break;
+      rc.setIndicatorString("COL " + resourceType + ": " + targetWell + "->" + targetHQ);
+      doWellCollection(resourceType);
+
+      if (wellPathToFollow == null) {
+        while (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(targetWell, SET_WELL_PATH_DISTANCE)
+            && pathing.moveTowards(targetWell)) {
+          wellApproachDirection.setAlreadyContainedValue(targetWell, targetWell.directionTo(Cache.PerTurn.CURRENT_LOCATION));
+        }
+        if (Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(targetWell) <= SET_WELL_PATH_DISTANCE) {
+          wellPathToFollow = CarrierWellPathing.getPathForWell(targetWell, wellApproachDirection.get(targetWell));
+          Printer.print("well path: " + Arrays.toString(wellPathToFollow), "from direction: " + wellApproachDirection.get(targetWell));
         }
       }
-      while (pathing.moveTowards(targetWell)) {}
+      if (wellPathToFollow != null) {
+        followWellPath();
+      }
+
 //      while (pathing.moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell))) {}
-      while (pathing.moveRandomly()) {}
-      while (collectResource(targetWell, targetWellUpgraded ? GameConstants.WELL_ACCELERATED_RATE : GameConstants.WELL_STANDARD_RATE)) {
-        if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
-          break;
-        }
-      }
+//      while (pathing.moveRandomly()) {}
+
+      doWellCollection(resourceType);
     } else {
-      while (pathing.moveRandomly()) {}
+//      while (pathing.moveRandomly()) {}
       // periodically check comms for new target
     }
   }
 
+  /**
+   * will collect as much as possible from the target well based on upgrade status
+   * @param resourceType the resource to collect
+   * @throws GameActionException any issues during collection
+   */
+  private void doWellCollection(ResourceType resourceType) throws GameActionException {
+    while (collectResource(targetWell, getWellRate())) {
+      if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
+        return;
+      }
+    }
+  }
+
+  /**
+   * will follow the collection path of the well (circle around the well)
+   * will move along path depending on robots seen
+   */
+  private void followWellPath() throws GameActionException {
+    if (wellPathTargetIndex == -1) {
+      updateWellPathTarget();
+      if (wellPathTargetIndex != -1) {
+        Printer.print("set target: " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
+      }
+    }
+    if (updateEmptyRobotsSeen(role.getResourceCollectionType())) {
+      updateWellPathTarget();
+      if (wellPathTargetIndex != -1) {
+        Printer.print("empty robots seen: " + emptyRobotsSeen, "new target: " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
+      }
+    }
+
+    if (wellPathTargetIndex != -1) {
+//      MapLocation target = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]];
+      rc.setIndicatorString("well path target: " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
+      while (rc.isMovementReady()) {
+        // not yet in the path, just go to the entry point
+        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(targetWell)) {
+          if (pathing.moveTowards(wellPathToFollow[0])) {
+            continue;
+          }
+        }
+
+        // in the path, so try to get towards the correct point by navigating through the path
+        int moveTrial = wellPathTargetIndex;
+        while (moveTrial >= 0 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]])))) {
+          // we can't move (adjacent + can move)
+          moveTrial--;
+        }
+        if (moveTrial < 0) {
+          break;
+        }
+//        Printer.print("following path: " + Cache.PerTurn.CURRENT_LOCATION + "|" + rc.getLocation() + " --> " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+        Printer.print("following path: ->" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+        pathing.forceMoveTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+      }
+//      while (pathing.moveTowards(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]])) {}
+    } else {
+      while (pathing.moveAwayFrom(targetWell)) {}
+    }
+  }
+
+  private void updateWellPathTarget() throws GameActionException {
+    if (wellPathToFollow == null) return;
+    wellPathTargetIndex = -1;
+    for (int i = 0; i < 9; i++) {
+      MapLocation pathTarget = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[i]];
+      if (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget)) {
+        wellPathTargetIndex = i;
+        if (i >= emptyRobotsSeen) {
+          return;
+        }
+      }
+    }
+  }
+
+  /**
+   * senses around and updates the number of empty robots seen near this well
+   * @param resourceType the resource type to check for
+   * @return whether an update was made or not
+   */
+  private boolean updateEmptyRobotsSeen(ResourceType resourceType) {
+    boolean closeToWell = Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(targetWell, 9);
+    int counter = 0;
+    for (RobotInfo friendly : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      if (friendly.type == RobotType.CARRIER && friendly.getResourceAmount(resourceType) < maxResourceToCarry) {
+        if (closeToWell) {
+          counter++;
+        } else if (friendly.ID != lastEmptyRobotID && friendly.getResourceAmount(resourceType) <= getWellRate()) {
+          int dist = friendly.location.distanceSquaredTo(targetWell);
+          if (dist >= lastEmptyRobotDistance) {
+            counter++;
+            lastEmptyRobotID = friendly.ID;
+            lastEmptyRobotDistance = dist;
+          }
+        }
+      }
+    }
+    if (closeToWell) {
+      emptyRobotsSeen = 0;
+    }
+    emptyRobotsSeen += counter;
+    return counter != 0;
+  }
+
+  /**
+   * @return the rate at which the well is producing resources
+   */
+  private int getWellRate() {
+    return targetWellUpgraded ? GameConstants.WELL_ACCELERATED_RATE : GameConstants.WELL_STANDARD_RATE;
+  }
   private boolean collectResource(MapLocation well, int amount) throws GameActionException {
     if (rc.canCollectResource(well, amount)) {
       rc.collectResource(well, amount);
@@ -160,7 +302,7 @@ public class Carrier extends Robot {
     }
     targetHQ = communicator.commsHandler.readOurHqLocation(hqWithClosestWell);
     if (closestWellLocation == null) {
-      targetWell = null;
+      setTargetWell(null, false);
       if (resourceType == ResourceType.MANA) {
 //      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
         hqWithClosestWell++;
@@ -169,9 +311,24 @@ public class Carrier extends Robot {
 //      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
       }
     } else {
-      targetWell = closestWellLocation;
-      targetWellUpgraded = closestUpgraded;
+      setTargetWell(closestWellLocation, closestUpgraded);
     }
+  }
+
+  private void setTargetWell(MapLocation targetWell, boolean targetWellUpgraded) {
+    if (this.targetWell != targetWell) {
+      this.wellPathToFollow = null;
+      this.wellPathTargetIndex = -1;
+      this.lastEmptyRobotID = -1;
+      this.lastEmptyRobotDistance = Integer.MAX_VALUE;
+      this.emptyRobotsSeen = 0;
+    }
+    this.targetWell = targetWell;
+    this.targetWellUpgraded = targetWellUpgraded;
+    this.wellApproachDirection.put(targetWell, Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell));
+  }
+  private void setTargetWell(WellInfo targetWell) {
+    setTargetWell(targetWell.getMapLocation(), targetWell.isUpgraded());
   }
 
 //  private RobotInfo shouldAttackEnemy() throws GameActionException {
@@ -209,6 +366,8 @@ public class Carrier extends Robot {
   private enum CarrierRole {
     ADAMANTIUM_COLLECTION,
     MANA_COLLECTION;
+
+    private static final CarrierRole DEFAULT_ROLE = CarrierRole.ADAMANTIUM_COLLECTION;
 
     CarrierRole toggleCollectionType() {
       switch (this) {

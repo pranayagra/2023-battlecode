@@ -3,6 +3,7 @@ package basicbot.robots.pathfinding;
 import basicbot.robots.Robot;
 import basicbot.utils.Cache;
 import basicbot.utils.Global;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -39,6 +40,15 @@ public abstract class Pathing {
             return true;
         }
         return false;
+    }
+
+    public void forceMoveTo(MapLocation mapLocation) throws GameActionException {
+        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation)) {
+            Printer.print("Can only force move to adjacent locations" + Cache.PerTurn.CURRENT_LOCATION + "->" + mapLocation);
+        }
+        assert Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation);
+        rc.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(mapLocation));
+        Cache.PerTurn.whenMoved();
     }
 
     /**
