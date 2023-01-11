@@ -6,30 +6,50 @@ import battlecode.common.*;
 
 public class CarrierWellPathing {
 
-  public static MapLocation[] NORTHEAST_OFFSET = {new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(0, 0), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0)};
-  public static MapLocation[] SOUTHEAST_OFFSET = {new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(0, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1)};
-  public static MapLocation[] SOUTHWEST_OFFSET = {new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(0, 0), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0)};
-  public static MapLocation[] NORTHWEST_OFFSET = {new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(0, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1)};
-  public static MapLocation[] NORTH_OFFSET = {new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(0, 0), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1)};
-  public static MapLocation[] EAST_OFFSET = {new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, 0), new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1)};
-  public static MapLocation[] SOUTH_OFFSET = {new MapLocation(0, -1), new MapLocation(-1, -1), new MapLocation(0, 0), new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1)};
-  public static MapLocation[] WEST_OFFSET = {new MapLocation(-1, 0), new MapLocation(-1, 1), new MapLocation(0, 0), new MapLocation(0, 1), new MapLocation(1, 1), new MapLocation(1, 0), new MapLocation(1, -1), new MapLocation(0, -1), new MapLocation(-1, -1)};
+  public static Direction[] NORTHEAST_OFFSET = {
+      Direction.NORTH, Direction.NORTHEAST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH
+    };
+  public static Direction[] SOUTHEAST_OFFSET = {
+      Direction.EAST, Direction.SOUTHEAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST
+    };
+  public static Direction[] SOUTHWEST_OFFSET = {
+      Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH
+    };
+  public static Direction[] NORTHWEST_OFFSET = {
+      Direction.WEST, Direction.NORTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST
+    };
+  public static Direction[] NORTH_OFFSET = {
+      Direction.NORTHEAST, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH, Direction.NORTH
+    };
+  public static Direction[] EAST_OFFSET = {
+      Direction.SOUTHEAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST, Direction.EAST
+    };
+  public static Direction[] SOUTH_OFFSET = {
+      Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH, Direction.SOUTH
+    };
+  public static Direction[] WEST_OFFSET = {
+      Direction.NORTHWEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST, Direction.WEST
+    };
 
   /**
    * Returns a 9-length array of maplocations specifying the path. The 0th index is the last position (leaving position).
    */
   public static MapLocation[] getPathForWell(MapLocation wellCenter, Direction directionToHQ) {
-    MapLocation[] offset = getOffset(directionToHQ);
-    MapLocation[] path = new MapLocation[9];
-    for(int i = 0; i < offset.length; i++) {
-      // TODO: change to directions
-      MapLocation o = offset[i]; // maybe remove for bytecode optimization?
-      path[i] = wellCenter.translate(o.x, o.y);
-    }
-    return path;
+    Direction[] offset = getOffset(directionToHQ);
+    return new MapLocation[] {
+        wellCenter.add(offset[0]),
+        wellCenter.add(offset[1]),
+        wellCenter.add(offset[2]),
+        wellCenter.add(offset[3]),
+        wellCenter.add(offset[4]),
+        wellCenter.add(offset[5]),
+        wellCenter.add(offset[6]),
+        wellCenter.add(offset[7]),
+        wellCenter.add(offset[8]),
+    };
   }
 
-  private static MapLocation[] getOffset(Direction directionToHQ) {
+  private static Direction[] getOffset(Direction directionToHQ) {
     switch(directionToHQ) {
       case NORTH:
         return NORTH_OFFSET;

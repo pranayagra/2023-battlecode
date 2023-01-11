@@ -16,7 +16,7 @@ public class Launcher extends Robot {
     while (i < Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length
         && attack(Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[i++].location)) {}
 
-    while (moveRandomly()) {};
+    while (pathing.moveRandomly()) {};
 
     i = 0;
     while (i < Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length

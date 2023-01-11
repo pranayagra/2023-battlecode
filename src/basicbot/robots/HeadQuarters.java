@@ -6,7 +6,6 @@ import basicbot.utils.Cache;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
-import battlecode.world.Inventory;
 
 import static battlecode.common.GameActionExceptionType.NOT_ENOUGH_RESOURCE;
 

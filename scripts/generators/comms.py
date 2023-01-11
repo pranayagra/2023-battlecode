@@ -87,14 +87,14 @@ SCHEMA = {
       **WELL_SCHEMA,
     }
   },
-  'attack_pod': {
-    'slots': 10,
-    'bits': {
-      'amp_alive_bool': BOOL_BITS,
-      'amp_loc': LOCATION_BITS,
-      'launcher_registry': 6,
-    }
-  },
+  # 'attack_pod': {
+  #   'slots': 10,
+  #   'bits': {
+  #     'amp_alive_bool': BOOL_BITS,
+  #     'amp_loc': LOCATION_BITS,
+  #     'launcher_registry': 6,
+  #   }
+  # },
 }
 
 def is_suffix_special(attr: str) -> bool:

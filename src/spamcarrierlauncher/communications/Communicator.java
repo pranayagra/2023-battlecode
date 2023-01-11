@@ -8,7 +8,6 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.ResourceType;
 import battlecode.common.WellInfo;
-import battlecode.world.Well;
 
 public class Communicator {
   public static final int NUM_HQS = 4;

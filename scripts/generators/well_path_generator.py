@@ -18,36 +18,58 @@ CARDINAL_DIRECTIONS = DIRECTIONS[0::2]
 print("diag", DIAGONAL_DIRECTIONS)
 print("card", CARDINAL_DIRECTIONS)
 DIAGONAL_NORTHEAST_PATH = [(-1, 1), (0, 1), (0, 0), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0) ]
-NORTH_PATH = [(0, 1), (1, 1), (0, 0), (1,0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)] 
-# TODO: change to directions
+NORTH_PATH = [(0, 1), (1, 1), (0, 0), (1,0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1)]
+
+def fix_list(offset_list):
+  for i in range(len(offset_list)):
+    if offset_list[i] != (0, 1):
+      offset_list[i] = "NORTH"
+    elif offset_list[i] != (1, 1):
+        offset_list[i] = "NORTHEAST"
+    elif offset_list[i] != (1, 0):
+        offset_list[i] = "EAST"
+    elif offset_list[i] != (1, -1):
+        offset_list[i] = "SOUTHEAST"
+    elif offset_list[i] != (0, -1):
+        offset_list[i] = "SOUTH"
+    elif offset_list[i] != (-1, -1):
+        offset_list[i] = "SOUTHWEST"
+    elif offset_list[i] != (-1, 0):
+        offset_list[i] = "WEST"
+    elif offset_list[i] != (-1, 1):
+        offset_list[i] = "NORTHWEST"
+    elif offset_list[i] != (0, 0):
+        offset_list[i] = "CENTER"
+
+fix_list(DIAGONAL_NORTHEAST_PATH)
+fix_list(NORTH_PATH)
+
+def rotateRight(dir):
+  return DIRECTIONS[(DIRECTIONS.index(dir) + 1) % 8]
+
+def rotateLeft(dir):
+  return DIRECTIONS[(DIRECTIONS.index(dir) + 8 - 1) % 8];
+
 def rotate_90_deg_clockwise(path):
-  new_path = []
-  for offset in path:
-    x, y = offset
-    new_path.append((y, -x))
-  return new_path
+  return [rotateRight(rotateRight(offset_dir)) for offset_dir in path]
 
 def gen_constants():
   out = """"""""
   bits_so_far = 0
   diagonal_path = copy(DIAGONAL_NORTHEAST_PATH)
   path = copy(NORTH_PATH)
-  for dir in DIAGONAL_DIRECTIONS:
-    
-    out += f"""  public static MapLocation[] {dir}_OFFSET = {{"""
-    for offset in diagonal_path:
-      out += f"""new MapLocation({offset[0]}, {offset[1]}), """
-    out = out[:-2]
-    out += f"""}};\n"""
+  for diag_dir in DIAGONAL_DIRECTIONS:
+
+    out += f"""  public static Direction[] {diag_dir}_OFFSET = {{
+      {", ".join([f"Direction.{offset_dir}" for offset_dir in diagonal_path])}
+    }};\n"""
     # rotate the boi
     diagonal_path = rotate_90_deg_clockwise(diagonal_path)
-  for dir in CARDINAL_DIRECTIONS:
-    
-    out += f"""  public static MapLocation[] {dir}_OFFSET = {{"""
-    for offset in path:
-      out += f"""new MapLocation({offset[0]}, {offset[1]}), """
-    out = out[:-2]
-    out += f"""}};\n"""
+  for card_dir in CARDINAL_DIRECTIONS:
+
+    out += f"""  public static Direction[] {card_dir}_OFFSET = {{
+      {", ".join([f"Direction.{offset_dir}" for offset_dir in path])}
+    }};\n"""
     # rotate the boi
     path = rotate_90_deg_clockwise(path)
   return out.rstrip() + "\n"
@@ -56,8 +78,6 @@ def gen_constants():
 
 if __name__ == '__main__':
   template_file = Path('./scripts/WellPathTemplate.java')
-  # out_file = Path('./scripts/test.java')
-
   out_file = Path('./src/') / sys.argv[1] / 'robots' / 'micro' / 'CarrierWellPathing.java'
   with open(template_file, 'r') as t:
     with open(out_file, 'w') as f:
