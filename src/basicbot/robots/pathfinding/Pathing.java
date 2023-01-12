@@ -9,14 +9,17 @@ import battlecode.common.*;
 
 public abstract class Pathing {
 
-    private final RobotController rc;
+    public static Pathing globalPathing;
+
+    protected final RobotController rc;
 
     public Pathing(RobotController rc) {
         this.rc = rc;
     }
 
     public static Pathing create(RobotController rc) {
-        return new BasicPathing(rc);
+        globalPathing = new SmartPathing(rc);
+        return globalPathing;
     }
 
     public abstract boolean moveTowards(MapLocation target) throws GameActionException;

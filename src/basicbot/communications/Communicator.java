@@ -39,6 +39,7 @@ public class Communicator {
 //        Utils.MapSymmetry.ROTATIONAL, // 111
     };
 
+    private int symmetryInfo;
     public Utils.MapSymmetry knownSymmetry; // determined by next three bools
     public Utils.MapSymmetry guessedSymmetry; // determined by next three bools
     private static final int NOT_HORIZ_MASK = 0b100;
@@ -47,16 +48,31 @@ public class Communicator {
     public boolean notVertical;       // 0-1               -- 1 bit  [2]
     private static final int NOT_ROT_MASK = 0b1;
     public boolean notRotational;     // 0-1               -- 1 bit  [1]
-    private static final int ALL_SYM_INFO_MASK = NOT_HORIZ_MASK | NOT_VERT_MASK | NOT_ROT_MASK;
-    private static final int SYM_INFO_INVERTED_MASK = ~ALL_SYM_INFO_MASK;
 
     public void updateSymmetry(int symmetryInfo) {
+      this.symmetryInfo = symmetryInfo;
       if (knownSymmetry != null) return;
-      knownSymmetry = symmetryKnownMap[(symmetryInfo & ALL_SYM_INFO_MASK) >> 1];
+      knownSymmetry = symmetryKnownMap[symmetryInfo];
       notHorizontal = (symmetryInfo & NOT_HORIZ_MASK) > 0;
       notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
       notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
-      guessedSymmetry = knownSymmetry != null ? knownSymmetry : symmetryGuessMap[(symmetryInfo & ALL_SYM_INFO_MASK) >> 1];
+      guessedSymmetry = knownSymmetry != null ? knownSymmetry : symmetryGuessMap[symmetryInfo];
+    }
+
+    public void writeNot(Utils.MapSymmetry symmetryToEliminate) throws GameActionException {
+      switch (symmetryToEliminate) {
+        case ROTATIONAL:
+          this.symmetryInfo |= NOT_ROT_MASK;
+          break;
+        case HORIZONTAL:
+          this.symmetryInfo |= NOT_HORIZ_MASK;
+          break;
+        case VERTICAL:
+          this.symmetryInfo |= NOT_VERT_MASK;
+      }
+      commsHandler.writeMapSymmetry(this.symmetryInfo);
+      this.updateSymmetry(this.symmetryInfo);
+      Printer.print("AYO I updated the symmetry!");
     }
   }
 

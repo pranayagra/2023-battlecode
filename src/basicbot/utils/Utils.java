@@ -330,7 +330,9 @@ public class Utils {
       System.out.printf("Not counting bytecodes for %s!!!\n", reason);
       return;
     }
-    System.out.printf("%4d BC: %s\n", end-start, reason);
+    int diff = end - start;
+    if (diff < 0) diff = end + (Cache.Permanent.ROBOT_TYPE.bytecodeLimit - start);
+    System.out.printf("%s bytecode=%4d\n", reason, diff);
     byteCodeMap.remove(reason);
   }
 
