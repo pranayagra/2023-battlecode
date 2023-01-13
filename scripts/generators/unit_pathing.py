@@ -138,7 +138,7 @@ def gen_bfs(radius, type):
 """.replace(' | 0', '')
           # cost_string = f"((int) (rc.senseCooldownMultiplier(l{encode(x,y)}) * moveCooldown))"
           # cost_string = f"((int) (rc.senseCooldownMultiplier(l{encode(x,y)}) * 20))"
-          cost_string = f"((int) (rc.senseCooldownMultiplier(l{encode(x,y)}) * moveCooldown)) << {DIRECTION_BITS}" if r2 <= 2 else f"shiftedMoveCD"#("0b1"+"0"*DIRECTION_BITS)
+          cost_string = f"((int) (rc.senseMapInfo(l{encode(x,y)}).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << {DIRECTION_BITS}" if r2 <= 2 else f"shiftedMoveCD"#("0b1"+"0"*DIRECTION_BITS)
           out += f"""
             {indent}d{encode(x,y)} += {cost_string};""" # should be "* moveCooldown" but bytecode
                                       #rc.senseRubble(l{encode(x,y)}) + 10;""" ## should be the incurred cooldown cost of movement here
@@ -224,6 +224,7 @@ def gen_full(bot, unit):
 package {bot}.robots.pathfinding.unitpathing;
 
 import battlecode.common.*;
+import {bot}.utils.Cache;
 import {bot}.utils.Utils;
 
 public class {unit}Pathing implements UnitPathing {{

@@ -145,7 +145,7 @@ public class SmitePathing {
       Direction dir = dirs[i];
       MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
       if (rc.canMove(dir) && !isFuzzyVisited(newLoc)) {//!newLoc.isWithinDistanceSquared(Cache.PerTurn.PREVIOUS_LOCATION, 0)) {
-        int newCost = (int) ((rc.canSenseLocation(newLoc) ? rc.senseCooldownMultiplier(newLoc) : 1)
+        int newCost = (int) ((rc.canSenseLocation(newLoc) ? rc.senseMapInfo(newLoc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) : 1)
             * cooldownCost);//rc.senseRubble(myLocation.add(dir));
         // add epsilon boost to forward direction
         if (dir == toDest) {
@@ -184,7 +184,7 @@ public class SmitePathing {
 
     MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.add(dir.rotateLeft());
     if (rc.onTheMap(loc) && rc.canMove(dir.rotateLeft())) {
-      double cooldownMuliplier = rc.senseCooldownMultiplier(loc);
+      double cooldownMuliplier = rc.senseMapInfo(loc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM);
       if (cooldownMuliplier < bestCooldownMultiplier) {
         bestCooldownMultiplier = cooldownMuliplier;
         bestDir = dir.rotateLeft();
@@ -192,7 +192,7 @@ public class SmitePathing {
     }
     loc = Cache.PerTurn.CURRENT_LOCATION.add(dir.rotateRight());
     if (rc.onTheMap(loc) && rc.canMove(dir.rotateRight())) {
-      double cooldownMuliplier = rc.senseCooldownMultiplier(loc);
+      double cooldownMuliplier = rc.senseMapInfo(loc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM);
       if (cooldownMuliplier < bestCooldownMultiplier) {
         bestCooldownMultiplier = cooldownMuliplier;
         bestDir = dir.rotateRight();
@@ -201,7 +201,7 @@ public class SmitePathing {
 
     loc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
     if (rc.onTheMap(loc) && rc.canMove(dir)) {
-      double cooldownMuliplier = rc.senseCooldownMultiplier(loc);
+      double cooldownMuliplier = rc.senseMapInfo(loc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM);
       if (cooldownMuliplier <= bestCooldownMultiplier) {
         bestCooldownMultiplier = cooldownMuliplier;
         bestDir = dir;

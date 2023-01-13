@@ -145,7 +145,7 @@ public class SmitePathing {
       Direction dir = dirs[i];
       MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
       if (rc.canMove(dir) && !isFuzzyVisited(newLoc)) {//!newLoc.isWithinDistanceSquared(Cache.PerTurn.PREVIOUS_LOCATION, 0)) {
-        int newCost = (int) ((rc.canSenseLocation(newLoc) ? rc.senseCooldownMultiplier(newLoc) : 1)
+        int newCost = (int) ((rc.canSenseLocation(newLoc) ? (rc.senseMapInfo(newLoc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM)) : 1)
             * cooldownCost);//rc.senseRubble(myLocation.add(dir));
         // add epsilon boost to forward direction
         if (dir == toDest) {

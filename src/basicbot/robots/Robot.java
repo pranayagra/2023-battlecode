@@ -2,6 +2,7 @@ package basicbot.robots;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.Message;
+import basicbot.communications.RunningMemory;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.utils.Cache;
 import basicbot.utils.Global;
@@ -184,6 +185,7 @@ public abstract class Robot {
    */
   protected void afterTurnWhenMoved() throws GameActionException {
     updateSymmetryComms();
+    updateWellExploration();
   }
 
   /**
@@ -266,6 +268,29 @@ public abstract class Robot {
         }
       }
     }
+  }
+
+  /**
+   * If a nearby well is seen, put it in comms
+   * @throws GameActionException any issues during reading/writing
+   */
+  protected void updateWellExploration() throws GameActionException {
+//    if (!rc.canWriteSharedArray(0,0)) return;
+    if (Cache.PerTurn.hasPreviouslyVisitedOwnLoc()) return;
+    if (Clock.getBytecodesLeft() < 200) return;
+    int wellsPublished = 0;
+    for (WellInfo well : rc.senseNearbyWells()) {
+      if (RunningMemory.publishWell(well)) {
+        wellsPublished++;
+      }
+    }
+//    if (wellsPublished > 0) {
+//      Printer.print("Found " + wellsPublished + " new wells");
+//    }
+    int wellsBroadcast = RunningMemory.broadcastMemorizedWells();
+//    if (wellsBroadcast > 0) {
+//      Printer.print("Broadcasted " + wellsBroadcast + " wells");
+//    }
   }
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {

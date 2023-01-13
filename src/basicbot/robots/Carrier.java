@@ -12,6 +12,7 @@ import java.util.Arrays;
 
 public class Carrier extends Robot {
   private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
+  private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 2;
 
   private MapLocation targetHQ;
 
@@ -23,6 +24,7 @@ public class Carrier extends Robot {
   int wellPathTargetIndex;
   private int emptierRobotsSeen;
   private int fullerRobotsSeen;
+  private int roundsWaitingForPath;
 
   private CarrierRole role;
   private int turnsSinceRoleChange;
@@ -85,9 +87,9 @@ public class Carrier extends Robot {
       default:
         resetRole();
     }
-    if (turnCount % 10 == 9) {
-      resetRole();
-    }
+//    if (turnCount % 10 == 9) {
+//      resetRole();
+//    }
     turnsSinceRoleChange++;
   }
 
@@ -107,7 +109,7 @@ public class Carrier extends Robot {
           initManaCollection();
           break;
       }
-      rc.setIndicatorString("Role: " + this.role + " (" + targetWell + "->" + targetHQ + ")");
+      rc.setIndicatorString("Reset Role: " + this.role + " (" + targetWell + "->" + targetHQ + ")");
     }
   }
 
@@ -151,9 +153,8 @@ public class Carrier extends Robot {
   private void runCollection(ResourceType resourceType) throws GameActionException {
     if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
       rc.setIndicatorString("RET " + resourceType + ": " + targetWell + "->" + targetHQ);
-      if (!doTransfer(targetHQ, resourceType)) {
-        rc.setIndicatorString("transfer failed - " + targetHQ + "..ActCD=" + rc.getActionCooldownTurns() + "..canAct=" + rc.canActLocation(targetHQ) + "..robInfo=" + (rc.canSenseLocation(targetHQ) ? rc.senseRobotAtLocation(targetHQ) : "unknown"));
-      }
+      doTransfer(targetHQ, resourceType); //        rc.setIndicatorString("transfer failed - " + targetHQ + "..ActCD=" + rc.getActionCooldownTurns() + "..canAct=" + rc.canActLocation(targetHQ) + "..robInfo=" + (rc.canSenseLocation(targetHQ) ? rc.senseRobotAtLocation(targetHQ) : "unknown"));
+
       if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(targetWell)) {
         MapLocation targetPosition = targetHQ;
         if (targetWell != null) {
@@ -249,12 +250,12 @@ public class Carrier extends Robot {
    * will move along path depending on robots seen
    */
   private void followWellPath() throws GameActionException {
-    if (wellPathTargetIndex == -1) {
-      updateWellPathTarget();
-//      if (wellPathTargetIndex != -1) {
-//        Printer.print("set target: " + wellPathTargetIndex + ":" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
-//      }
-    }
+//    if (wellPathTargetIndex == -1) {
+//      updateWellPathTarget();
+////      if (wellPathTargetIndex != -1) {
+////        Printer.print("set target: " + wellPathTargetIndex + ":" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
+////      }
+//    }
     updateRobotsSeenInQueue(role.getResourceCollectionType());
     updateWellPathTarget();
 //    if (wellPathTargetIndex != -1) {
@@ -310,7 +311,12 @@ public class Carrier extends Robot {
 //        pathing.moveTowards(targetWell);
         rc.setIndicatorString("there's people in the way so ima dip");
 //        while (pathing.moveAwayFrom(targetWell)) {}
-        resetRole(role.toggleCollectionType());
+        roundsWaitingForPath++;
+        if (roundsWaitingForPath > MAX_ROUNDS_WAIT_FOR_WELL_PATH) {
+          resetRole(role.toggleCollectionType());
+        } else {
+          rc.setIndicatorString("waiting for well path @ " + targetWell + " turn#" + roundsWaitingForPath);
+        }
       } else {
         pathing.moveToOrAdjacent(targetWell);
       }
@@ -336,9 +342,10 @@ public class Carrier extends Robot {
         maxFillSpot--;
       }
       MapLocation pathTarget = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[testSpot]];
-      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
+      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget) && rc.sensePassability(pathTarget))) {
         // we can move to the target (or already there)
         wellPathTargetIndex = testSpot;
+        roundsWaitingForPath = 0;
         return;
 //      } else {
 //        Printer.print("can't move from=" + Cache.PerTurn.CURRENT_LOCATION + ".to=" + pathTarget + " sense=" + rc.canSenseLocation(pathTarget) + ".bot=" + rc.canSenseRobotAtLocation(pathTarget));
@@ -349,6 +356,7 @@ public class Carrier extends Robot {
       if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
         // we can move to the target (or already there)
         wellPathTargetIndex = maxFillSpot;
+        roundsWaitingForPath = 0;
         return;
 //      } else {
 //        Printer.print("can't move from=" + Cache.PerTurn.CURRENT_LOCATION + ".to=" + pathTarget + " sense=" + rc.canSenseLocation(pathTarget) + ".bot=" + rc.canSenseRobotAtLocation(pathTarget));
@@ -542,9 +550,9 @@ public class Carrier extends Robot {
     return moves;
   }
 
-  private RobotInfo attackEnemyIfCannotRun() {
+  private RobotInfo attackEnemyIfCannotRun() throws GameActionException {
 //    Printer.print("attackEnemyIfCannotRun()");
-    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA) + rc.getResourceAmount(ResourceType.ELIXIR) + (rc.getAnchor() != null ? 40 : 0));
+    int myInvSize = rc.getWeight();
     if (myInvSize <= 4) {
 //      Printer.print("null bc invSize <= 4");
       return null;

@@ -26,7 +26,7 @@ SUFFIX_TO_GENERAL = {
       'exists': ['boolean','!(({}).equals(NONEXISTENT_MAP_LOC))'], # type, format string analyze result of reading
     },
     'extra_consts': [
-      'private static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1)',
+      'private static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1);',
     ]
   },
   BOOL_KEY: {
@@ -48,7 +48,7 @@ BOOL_BITS = SPECIAL_ATTR_BITS[BOOL_KEY]
 
 METAINFO = {
   'hq_count': {
-    'bits': 2,
+    'bits': 3,
   },
   'map_symmetry': {
     'bits': 3,
@@ -143,7 +143,7 @@ def get_raw_attrs(schema_datatype: dict) -> list[tuple[str,int,str]]:
   # print('attrs:', attrs)
   return attrs
 
-def get_generated_attrs(schema_datatype: dict) -> list[str]:
+def get_generated_attrs(schema_datatype: dict) -> list[tuple[str,str,bool]]: # name, java type, can write
   attr_list = schema_datatype['bits'].keys()
   attrs = []
   for attr in attr_list:
@@ -151,12 +151,12 @@ def get_generated_attrs(schema_datatype: dict) -> list[str]:
       if is_suffix_special(attr):
         suffix,special_attr_info = get_suffix_info(attr)
         prefix = attr[:-len(suffix)]
-        attrs.append((f"{prefix}{special_attr_info['method_suffix']}", special_attr_info['datatype']))
+        attrs.append((f"{prefix}{special_attr_info['method_suffix']}", special_attr_info['datatype'], True))
         if 'extra_read_suffixes' in special_attr_info:
           for extra_suffix, (extra_type, _) in special_attr_info['extra_read_suffixes'].items():
-            attrs.append((f"{prefix}{extra_suffix}", extra_type))
+            attrs.append((f"{prefix}{extra_suffix}", extra_type, False))
     else:
-      attrs.append((attr, 'int'))
+      attrs.append((attr, 'int', True))
   return attrs
 
 def gen_constants():
@@ -345,7 +345,7 @@ def gen_resource():
     print(f'{datatype_fmt}:  RSS:{valid_rss}')
     generic_name = re.sub(r'_?\{\}_?', '', datatype_fmt)
     base_type = datatype_fmt.format(valid_rss[0])
-    for attribute,out_type in get_generated_attrs(SCHEMA[base_type]):
+    for attribute,out_type,can_write in get_generated_attrs(SCHEMA[base_type]):
       print(f"  {attribute} can be specialized by rss under schema for {generic_name}")
 
       # read
@@ -374,6 +374,38 @@ def gen_resource():
         out += f"""
         default:
           throw new RuntimeException("read{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
+      }}
+    }}
+"""
+      # write
+      if can_write:
+        if SCHEMA[base_type]['slots'] == 1:
+          out += f"""
+    public void write{capitalize(generic_name)}{capitalize(attribute)}({out_type} value) throws GameActionException {{
+      switch (this) {{"""
+          for rss in valid_rss:
+            out += f"""
+        case {rss.upper()}:
+          Global.communicator.commsHandler.write{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(value);
+          break;"""
+          out += f"""
+        default:
+          throw new RuntimeException("write{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
+      }}
+    }}
+"""
+        else:
+          out += f"""
+    public void write{capitalize(generic_name)}{capitalize(attribute)}(int idx, {out_type} value) throws GameActionException {{
+      switch (this) {{"""
+          for rss in valid_rss:
+            out += f"""
+        case {rss.upper()}:
+          Global.communicator.commsHandler.write{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(idx, value);
+          break;"""
+          out += f"""
+        default:
+          throw new RuntimeException("write{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
       }}
     }}
 """

@@ -16,7 +16,7 @@ import java.util.Set;
  * is created!
  */
 public strictfp class RobotPlayer {
-    public static final boolean RESIGN_ON_FATAL_ERROR = false;
+    public static final boolean RESIGN_ON_FATAL_ERROR = true;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.

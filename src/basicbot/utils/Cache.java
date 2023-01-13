@@ -173,6 +173,8 @@ public class Cache {
         public static RobotInfo ENEMY_9;
         public static MapLocation CURRENT_LOCATION;
         public static MapLocation PREVIOUS_LOCATION;
+
+        public static final int[] GLOBAL_VISITED_LOCS = new int[113];
 //        public static int LEVEL;
         public static int HEALTH;
         //        public static MapLocation[] NEARBY_LEAD_MIN_2;
@@ -181,23 +183,36 @@ public class Cache {
         public static int cacheState;
 
       public static void whenMoved() throws GameActionException {
-            // don't need to update
-            if (PerTurn.CURRENT_LOCATION != null && Global.rc.getLocation().equals(PerTurn.CURRENT_LOCATION)) {
-                return;
-            }
-            // do the update
-            updateForMovement();
+        // don't need to update
+        if (PerTurn.CURRENT_LOCATION != null && Global.rc.getLocation().equals(PerTurn.CURRENT_LOCATION)) {
+            return;
         }
+        // do the update
+        updateForMovement();
+      }
 
-        private static void updateForMovement() throws GameActionException {
-            PerTurn.cacheState++;
-            PerTurn.PREVIOUS_LOCATION = PerTurn.CURRENT_LOCATION;
-            PerTurn.CURRENT_LOCATION = Global.rc.getLocation();
-            PerTurn.ALL_NEARBY_ROBOTS = Global.rc.senseNearbyRobots();
-            PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OUR_TEAM);
-            PerTurn.ALL_NEARBY_ENEMY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OPPONENT_TEAM);
+      private static void updateForMovement() throws GameActionException {
+          PerTurn.cacheState++;
+          PerTurn.PREVIOUS_LOCATION = PerTurn.CURRENT_LOCATION;
+          if (PREVIOUS_LOCATION != null) {
+            int visitedBit = PREVIOUS_LOCATION.x + 60 * PREVIOUS_LOCATION.y;
+            GLOBAL_VISITED_LOCS[visitedBit >>> 5] |= 1 << (31 - visitedBit & 31);
+          }
+          PerTurn.CURRENT_LOCATION = Global.rc.getLocation();
+          PerTurn.ALL_NEARBY_ROBOTS = Global.rc.senseNearbyRobots();
+          PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OUR_TEAM);
+          PerTurn.ALL_NEARBY_ENEMY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OPPONENT_TEAM);
 //            PerTurn.NEARBY_LEAD_MIN_2 = Global.rc.senseNearbyLocationsWithLead(-1, 2);
-        }
+      }
+
+      public static boolean hasPreviouslyVisited(MapLocation loc) {
+        int visitedBit = loc.x + 60 * loc.y;
+        return (GLOBAL_VISITED_LOCS[visitedBit >>> 5] & (1 << (31 - visitedBit & 31))) != 0;
+      }
+      public static boolean hasPreviouslyVisitedOwnLoc() {
+        int visitedBit = CURRENT_LOCATION.x + 60 * CURRENT_LOCATION.y;
+        return (GLOBAL_VISITED_LOCS[visitedBit >>> 5] & (1 << (31 - visitedBit & 31))) != 0;
+      }
     }
 
     public static void updateOnTurn() throws GameActionException {

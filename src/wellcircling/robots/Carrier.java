@@ -526,7 +526,7 @@ public class Carrier extends Robot {
 
   private RobotInfo attackEnemyIfCannotRun() {
 //    Printer.print("attackEnemyIfCannotRun()");
-    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA) + rc.getResourceAmount(ResourceType.ELIXIR) + (rc.getAnchor() != null ? 40 : 0));
+    int myInvSize = rc.getWeight();
     if (myInvSize <= 4) {
 //      Printer.print("null bc invSize <= 4");
       return null;
