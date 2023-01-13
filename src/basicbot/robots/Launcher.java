@@ -19,6 +19,9 @@ public class Launcher extends MobileRobot {
       attack(enemy.location);
     }
 
+    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
+      randomizeExplorationTarget(true);
+    }
     doExploration();
 
     rc.setIndicatorString("Enemies near me: " + Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length + " -- canAct=" + rc.isActionReady());
