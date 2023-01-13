@@ -17,30 +17,30 @@ public class CommsHandler {
   private static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1);
 
 
-  RobotController rc;
+  static RobotController rc;
 
-  public CommsHandler(RobotController rc) throws GameActionException {
-    this.rc = rc;
+  public static void init(RobotController rc) throws GameActionException {
+    CommsHandler.rc = rc;
   }
 
 
-  public int readHqCount() throws GameActionException {
+  public static int readHqCount() throws GameActionException {
     return (rc.readSharedArray(0) & 57344) >>> 13;
   }
 
-  public void writeHqCount(int value) throws GameActionException {
+  public static void writeHqCount(int value) throws GameActionException {
     rc.writeSharedArray(0, (rc.readSharedArray(0) & 8191) | (value << 13));
   }
 
-  public int readMapSymmetry() throws GameActionException {
+  public static int readMapSymmetry() throws GameActionException {
     return (rc.readSharedArray(0) & 7168) >>> 10;
   }
 
-  public void writeMapSymmetry(int value) throws GameActionException {
+  public static void writeMapSymmetry(int value) throws GameActionException {
     rc.writeSharedArray(0, (rc.readSharedArray(0) & 58367) | (value << 10));
   }
 
-  private int readOurHqX(int idx) throws GameActionException {
+  private static int readOurHqX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(0) & 1008) >>> 4;
@@ -55,7 +55,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeOurHqX(int idx, int value) throws GameActionException {
+  private static void writeOurHqX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(0, (rc.readSharedArray(0) & 64527) | (value << 4));
@@ -73,7 +73,7 @@ public class CommsHandler {
     }
   }
 
-  private int readOurHqY(int idx) throws GameActionException {
+  private static int readOurHqY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return ((rc.readSharedArray(0) & 15) << 2) + ((rc.readSharedArray(1) & 49152) >>> 14);
@@ -88,7 +88,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeOurHqY(int idx, int value) throws GameActionException {
+  private static void writeOurHqY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(0, (rc.readSharedArray(0) & 65520) | ((value & 60) >>> 2));
@@ -106,17 +106,17 @@ public class CommsHandler {
     }
   }
 
-  public MapLocation readOurHqLocation(int idx) throws GameActionException {
+  public static MapLocation readOurHqLocation(int idx) throws GameActionException {
     return new MapLocation(readOurHqX(idx)-1,readOurHqY(idx)-1);
   }
-  public boolean readOurHqExists(int idx) throws GameActionException {
+  public static boolean readOurHqExists(int idx) throws GameActionException {
     return !((readOurHqLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
-  public void writeOurHqLocation(int idx, MapLocation value) throws GameActionException {
+  public static void writeOurHqLocation(int idx, MapLocation value) throws GameActionException {
     writeOurHqX(idx, (value).x+1);
     writeOurHqY(idx, (value).y+1);
   }
-  private int readAdamantiumWellX(int idx) throws GameActionException {
+  private static int readAdamantiumWellX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(3) & 1008) >>> 4;
@@ -131,7 +131,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeAdamantiumWellX(int idx, int value) throws GameActionException {
+  private static void writeAdamantiumWellX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(3, (rc.readSharedArray(3) & 64527) | (value << 4));
@@ -149,7 +149,7 @@ public class CommsHandler {
     }
   }
 
-  private int readAdamantiumWellY(int idx) throws GameActionException {
+  private static int readAdamantiumWellY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return ((rc.readSharedArray(3) & 15) << 2) + ((rc.readSharedArray(4) & 49152) >>> 14);
@@ -164,7 +164,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeAdamantiumWellY(int idx, int value) throws GameActionException {
+  private static void writeAdamantiumWellY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(3, (rc.readSharedArray(3) & 65520) | ((value & 60) >>> 2));
@@ -182,7 +182,7 @@ public class CommsHandler {
     }
   }
 
-  private int readAdamantiumWellUpgradedBit(int idx) throws GameActionException {
+  private static int readAdamantiumWellUpgradedBit(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(4) & 8192) >>> 13;
@@ -197,7 +197,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeAdamantiumWellUpgradedBit(int idx, int value) throws GameActionException {
+  private static void writeAdamantiumWellUpgradedBit(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(4, (rc.readSharedArray(4) & 57343) | (value << 13));
@@ -214,23 +214,23 @@ public class CommsHandler {
     }
   }
 
-  public MapLocation readAdamantiumWellLocation(int idx) throws GameActionException {
+  public static MapLocation readAdamantiumWellLocation(int idx) throws GameActionException {
     return new MapLocation(readAdamantiumWellX(idx)-1,readAdamantiumWellY(idx)-1);
   }
-  public boolean readAdamantiumWellExists(int idx) throws GameActionException {
+  public static boolean readAdamantiumWellExists(int idx) throws GameActionException {
     return !((readAdamantiumWellLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
-  public void writeAdamantiumWellLocation(int idx, MapLocation value) throws GameActionException {
+  public static void writeAdamantiumWellLocation(int idx, MapLocation value) throws GameActionException {
     writeAdamantiumWellX(idx, (value).x+1);
     writeAdamantiumWellY(idx, (value).y+1);
   }
-  public boolean readAdamantiumWellUpgraded(int idx) throws GameActionException {
+  public static boolean readAdamantiumWellUpgraded(int idx) throws GameActionException {
     return ((readAdamantiumWellUpgradedBit(idx)) == 1);
   }
-  public void writeAdamantiumWellUpgraded(int idx, boolean value) throws GameActionException {
+  public static void writeAdamantiumWellUpgraded(int idx, boolean value) throws GameActionException {
     writeAdamantiumWellUpgradedBit(idx, ((value) ? 1 : 0));
   }
-  private int readManaWellX(int idx) throws GameActionException {
+  private static int readManaWellX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(6) & 63);
@@ -245,7 +245,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeManaWellX(int idx, int value) throws GameActionException {
+  private static void writeManaWellX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(6, (rc.readSharedArray(6) & 65472) | (value));
@@ -262,7 +262,7 @@ public class CommsHandler {
     }
   }
 
-  private int readManaWellY(int idx) throws GameActionException {
+  private static int readManaWellY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(7) & 64512) >>> 10;
@@ -277,7 +277,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeManaWellY(int idx, int value) throws GameActionException {
+  private static void writeManaWellY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(7, (rc.readSharedArray(7) & 1023) | (value << 10));
@@ -295,7 +295,7 @@ public class CommsHandler {
     }
   }
 
-  private int readManaWellUpgradedBit(int idx) throws GameActionException {
+  private static int readManaWellUpgradedBit(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(7) & 512) >>> 9;
@@ -310,7 +310,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeManaWellUpgradedBit(int idx, int value) throws GameActionException {
+  private static void writeManaWellUpgradedBit(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(7, (rc.readSharedArray(7) & 65023) | (value << 9));
@@ -327,23 +327,23 @@ public class CommsHandler {
     }
   }
 
-  public MapLocation readManaWellLocation(int idx) throws GameActionException {
+  public static MapLocation readManaWellLocation(int idx) throws GameActionException {
     return new MapLocation(readManaWellX(idx)-1,readManaWellY(idx)-1);
   }
-  public boolean readManaWellExists(int idx) throws GameActionException {
+  public static boolean readManaWellExists(int idx) throws GameActionException {
     return !((readManaWellLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
-  public void writeManaWellLocation(int idx, MapLocation value) throws GameActionException {
+  public static void writeManaWellLocation(int idx, MapLocation value) throws GameActionException {
     writeManaWellX(idx, (value).x+1);
     writeManaWellY(idx, (value).y+1);
   }
-  public boolean readManaWellUpgraded(int idx) throws GameActionException {
+  public static boolean readManaWellUpgraded(int idx) throws GameActionException {
     return ((readManaWellUpgradedBit(idx)) == 1);
   }
-  public void writeManaWellUpgraded(int idx, boolean value) throws GameActionException {
+  public static void writeManaWellUpgraded(int idx, boolean value) throws GameActionException {
     writeManaWellUpgradedBit(idx, ((value) ? 1 : 0));
   }
-  private int readElixirWellX(int idx) throws GameActionException {
+  private static int readElixirWellX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return ((rc.readSharedArray(9) & 3) << 4) + ((rc.readSharedArray(10) & 61440) >>> 12);
@@ -358,7 +358,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeElixirWellX(int idx, int value) throws GameActionException {
+  private static void writeElixirWellX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(9, (rc.readSharedArray(9) & 65532) | ((value & 48) >>> 4));
@@ -377,7 +377,7 @@ public class CommsHandler {
     }
   }
 
-  private int readElixirWellY(int idx) throws GameActionException {
+  private static int readElixirWellY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(10) & 4032) >>> 6;
@@ -392,7 +392,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeElixirWellY(int idx, int value) throws GameActionException {
+  private static void writeElixirWellY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(10, (rc.readSharedArray(10) & 61503) | (value << 6));
@@ -411,7 +411,7 @@ public class CommsHandler {
     }
   }
 
-  private int readElixirWellUpgradedBit(int idx) throws GameActionException {
+  private static int readElixirWellUpgradedBit(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(10) & 32) >>> 5;
@@ -426,7 +426,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeElixirWellUpgradedBit(int idx, int value) throws GameActionException {
+  private static void writeElixirWellUpgradedBit(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(10, (rc.readSharedArray(10) & 65503) | (value << 5));
@@ -443,23 +443,23 @@ public class CommsHandler {
     }
   }
 
-  public MapLocation readElixirWellLocation(int idx) throws GameActionException {
+  public static MapLocation readElixirWellLocation(int idx) throws GameActionException {
     return new MapLocation(readElixirWellX(idx)-1,readElixirWellY(idx)-1);
   }
-  public boolean readElixirWellExists(int idx) throws GameActionException {
+  public static boolean readElixirWellExists(int idx) throws GameActionException {
     return !((readElixirWellLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
-  public void writeElixirWellLocation(int idx, MapLocation value) throws GameActionException {
+  public static void writeElixirWellLocation(int idx, MapLocation value) throws GameActionException {
     writeElixirWellX(idx, (value).x+1);
     writeElixirWellY(idx, (value).y+1);
   }
-  public boolean readElixirWellUpgraded(int idx) throws GameActionException {
+  public static boolean readElixirWellUpgraded(int idx) throws GameActionException {
     return ((readElixirWellUpgradedBit(idx)) == 1);
   }
-  public void writeElixirWellUpgraded(int idx, boolean value) throws GameActionException {
+  public static void writeElixirWellUpgraded(int idx, boolean value) throws GameActionException {
     writeElixirWellUpgradedBit(idx, ((value) ? 1 : 0));
   }
-  private int readAttackTargetX(int idx) throws GameActionException {
+  private static int readAttackTargetX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(13) & 16128) >>> 8;
@@ -482,7 +482,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeAttackTargetX(int idx, int value) throws GameActionException {
+  private static void writeAttackTargetX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(13, (rc.readSharedArray(13) & 49407) | (value << 8));
@@ -513,7 +513,7 @@ public class CommsHandler {
     }
   }
 
-  private int readAttackTargetY(int idx) throws GameActionException {
+  private static int readAttackTargetY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(13) & 252) >>> 2;
@@ -536,7 +536,7 @@ public class CommsHandler {
     }
   }
 
-  private void writeAttackTargetY(int idx, int value) throws GameActionException {
+  private static void writeAttackTargetY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(13, (rc.readSharedArray(13) & 65283) | (value << 2));
@@ -567,13 +567,13 @@ public class CommsHandler {
     }
   }
 
-  public MapLocation readAttackTargetLocation(int idx) throws GameActionException {
+  public static MapLocation readAttackTargetLocation(int idx) throws GameActionException {
     return new MapLocation(readAttackTargetX(idx)-1,readAttackTargetY(idx)-1);
   }
-  public boolean readAttackTargetExists(int idx) throws GameActionException {
+  public static boolean readAttackTargetExists(int idx) throws GameActionException {
     return !((readAttackTargetLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
-  public void writeAttackTargetLocation(int idx, MapLocation value) throws GameActionException {
+  public static void writeAttackTargetLocation(int idx, MapLocation value) throws GameActionException {
     writeAttackTargetX(idx, (value).x+1);
     writeAttackTargetY(idx, (value).y+1);
   }
@@ -601,11 +601,11 @@ public class CommsHandler {
     public MapLocation readWellLocation(int idx) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          return Global.communicator.commsHandler.readAdamantiumWellLocation(idx);
+          return CommsHandler.readAdamantiumWellLocation(idx);
         case MANA:
-          return Global.communicator.commsHandler.readManaWellLocation(idx);
+          return CommsHandler.readManaWellLocation(idx);
         case ELIXIR:
-          return Global.communicator.commsHandler.readElixirWellLocation(idx);
+          return CommsHandler.readElixirWellLocation(idx);
         default:
           throw new RuntimeException("readWellLocation not defined for " + this);
       }
@@ -614,13 +614,13 @@ public class CommsHandler {
     public void writeWellLocation(int idx, MapLocation value) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          Global.communicator.commsHandler.writeAdamantiumWellLocation(idx, value);
+          CommsHandler.writeAdamantiumWellLocation(idx, value);
           break;
         case MANA:
-          Global.communicator.commsHandler.writeManaWellLocation(idx, value);
+          CommsHandler.writeManaWellLocation(idx, value);
           break;
         case ELIXIR:
-          Global.communicator.commsHandler.writeElixirWellLocation(idx, value);
+          CommsHandler.writeElixirWellLocation(idx, value);
           break;
         default:
           throw new RuntimeException("writeWellLocation not defined for " + this);
@@ -630,11 +630,11 @@ public class CommsHandler {
     public boolean readWellExists(int idx) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          return Global.communicator.commsHandler.readAdamantiumWellExists(idx);
+          return CommsHandler.readAdamantiumWellExists(idx);
         case MANA:
-          return Global.communicator.commsHandler.readManaWellExists(idx);
+          return CommsHandler.readManaWellExists(idx);
         case ELIXIR:
-          return Global.communicator.commsHandler.readElixirWellExists(idx);
+          return CommsHandler.readElixirWellExists(idx);
         default:
           throw new RuntimeException("readWellExists not defined for " + this);
       }
@@ -643,11 +643,11 @@ public class CommsHandler {
     public boolean readWellUpgraded(int idx) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          return Global.communicator.commsHandler.readAdamantiumWellUpgraded(idx);
+          return CommsHandler.readAdamantiumWellUpgraded(idx);
         case MANA:
-          return Global.communicator.commsHandler.readManaWellUpgraded(idx);
+          return CommsHandler.readManaWellUpgraded(idx);
         case ELIXIR:
-          return Global.communicator.commsHandler.readElixirWellUpgraded(idx);
+          return CommsHandler.readElixirWellUpgraded(idx);
         default:
           throw new RuntimeException("readWellUpgraded not defined for " + this);
       }
@@ -656,13 +656,13 @@ public class CommsHandler {
     public void writeWellUpgraded(int idx, boolean value) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          Global.communicator.commsHandler.writeAdamantiumWellUpgraded(idx, value);
+          CommsHandler.writeAdamantiumWellUpgraded(idx, value);
           break;
         case MANA:
-          Global.communicator.commsHandler.writeManaWellUpgraded(idx, value);
+          CommsHandler.writeManaWellUpgraded(idx, value);
           break;
         case ELIXIR:
-          Global.communicator.commsHandler.writeElixirWellUpgraded(idx, value);
+          CommsHandler.writeElixirWellUpgraded(idx, value);
           break;
         default:
           throw new RuntimeException("writeWellUpgraded not defined for " + this);

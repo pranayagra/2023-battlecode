@@ -5,7 +5,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
-public class Launcher extends Robot {
+public class Launcher extends MobileRobot {
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
   }
@@ -16,7 +16,7 @@ public class Launcher extends Robot {
     while (i < Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length
         && attack(Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[i++].location)) {}
 
-    while (pathing.moveRandomly()) {};
+    doExploration();
 
     i = 0;
     while (i < Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length

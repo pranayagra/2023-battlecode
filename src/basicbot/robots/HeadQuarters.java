@@ -1,6 +1,7 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
+import basicbot.communications.Communicator;
 import basicbot.utils.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -25,18 +26,29 @@ public class HeadQuarters extends Robot {
     if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
       this.closestWell = this.closestMana;
     }
-    this.hqID = communicator.metaInfo.registerHQ(this.closestAdamantium, this.closestMana);
+    this.hqID = Communicator.MetaInfo.registerHQ(this.closestAdamantium, this.closestMana);
     determineRole();
   }
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUNDS_ALIVE == 1) communicator.metaInfo.reinitForHQ();
+    if (Cache.PerTurn.ROUNDS_ALIVE == 1) Communicator.MetaInfo.reinitForHQ();
 //    if (Cache.PerTurn.ROUND_NUM == 50) rc.resign();
     if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
       this.role = HQRole.BUILD_ANCHORS;
     }
-    if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
+    make_carriers: if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
+      if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
+        int emptyCarrierCount = 0;
+        for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+          if (robot.type == RobotType.CARRIER && getInvWeight(robot) == 0) {
+            emptyCarrierCount++;
+          }
+        }
+        if (emptyCarrierCount >= 15) {
+          break make_carriers;
+        }
+      }
       if (this.closestWell != null) {
         rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
         if (spawnCarrierTowardsWell(this.closestWell)) {

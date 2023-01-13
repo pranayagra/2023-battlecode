@@ -1,6 +1,7 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
+import basicbot.communications.HqMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.utils.Cache;
@@ -8,7 +9,7 @@ import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
-public class Carrier extends Robot {
+public class Carrier extends MobileRobot {
   private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
   private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 2;
 
@@ -141,7 +142,7 @@ public class Carrier extends Robot {
   }
 
   private boolean searchForTargetWell() throws GameActionException {
-    while (pathing.moveRandomly()) {
+    while (tryExplorationMove()) {
       WellInfo well = getClosestWell(role.getResourceCollectionType());
       if (well != null) {
         rc.setIndicatorString("found well: " + well);
@@ -295,7 +296,7 @@ public class Carrier extends Robot {
         }
 
         int moveTrial = wellPathTargetIndex;
-        if (currentPathIndex < wellPathTargetIndex) {
+        if (currentPathIndex < wellPathTargetIndex || currentPathIndex == -1) {
           while (moveTrial >= 0 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]])))) {
             // we can't move (adjacent + can move)
             moveTrial--;
@@ -303,7 +304,8 @@ public class Carrier extends Robot {
           if (moveTrial < 0) {
             break;
           }
-        } else {
+        }
+        if (currentPathIndex > wellPathTargetIndex || currentPathIndex == -1) {
           while (moveTrial < 9 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]])))) {
             // we can't move (adjacent + can move)
             moveTrial++;
@@ -460,8 +462,8 @@ public class Carrier extends Robot {
       closestUpgraded = resourceTypeReaderWriter.readWellUpgraded(i);
     }
 
-    int hqWithClosestWell = closestWellLocation != null ? communicator.metaInfo.hqInfo.getClosestHQ(closestWellLocation) : communicator.metaInfo.hqInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
-    targetHQ = communicator.commsHandler.readOurHqLocation(hqWithClosestWell);
+    int hqWithClosestWell = closestWellLocation != null ? HqMetaInfo.getClosestHQ(closestWellLocation) : HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
+    targetHQ = CommsHandler.readOurHqLocation(hqWithClosestWell);
 //    if (resourceType == ResourceType.MANA) {
 ////      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
 //      hqWithClosestWell++;
@@ -503,10 +505,6 @@ public class Carrier extends Robot {
 
   private boolean enemyExists() throws GameActionException {
     return Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0;
-  }
-
-  private int getInvWeight(RobotInfo ri) {
-    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() == 0 ? 0 : 40));
   }
 
   private RobotInfo enemyToAttackIfWorth() throws GameActionException {
@@ -625,8 +623,8 @@ public class Carrier extends Robot {
 
   private void executeIslandClaimProtocol() throws GameActionException {
     if (rc.getAnchor() == null) {
-      int closestHQ = communicator.metaInfo.hqInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
-      MapLocation hqWithAnchor = communicator.commsHandler.readOurHqLocation(closestHQ);
+      int closestHQ = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
+      MapLocation hqWithAnchor = CommsHandler.readOurHqLocation(closestHQ);
       if (!rc.canSenseLocation(hqWithAnchor) || rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
         resetRole();
         return;
@@ -655,7 +653,7 @@ public class Carrier extends Robot {
     // go to unclaimed island
     MapLocation closestUnclaimedIsland = null;
     int closestDistance = Integer.MAX_VALUE;
-    while (pathing.moveRandomly()) {
+    while (tryExplorationMove()) {
       int[] nearbyIslands = rc.senseNearbyIslands();
       for (int islandID : nearbyIslands) {
         if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {

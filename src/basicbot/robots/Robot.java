@@ -1,6 +1,7 @@
 package basicbot.robots;
 
 import basicbot.communications.Communicator;
+import basicbot.communications.MapMetaInfo;
 import basicbot.communications.Message;
 import basicbot.communications.RunningMemory;
 import basicbot.robots.pathfinding.Pathing;
@@ -17,8 +18,7 @@ public abstract class Robot {
   private static final int MAX_TURNS_FIGURE_SYMMETRY = 200;
 
   protected final RobotController rc;
-  protected final Communicator communicator;
-  protected int pendingMessages;
+  
 
   protected int turnCount;
   protected boolean dontYield;
@@ -43,7 +43,6 @@ public abstract class Robot {
     Printer.cleanPrint();
     this.rc = rc;
     Global.configureCommunicator();
-    this.communicator = Global.communicator;
 
     pathing = Pathing.create(rc);
 
@@ -137,7 +136,7 @@ public abstract class Robot {
 //        pathing.initTurn();
 
 //    Utils.startByteCodeCounting("updating-comm-metainfo");
-    communicator.metaInfo.updateOnTurnStart();
+    Communicator.MetaInfo.updateOnTurnStart();
 //    Utils.finishByteCodeCounting("updating-comm-metainfo");
 
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
@@ -194,7 +193,7 @@ public abstract class Robot {
    * @throws GameActionException if sensing fails
    */
   protected void updateSymmetryComms() throws GameActionException {
-    if (communicator.metaInfo.mapInfo.knownSymmetry != null) return;
+    if (MapMetaInfo.knownSymmetry != null) return;
     if (!rc.canWriteSharedArray(0,0)) return;
     if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
 
@@ -205,7 +204,7 @@ public abstract class Robot {
     int mapWidth = Cache.Permanent.MAP_WIDTH;
     int mapHeight = Cache.Permanent.MAP_HEIGHT;
     // if Vertical not ruled out (flipY, horizontal midline)
-    if (!communicator.metaInfo.mapInfo.notVertical) { // could be vertical
+    if (!MapMetaInfo.notVertical) { // could be vertical
       // check if y is near the middle
       nearHorizMidline:
       if (myY * 2 <= mapHeight + midlineThreshold
@@ -217,7 +216,7 @@ public abstract class Robot {
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
               break nearHorizMidline;
             }
           }
@@ -229,7 +228,7 @@ public abstract class Robot {
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
               break nearHorizMidline;
             }
           }
@@ -237,7 +236,7 @@ public abstract class Robot {
       }
     }
     // if Horizontal not ruled out (flipX, vertical midline)
-    if (!communicator.metaInfo.mapInfo.notHorizontal) { // could be horizontal
+    if (!MapMetaInfo.notHorizontal) { // could be horizontal
       // check if x is near the middle
       nearVertMidline:
       if (myX * 2 <= mapWidth + midlineThreshold
@@ -249,7 +248,7 @@ public abstract class Robot {
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
               break nearVertMidline;
             }
           }
@@ -261,7 +260,7 @@ public abstract class Robot {
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
               break nearVertMidline;
             }
           }
@@ -432,6 +431,10 @@ public abstract class Robot {
     return weakestEnemy;
   }
 
+
+  protected int getInvWeight(RobotInfo ri) {
+    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() == 0 ? 0 : 40));
+  }
 
   protected void becomeDoNothingBot() {
     while (true) Clock.yield();

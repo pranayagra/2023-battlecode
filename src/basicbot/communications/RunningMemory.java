@@ -48,7 +48,7 @@ public class RunningMemory {
     if (!Global.rc.canWriteSharedArray(0,0)) return 0;
     int oldCount = wellCount;
 //    Printer.print("flushing " + wellCount + " wells");
-    while (wellCount > 0 && Global.communicator.writeNextWell(wells[wellCount-1])) {
+    while (wellCount > 0 && Communicator.writeNextWell(wells[wellCount-1])) {
 //      Printer.print("flushed well " + wells[wellCount-1].getMapLocation());
       wellCount--;
     }

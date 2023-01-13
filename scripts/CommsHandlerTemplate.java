@@ -9,10 +9,10 @@ public class CommsHandler {
 
   // CONSTS
 
-  RobotController rc;
+  static RobotController rc;
 
-  public CommsHandler(RobotController rc) throws GameActionException {
-    this.rc = rc;
+  public static void init(RobotController rc) throws GameActionException {
+    CommsHandler.rc = rc;
   }
 
   // MAIN READ AND WRITE METHODS

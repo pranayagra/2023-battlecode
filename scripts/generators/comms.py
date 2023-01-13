@@ -203,13 +203,13 @@ def gen():
 
       if SCHEMA[datatype]['slots'] == 1:
         out += f"""
-  {publicity} int read{capitalize(datatype)}{capitalize(attribute)}() throws GameActionException {{
+  {publicity} static int read{capitalize(datatype)}{capitalize(attribute)}() throws GameActionException {{
     return {rets[0]};
   }}
 """
       else:
         out += f"""
-  {publicity} int read{capitalize(datatype)}{capitalize(attribute)}(int idx) throws GameActionException {{
+  {publicity} static int read{capitalize(datatype)}{capitalize(attribute)}(int idx) throws GameActionException {{
     switch (idx) {{"""
         for idx, ret in enumerate(rets):
           out += f"""
@@ -246,7 +246,7 @@ def gen():
 
       if SCHEMA[datatype]['slots'] == 1:
         out += f"""
-  {publicity} void write{capitalize(datatype)}{capitalize(attribute)}(int value) throws GameActionException {{"""
+  {publicity} static void write{capitalize(datatype)}{capitalize(attribute)}(int value) throws GameActionException {{"""
         for w in writes[0]:
           out += f"""
     {w};"""
@@ -255,7 +255,7 @@ def gen():
 """
       else:
         out += f"""
-  {publicity} void write{capitalize(datatype)}{capitalize(attribute)}(int idx, int value) throws GameActionException {{
+  {publicity} static void write{capitalize(datatype)}{capitalize(attribute)}(int idx, int value) throws GameActionException {{
     switch (idx) {{"""
         for idx, write in enumerate(writes):
           out += f"""
@@ -282,12 +282,12 @@ def gen():
         # read
         if SCHEMA[datatype]['slots'] == 1:
           out += f"""
-  public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}() throws GameActionException {{
+  public static {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}() throws GameActionException {{
     return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}()" for new_suffix in special_attr_info['new_suffixes']))};
   }}"""
         else:
           out += f"""
-  public {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}(int idx) throws GameActionException {{
+  public static {special_attr_info['datatype']} read{capitalize(datatype)}{capitalize(method_name_attr)}(int idx) throws GameActionException {{
     return {read_conversion_format_str.format(*(f"read{capitalize(datatype)}{capitalize(prefix + new_suffix)}(idx)" for new_suffix in special_attr_info['new_suffixes']))};
   }}"""
 
@@ -296,18 +296,18 @@ def gen():
             # print(suffix,extra_suffix,extra_type,analyzer_format_str)
             if SCHEMA[datatype]['slots'] == 1:
               out += f"""
-  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}() throws GameActionException {{
+  public static {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}() throws GameActionException {{
     return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}()")};
   }}"""
             else:
               out += f"""
-  public {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}(int idx) throws GameActionException {{
+  public static {extra_type} read{capitalize(datatype)}{capitalize(prefix + extra_suffix)}(int idx) throws GameActionException {{
     return {analyzer_format_str.format(f"read{capitalize(datatype)}{capitalize(method_name_attr)}(idx)")};
   }}"""
         #write
         if SCHEMA[datatype]['slots'] == 1:
           out += f"""
-  public void write{capitalize(datatype)}{capitalize(method_name_attr)}({special_attr_info['datatype']} value) throws GameActionException {{"""
+  public static void write{capitalize(datatype)}{capitalize(method_name_attr)}({special_attr_info['datatype']} value) throws GameActionException {{"""
           for new_suffix,suffix_info in special_attr_info['new_suffixes'].items():
             suffix_write_format_str = suffix_info[1]
             out += f"""
@@ -316,7 +316,7 @@ def gen():
   }}"""
         else:
           out += f"""
-  public void write{capitalize(datatype)}{capitalize(method_name_attr)}(int idx, {special_attr_info['datatype']} value) throws GameActionException {{"""
+  public static void write{capitalize(datatype)}{capitalize(method_name_attr)}(int idx, {special_attr_info['datatype']} value) throws GameActionException {{"""
           for new_suffix,suffix_info in special_attr_info['new_suffixes'].items():
             suffix_write_format_str = suffix_info[1]
             out += f"""
@@ -356,7 +356,7 @@ def gen_resource():
         for rss in valid_rss:
           out += f"""
         case {rss.upper()}:
-          return Global.communicator.commsHandler.read{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}();"""
+          return CommsHandler.read{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}();"""
         out += f"""
         default:
           throw new RuntimeException("read{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
@@ -370,7 +370,7 @@ def gen_resource():
         for rss in valid_rss:
           out += f"""
         case {rss.upper()}:
-          return Global.communicator.commsHandler.read{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(idx);"""
+          return CommsHandler.read{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(idx);"""
         out += f"""
         default:
           throw new RuntimeException("read{capitalize(generic_name)}{capitalize(attribute)} not defined for " + this);
@@ -386,7 +386,7 @@ def gen_resource():
           for rss in valid_rss:
             out += f"""
         case {rss.upper()}:
-          Global.communicator.commsHandler.write{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(value);
+          CommsHandler.write{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(value);
           break;"""
           out += f"""
         default:
@@ -401,7 +401,7 @@ def gen_resource():
           for rss in valid_rss:
             out += f"""
         case {rss.upper()}:
-          Global.communicator.commsHandler.write{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(idx, value);
+          CommsHandler.write{capitalize(datatype_fmt.format(rss))}{capitalize(attribute)}(idx, value);
           break;"""
           out += f"""
         default:
