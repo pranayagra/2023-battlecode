@@ -98,7 +98,6 @@ public class Carrier extends Robot {
     if (newRole == null) newRole = determineRole();
     if (newRole != this.role) {
       this.role = newRole;
-      rc.setIndicatorString("Role: " + this.role + " (" + targetWell + "->" + targetHQ + ")");
       turnsSinceRoleChange = 0;
       switch (this.role) {
         case ADAMANTIUM_COLLECTION:
@@ -108,6 +107,7 @@ public class Carrier extends Robot {
           initManaCollection();
           break;
       }
+      rc.setIndicatorString("Role: " + this.role + " (" + targetWell + "->" + targetHQ + ")");
     }
   }
 

@@ -1,9 +1,12 @@
 package basicbot.utils;
 
+import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class Utils {

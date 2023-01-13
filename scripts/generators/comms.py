@@ -35,7 +35,7 @@ SUFFIX_TO_GENERAL = {
     # 'read_method_prefix': 'is',
     # 'write_method_prefix': 'set',
     'method_suffix': '',
-  }
+  },
 }
 SPECIAL_ATTR_SUFFIXES = list(SUFFIX_TO_GENERAL.keys())
 SPECIAL_ATTR_BITS = {suffix:sum(suffix_info[0] for suffix_info in general_info['new_suffixes'].values()) for suffix,general_info in SUFFIX_TO_GENERAL.items()}

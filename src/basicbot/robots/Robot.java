@@ -162,20 +162,6 @@ public abstract class Robot {
   }
 
   /**
-   * acknowledge the provided message (happens at turn start)
-   * @param message the message received
-   */
-  public void ackMessage(Message message) throws GameActionException {
-//    switch (message.header.type) {
-//      case RUBBLE_AT_LOCATION:
-//        ackRubbleAtLocationMessage((RubbleAtLocationMessage) message);
-//        break;
-//      case ENEMY_FOUND:
-//        ackEnemyFound((EnemyFoundMessage) message);
-//    }
-  }
-
-  /**
    * Run a single turn for the robot
    * unique to buildings/droids
    */
