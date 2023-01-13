@@ -50,7 +50,7 @@ public abstract class MobileRobot extends Robot {
 //          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
 //          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget);
         }
-        if (Cache.PerTurn.ROUND_NUM <= 100) { // TODO: this will make the unit stay at the mid point
+        if (checkShouldNotCrossMidpoint()) { // TODO: this will make the unit stay at the mid point
           MapLocation friendly = HqMetaInfo.getClosestHqLocation(explorationTarget);
           MapLocation enemy = HqMetaInfo.getClosestEnemyHqLocation(explorationTarget);
           Direction backHome = enemy.directionTo(friendly);
@@ -72,6 +72,10 @@ public abstract class MobileRobot extends Robot {
         break;
     }
     exploringRandomly = true;
+  }
+
+  private boolean checkShouldNotCrossMidpoint() {
+    return Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length < Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length;
   }
 
   /**

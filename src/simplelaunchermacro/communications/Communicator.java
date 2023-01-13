@@ -18,7 +18,7 @@ public class Communicator {
 
     public static int registerHQ(WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
       int hqID = HqMetaInfo.hqCount;
-      // Printer.print("Registering HQ " + hqID);
+//      Printer.print("Registering HQ " + hqID);
       HqMetaInfo.hqCount++;
       CommsHandler.writeHqCount(HqMetaInfo.hqCount);
       CommsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
