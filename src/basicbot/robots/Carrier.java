@@ -440,7 +440,7 @@ public class Carrier extends Robot {
       closestUpgraded = resourceTypeReaderWriter.readWellUpgraded(i);
     }
 
-    int hqWithClosestWell = closestWellLocation != null ? getClosestHQ(closestWellLocation) : getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
+    int hqWithClosestWell = closestWellLocation != null ? communicator.metaInfo.hqInfo.getClosestHQ(closestWellLocation) : communicator.metaInfo.hqInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
     targetHQ = communicator.commsHandler.readOurHqLocation(hqWithClosestWell);
 //    if (resourceType == ResourceType.MANA) {
 ////      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);

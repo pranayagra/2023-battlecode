@@ -13,6 +13,9 @@ public class CommsHandler {
   public static final int ADAMANTIUM_WELL_SLOTS = 4;
   public static final int MANA_WELL_SLOTS = 4;
   public static final int ELIXIR_WELL_SLOTS = 4;
+  public static final int ATTACK_TARGET_SLOTS = 8;
+  private static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1)
+
 
   RobotController rc;
 
@@ -108,7 +111,7 @@ public class CommsHandler {
     return new MapLocation(readOurHqX(idx)-1,readOurHqY(idx)-1);
   }
   public boolean readOurHqExists(int idx) throws GameActionException {
-    return !((readOurHqLocation(idx)).equals(new MapLocation(0,0)));
+    return !((readOurHqLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
   public void writeOurHqLocation(int idx, MapLocation value) throws GameActionException {
     writeOurHqX(idx, (value).x+1);
@@ -217,7 +220,7 @@ public class CommsHandler {
     return new MapLocation(readAdamantiumWellX(idx)-1,readAdamantiumWellY(idx)-1);
   }
   public boolean readAdamantiumWellExists(int idx) throws GameActionException {
-    return !((readAdamantiumWellLocation(idx)).equals(new MapLocation(0,0)));
+    return !((readAdamantiumWellLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
   public void writeAdamantiumWellLocation(int idx, MapLocation value) throws GameActionException {
     writeAdamantiumWellX(idx, (value).x+1);
@@ -331,7 +334,7 @@ public class CommsHandler {
     return new MapLocation(readManaWellX(idx)-1,readManaWellY(idx)-1);
   }
   public boolean readManaWellExists(int idx) throws GameActionException {
-    return !((readManaWellLocation(idx)).equals(new MapLocation(0,0)));
+    return !((readManaWellLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
   public void writeManaWellLocation(int idx, MapLocation value) throws GameActionException {
     writeManaWellX(idx, (value).x+1);
@@ -445,7 +448,7 @@ public class CommsHandler {
     return new MapLocation(readElixirWellX(idx)-1,readElixirWellY(idx)-1);
   }
   public boolean readElixirWellExists(int idx) throws GameActionException {
-    return !((readElixirWellLocation(idx)).equals(new MapLocation(0,0)));
+    return !((readElixirWellLocation(idx)).equals(NONEXISTENT_MAP_LOC));
   }
   public void writeElixirWellLocation(int idx, MapLocation value) throws GameActionException {
     writeElixirWellX(idx, (value).x+1);
@@ -456,6 +459,126 @@ public class CommsHandler {
   }
   public void writeElixirWellUpgraded(int idx, boolean value) throws GameActionException {
     writeElixirWellUpgradedBit(idx, ((value) ? 1 : 0));
+  }
+  private int readAttackTargetX(int idx) throws GameActionException {
+    switch (idx) {
+      case 0:
+          return (rc.readSharedArray(13) & 32256) >>> 9;
+      case 1:
+          return ((rc.readSharedArray(13) & 7) << 3) + ((rc.readSharedArray(14) & 57344) >>> 13);
+      case 2:
+          return (rc.readSharedArray(14) & 126) >>> 1;
+      case 3:
+          return (rc.readSharedArray(15) & 2016) >>> 5;
+      case 4:
+          return (rc.readSharedArray(16) & 32256) >>> 9;
+      case 5:
+          return ((rc.readSharedArray(16) & 7) << 3) + ((rc.readSharedArray(17) & 57344) >>> 13);
+      case 6:
+          return (rc.readSharedArray(17) & 126) >>> 1;
+      case 7:
+          return (rc.readSharedArray(18) & 2016) >>> 5;
+      default:
+          return -1;
+    }
+  }
+
+  private void writeAttackTargetX(int idx, int value) throws GameActionException {
+    switch (idx) {
+      case 0:
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 33279) | (value << 9));
+        break;
+      case 1:
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 65528) | ((value & 56) >>> 3));
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 8191) | ((value & 7) << 13));
+        break;
+      case 2:
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65409) | (value << 1));
+        break;
+      case 3:
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 63519) | (value << 5));
+        break;
+      case 4:
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 33279) | (value << 9));
+        break;
+      case 5:
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65528) | ((value & 56) >>> 3));
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 8191) | ((value & 7) << 13));
+        break;
+      case 6:
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 65409) | (value << 1));
+        break;
+      case 7:
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 63519) | (value << 5));
+        break;
+    }
+  }
+
+  private int readAttackTargetY(int idx) throws GameActionException {
+    switch (idx) {
+      case 0:
+          return (rc.readSharedArray(13) & 504) >>> 3;
+      case 1:
+          return (rc.readSharedArray(14) & 8064) >>> 7;
+      case 2:
+          return ((rc.readSharedArray(14) & 1) << 5) + ((rc.readSharedArray(15) & 63488) >>> 11);
+      case 3:
+          return ((rc.readSharedArray(15) & 31) << 1) + ((rc.readSharedArray(16) & 32768) >>> 15);
+      case 4:
+          return (rc.readSharedArray(16) & 504) >>> 3;
+      case 5:
+          return (rc.readSharedArray(17) & 8064) >>> 7;
+      case 6:
+          return ((rc.readSharedArray(17) & 1) << 5) + ((rc.readSharedArray(18) & 63488) >>> 11);
+      case 7:
+          return ((rc.readSharedArray(18) & 31) << 1) + ((rc.readSharedArray(19) & 32768) >>> 15);
+      default:
+          return -1;
+    }
+  }
+
+  private void writeAttackTargetY(int idx, int value) throws GameActionException {
+    switch (idx) {
+      case 0:
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 65031) | (value << 3));
+        break;
+      case 1:
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 57471) | (value << 7));
+        break;
+      case 2:
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65534) | ((value & 32) >>> 5));
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 2047) | ((value & 31) << 11));
+        break;
+      case 3:
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 65504) | ((value & 62) >>> 1));
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 32767) | ((value & 1) << 15));
+        break;
+      case 4:
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65031) | (value << 3));
+        break;
+      case 5:
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 57471) | (value << 7));
+        break;
+      case 6:
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 65534) | ((value & 32) >>> 5));
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 2047) | ((value & 31) << 11));
+        break;
+      case 7:
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 65504) | ((value & 62) >>> 1));
+        rc.writeSharedArray(19, (rc.readSharedArray(19) & 32767) | ((value & 1) << 15));
+        break;
+    }
+  }
+
+  public MapLocation readAttackTargetLocation(int idx) throws GameActionException {
+    return new MapLocation(readAttackTargetX(idx)-1,readAttackTargetY(idx)-1);
+  }
+  public boolean readAttackTargetExists(int idx) throws GameActionException {
+    return !((readAttackTargetLocation(idx)).equals(NONEXISTENT_MAP_LOC));
+  }
+  public void writeAttackTargetLocation(int idx, MapLocation value) throws GameActionException {
+    writeAttackTargetX(idx, (value).x+1);
+    writeAttackTargetY(idx, (value).y+1);
   }
 
 

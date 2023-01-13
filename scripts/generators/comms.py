@@ -23,8 +23,11 @@ SUFFIX_TO_GENERAL = {
     # 'write_method_prefix': 'write',
     'method_suffix': 'location',
     'extra_read_suffixes': {
-      'exists': ['boolean','!(({}).equals(new MapLocation(0,0)))'], # type, format string analyze result of reading
-    }
+      'exists': ['boolean','!(({}).equals(NONEXISTENT_MAP_LOC))'], # type, format string analyze result of reading
+    },
+    'extra_consts': [
+      'private static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1)',
+    ]
   },
   BOOL_KEY: {
     'datatype': 'boolean',
@@ -49,7 +52,6 @@ METAINFO = {
   },
   'map_symmetry': {
     'bits': 3,
-    'update': True,
   },
 }
 
@@ -85,6 +87,12 @@ SCHEMA = {
     'slots': 4,
     'bits': {
       **WELL_SCHEMA,
+    }
+  },
+  'attack_target': {
+    'slots': 8,
+    'bits': {
+      'loc': LOCATION_BITS,
     }
   },
   # 'attack_pod': {
@@ -157,6 +165,12 @@ def gen_constants():
     name = datatype.upper() if datatype else 'META'
     out += f"""
   public static final int {name}_SLOTS = {SCHEMA[datatype]['slots']};"""
+  for suffix,suffix_info in SUFFIX_TO_GENERAL.items():
+    if 'extra_consts' in suffix_info:
+      join_str = "\n  "
+      out += f"""
+  {join_str.join(suffix_info['extra_consts'])}
+"""
   return out+"\n"
 
 def gen():

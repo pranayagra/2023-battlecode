@@ -181,17 +181,10 @@ public class SmitePathing {
     Direction dir = Cache.PerTurn.CURRENT_LOCATION.directionTo(target);
     double bestCooldownMultiplier = 1; // we want lower cooldown scaling
     Direction bestDir = null;
-    MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
-    if (rc.onTheMap(loc) && rc.canMove(dir)) {
-      double cooldownMuliplier = rc.senseMapInfo(loc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM);
-      if (cooldownMuliplier < bestCooldownMultiplier) {
-        bestCooldownMultiplier = cooldownMuliplier;
-        bestDir = dir;
-      }
-    }
-    loc = Cache.PerTurn.CURRENT_LOCATION.add(dir.rotateLeft());
+
+    MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.add(dir.rotateLeft());
     if (rc.onTheMap(loc) && rc.canMove(dir.rotateLeft())) {
-      double cooldownMuliplier = rc.senseMapInfo(loc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM);
+      double cooldownMuliplier = rc.senseCooldownMultiplier(loc);
       if (cooldownMuliplier < bestCooldownMultiplier) {
         bestCooldownMultiplier = cooldownMuliplier;
         bestDir = dir.rotateLeft();
@@ -199,10 +192,19 @@ public class SmitePathing {
     }
     loc = Cache.PerTurn.CURRENT_LOCATION.add(dir.rotateRight());
     if (rc.onTheMap(loc) && rc.canMove(dir.rotateRight())) {
-      double cooldownMuliplier = rc.senseMapInfo(loc).getCooldownMuliplier(Cache.Permanent.OUR_TEAM);
+      double cooldownMuliplier = rc.senseCooldownMultiplier(loc);
       if (cooldownMuliplier < bestCooldownMultiplier) {
         bestCooldownMultiplier = cooldownMuliplier;
         bestDir = dir.rotateRight();
+      }
+    }
+
+    loc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
+    if (rc.onTheMap(loc) && rc.canMove(dir)) {
+      double cooldownMuliplier = rc.senseCooldownMultiplier(loc);
+      if (cooldownMuliplier <= bestCooldownMultiplier) {
+        bestCooldownMultiplier = cooldownMuliplier;
+        bestDir = dir;
       }
     }
     if (bestDir != null) {

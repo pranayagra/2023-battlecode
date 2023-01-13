@@ -15,6 +15,37 @@ public class Communicator {
 
     public int hqCount;
     public MapLocation[] hqLocations;
+
+    /**
+     * gets the closeset HQ to the specified location based on comms info
+     * @param location where to center the search for closest HQ
+     * @return the hqID of the closest HQ
+     */
+    public int getClosestHQ(MapLocation location) {
+      int closest = 0;
+      // optimized switch statement to use as little jvm/java bytecode as possible
+      switch (hqCount) {
+        case 4:
+          if (location.distanceSquaredTo(hqLocations[3]) <
+              location.distanceSquaredTo(hqLocations[closest])) {
+            closest = 3;
+          }
+        case 3:
+          if (location.distanceSquaredTo(hqLocations[2]) <
+              location.distanceSquaredTo(hqLocations[closest])) {
+            closest = 2;
+          }
+        case 2:
+          if (location.distanceSquaredTo(hqLocations[1]) <
+              location.distanceSquaredTo(hqLocations[closest])) {
+            closest = 1;
+          }
+          return closest;
+        case 1:
+          return 0;
+      }
+      throw new RuntimeException("hqCount is not 1, 2, 3, or 4. Got=" + hqCount);
+    }
   }
 
   public class MapInfo {
@@ -49,9 +80,9 @@ public class Communicator {
     private static final int NOT_ROT_MASK = 0b1;
     public boolean notRotational;     // 0-1               -- 1 bit  [1]
 
-    public void updateSymmetry(int symmetryInfo) {
-      this.symmetryInfo = symmetryInfo;
+    public void updateSymmetry() throws GameActionException {
       if (knownSymmetry != null) return;
+      this.symmetryInfo = commsHandler.readMapSymmetry();
       knownSymmetry = symmetryKnownMap[symmetryInfo];
       notHorizontal = (symmetryInfo & NOT_HORIZ_MASK) > 0;
       notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
@@ -71,7 +102,11 @@ public class Communicator {
           this.symmetryInfo |= NOT_VERT_MASK;
       }
       commsHandler.writeMapSymmetry(this.symmetryInfo);
-      this.updateSymmetry(this.symmetryInfo);
+      knownSymmetry = symmetryKnownMap[symmetryInfo];
+      notHorizontal = (symmetryInfo & NOT_HORIZ_MASK) > 0;
+      notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
+      notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
+      guessedSymmetry = knownSymmetry != null ? knownSymmetry : symmetryGuessMap[symmetryInfo];
       Printer.print("AYO I updated the symmetry!");
     }
   }
@@ -132,7 +167,7 @@ public class Communicator {
     }
 
     public void updateOnTurnStart() throws GameActionException {
-      mapInfo.updateSymmetry(commsHandler.readMapSymmetry());
+      mapInfo.updateSymmetry();
     }
   }
 
