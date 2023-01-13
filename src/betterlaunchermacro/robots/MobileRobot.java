@@ -1,10 +1,10 @@
-package basicbot.robots;
+package betterlaunchermacro.robots;
 
-import basicbot.communications.HqMetaInfo;
-import basicbot.communications.RunningMemory;
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import betterlaunchermacro.communications.HqMetaInfo;
+import betterlaunchermacro.communications.RunningMemory;
+import betterlaunchermacro.utils.Cache;
+import betterlaunchermacro.utils.Printer;
+import betterlaunchermacro.utils.Utils;
 import battlecode.common.*;
 
 public abstract class MobileRobot extends Robot {
