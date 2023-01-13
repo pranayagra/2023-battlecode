@@ -3,19 +3,23 @@ package basicbot.robots.pathfinding;
 import basicbot.robots.Robot;
 import basicbot.utils.Cache;
 import basicbot.utils.Global;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Pathing {
 
-    private final RobotController rc;
+    public static Pathing globalPathing;
+
+    protected final RobotController rc;
 
     public Pathing(RobotController rc) {
         this.rc = rc;
     }
 
     public static Pathing create(RobotController rc) {
-        return new BasicPathing(rc);
+        globalPathing = new SmartPathing(rc);
+        return globalPathing;
     }
 
     public abstract boolean moveTowards(MapLocation target) throws GameActionException;
@@ -39,6 +43,34 @@ public abstract class Pathing {
             return true;
         }
         return false;
+    }
+
+    public void forceMoveTo(MapLocation mapLocation) throws GameActionException {
+//        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation)) {
+//            Printer.print("Can only force move to adjacent locations" + Cache.PerTurn.CURRENT_LOCATION + "->" + mapLocation);
+//        }
+        assert Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation);
+        rc.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(mapLocation));
+        Cache.PerTurn.whenMoved();
+    }
+
+    /**
+     * requires adjacency -- same logic as above
+     * @param center
+     * @return
+     * @throws GameActionException
+     */
+    public boolean moveToOrAdjacent(MapLocation center) throws GameActionException {
+        assert Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(center);
+        return move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.NORTH)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.SOUTH)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.EAST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.WEST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.NORTHEAST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.NORTHWEST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.SOUTHEAST)))
+            || move(Cache.PerTurn.CURRENT_LOCATION.directionTo(center.add(Direction.SOUTHWEST)));
     }
 
     /**

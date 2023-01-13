@@ -10,8 +10,8 @@ import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Robot {
-  private static final boolean RESIGN_ON_GAME_EXCEPTION = false;
-  private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = false;
+  private static final boolean RESIGN_ON_GAME_EXCEPTION = true;
+  private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = true;
 
   private static final int MAX_TURNS_FIGURE_SYMMETRY = 200;
 
@@ -27,6 +27,9 @@ public abstract class Robot {
 
   protected final Pathing pathing;
 
+
+  public int testCount;
+
   /**
    * Create a Robot with the given controller
    * Perform various setup tasks generic to ny robot (building/droid)
@@ -38,6 +41,7 @@ public abstract class Robot {
     Cache.setup();
     Printer.cleanPrint();
     this.rc = rc;
+    Global.configureCommunicator();
     this.communicator = Global.communicator;
 
     pathing = Pathing.create(rc);
@@ -79,18 +83,18 @@ public abstract class Robot {
         Printer.submitPrint();
       } catch (GameActionException e) {
         // something illegal in the Battlecode world
-        System.out.println(rc.getType() + " GameActionException");
+        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " GameActionException");
         Printer.submitPrint();
         e.printStackTrace();
         rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
-        if (RESIGN_ON_GAME_EXCEPTION) rc.resign();
+        if (RESIGN_ON_GAME_EXCEPTION) die();
       } catch (Exception e) {
         // something bad
-        System.out.println(rc.getType() + " Exception");
+        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " Exception");
         Printer.submitPrint();
         e.printStackTrace();
         rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
-        if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) rc.resign();
+        if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) die();
       } finally {
         // end turn - make code wait until next turn
         if (!dontYield) Clock.yield();
@@ -105,6 +109,12 @@ public abstract class Robot {
       }
       Printer.cleanPrint();
     }
+  }
+
+  private void die() {
+    Clock.yield();
+    Clock.yield();
+    rc.resign();
   }
 
   /**
@@ -125,9 +135,9 @@ public abstract class Robot {
 
 //        pathing.initTurn();
 
-    Utils.startByteCodeCounting("updating-comm-metainfo");
+//    Utils.startByteCodeCounting("updating-comm-metainfo");
     communicator.metaInfo.updateOnTurnStart();
-    Utils.finishByteCodeCounting("updating-comm-metainfo");
+//    Utils.finishByteCodeCounting("updating-comm-metainfo");
 
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
     runTurnTypeWrapper();
@@ -149,20 +159,6 @@ public abstract class Robot {
 //    }
     }
 //    System.out.println("\nvery end - " + rc.readSharedArray(Communicator.MetaInfo.META_INT_START));
-  }
-
-  /**
-   * acknowledge the provided message (happens at turn start)
-   * @param message the message received
-   */
-  public void ackMessage(Message message) throws GameActionException {
-//    switch (message.header.type) {
-//      case RUBBLE_AT_LOCATION:
-//        ackRubbleAtLocationMessage((RubbleAtLocationMessage) message);
-//        break;
-//      case ENEMY_FOUND:
-//        ackEnemyFound((EnemyFoundMessage) message);
-//    }
   }
 
   /**
@@ -197,9 +193,79 @@ public abstract class Robot {
    */
   protected void updateSymmetryComms() throws GameActionException {
     if (communicator.metaInfo.mapInfo.knownSymmetry != null) return;
+    if (!rc.canWriteSharedArray(0,0)) return;
     if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
 
     // TODO: actually do the computation
+    int midlineThreshold = Cache.Permanent.VISION_RADIUS_FLOOR / 2;
+    int myX = Cache.PerTurn.CURRENT_LOCATION.x;
+    int myY = Cache.PerTurn.CURRENT_LOCATION.y;
+    int mapWidth = Cache.Permanent.MAP_WIDTH;
+    int mapHeight = Cache.Permanent.MAP_HEIGHT;
+    // if Vertical not ruled out (flipY, horizontal midline)
+    if (!communicator.metaInfo.mapInfo.notVertical) { // could be vertical
+      // check if y is near the middle
+      nearHorizMidline:
+      if (myY * 2 <= mapHeight + midlineThreshold
+          && myY * 2 >= mapHeight - midlineThreshold) {
+        MapLocation test1 = new MapLocation(myX, mapHeight / 2 - 1);
+        MapLocation test2 = new MapLocation(myX, mapHeight - mapHeight / 2);
+        rc.setIndicatorDot(test1, 211, 211, 211);
+        rc.setIndicatorDot(test2, 211, 211, 211);
+        if (rc.canSenseLocation(test1)) {
+          if (rc.canSenseLocation(test2)) {
+            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
+              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              break nearHorizMidline;
+            }
+          }
+        }
+        test1 = new MapLocation(myX - 2, mapHeight / 2 - 1);
+        test2 = new MapLocation(myX - 2, mapHeight - mapHeight / 2);
+        rc.setIndicatorDot(test1, 211, 211, 211);
+        rc.setIndicatorDot(test2, 211, 211, 211);
+        if (rc.canSenseLocation(test1)) {
+          if (rc.canSenseLocation(test2)) {
+            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
+              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              break nearHorizMidline;
+            }
+          }
+        }
+      }
+    }
+    // if Horizontal not ruled out (flipX, vertical midline)
+    if (!communicator.metaInfo.mapInfo.notHorizontal) { // could be horizontal
+      // check if x is near the middle
+      nearVertMidline:
+      if (myX * 2 <= mapWidth + midlineThreshold
+          && myX * 2 >= mapWidth - midlineThreshold) {
+        MapLocation test1 = new MapLocation(mapWidth / 2 - 1, myY);
+        MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, myY);
+        rc.setIndicatorDot(test1, 211, 211, 211);
+        rc.setIndicatorDot(test2, 211, 211, 211);
+        if (rc.canSenseLocation(test1)) {
+          if (rc.canSenseLocation(test2)) {
+            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
+              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              break nearVertMidline;
+            }
+          }
+        }
+        test1 = new MapLocation(mapWidth / 2 - 1, myY - 2);
+        test2 = new MapLocation(mapWidth - mapWidth / 2, myY - 2);
+        rc.setIndicatorDot(test1, 211, 211, 211);
+        rc.setIndicatorDot(test2, 211, 211, 211);
+        if (rc.canSenseLocation(test1)) {
+          if (rc.canSenseLocation(test2)) {
+            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
+              communicator.metaInfo.mapInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+              break nearVertMidline;
+            }
+          }
+        }
+      }
+    }
   }
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {
@@ -339,5 +405,10 @@ public abstract class Robot {
     }
 
     return weakestEnemy;
+  }
+
+
+  protected void becomeDoNothingBot() {
+    while (true) Clock.yield();
   }
 }

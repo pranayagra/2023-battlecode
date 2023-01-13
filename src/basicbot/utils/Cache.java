@@ -11,6 +11,8 @@ public class Cache {
         public static int ID;
         public static int VISION_RADIUS_SQUARED;
         public static int ACTION_RADIUS_SQUARED;
+        public static int VISION_RADIUS_FLOOR;
+        public static int ACTION_RADIUS_FLOOR;
         public static MapLocation START_LOCATION;
         public static int MAP_WIDTH;
         public static int MAP_HEIGHT;
@@ -143,6 +145,8 @@ public class Cache {
         Permanent.ID = Global.rc.getID();
         Permanent.VISION_RADIUS_SQUARED = Permanent.ROBOT_TYPE.visionRadiusSquared;
         Permanent.ACTION_RADIUS_SQUARED = Permanent.ROBOT_TYPE.actionRadiusSquared;
+        Permanent.VISION_RADIUS_FLOOR = (int) Math.sqrt(Permanent.VISION_RADIUS_SQUARED);
+        Permanent.ACTION_RADIUS_FLOOR = (int) Math.sqrt(Permanent.ACTION_RADIUS_SQUARED);
         Permanent.MAP_WIDTH = Global.rc.getMapWidth();
         Permanent.MAP_HEIGHT = Global.rc.getMapHeight();
         Permanent.MAP_AREA = Permanent.MAP_WIDTH * Permanent.MAP_HEIGHT;
@@ -153,7 +157,7 @@ public class Cache {
 
     public static class PerTurn {
         public static int ROUND_NUM;
-        public static int ROUNDS_ALIVE;
+        public static int ROUNDS_ALIVE; // round num - round spawned (=0 on first turn)
         public static RobotInfo[] ALL_NEARBY_ROBOTS;
         public static RobotInfo[] ALL_NEARBY_FRIENDLY_ROBOTS;
         public static RobotInfo[] ALL_NEARBY_ENEMY_ROBOTS;
@@ -168,6 +172,7 @@ public class Cache {
         public static RobotInfo ENEMY_8;
         public static RobotInfo ENEMY_9;
         public static MapLocation CURRENT_LOCATION;
+        public static MapLocation PREVIOUS_LOCATION;
 //        public static int LEVEL;
         public static int HEALTH;
         //        public static MapLocation[] NEARBY_LEAD_MIN_2;
@@ -175,7 +180,7 @@ public class Cache {
 
         public static int cacheState;
 
-        public static void whenMoved() throws GameActionException {
+      public static void whenMoved() throws GameActionException {
             // don't need to update
             if (PerTurn.CURRENT_LOCATION != null && Global.rc.getLocation().equals(PerTurn.CURRENT_LOCATION)) {
                 return;
@@ -186,6 +191,7 @@ public class Cache {
 
         private static void updateForMovement() throws GameActionException {
             PerTurn.cacheState++;
+            PerTurn.PREVIOUS_LOCATION = PerTurn.CURRENT_LOCATION;
             PerTurn.CURRENT_LOCATION = Global.rc.getLocation();
             PerTurn.ALL_NEARBY_ROBOTS = Global.rc.senseNearbyRobots();
             PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OUR_TEAM);
