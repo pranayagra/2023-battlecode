@@ -76,13 +76,14 @@ public class Carrier extends Robot {
       fleeingCounter--;
     }
 
-     if (rc.getAnchor() != null) executeIslandClaimProtocol();
-
     switch (this.role) {
       case ADAMANTIUM_COLLECTION:
       case MANA_COLLECTION:
         if (this.targetWell == null) searchForTargetWell();
         if (this.targetWell != null) runCollection(role.getResourceCollectionType());
+        break;
+      case CLAIM_ISLAND:
+        executeIslandClaimProtocol();
         break;
       default:
         resetRole();
@@ -114,7 +115,18 @@ public class Carrier extends Robot {
   }
 
   private CarrierRole determineRole() throws GameActionException {
-    if (this.role == null) return CarrierRole.DEFAULT_ROLE;
+    if (this.role == null) {
+      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+        if (robot.type == RobotType.HEADQUARTERS) {
+          if (robot.getTotalAnchors() > 0) {
+            return CarrierRole.CLAIM_ISLAND;
+          }
+        }
+      }
+      return CarrierRole.DEFAULT_ROLE;
+    }
+//    if (this.role == CarrierRole.CLAIM_ISLAND) return CarrierRole.CLAIM_ISLAND;
+
 //    this.role = CarrierRole.ADAMANTIUM_COLLECTION;
     int numLocalCarriers = 0;
     for (RobotInfo friend : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
@@ -606,25 +618,46 @@ public class Carrier extends Robot {
   }
 
   private void executeIslandClaimProtocol() throws GameActionException {
+    if (rc.getAnchor() == null) {
+      int closestHQ = communicator.metaInfo.hqInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
+      MapLocation hqWithAnchor = communicator.commsHandler.readOurHqLocation(closestHQ);
+      if (!rc.canSenseLocation(hqWithAnchor) || rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
+        resetRole();
+        return;
+      }
+      if (rc.canTakeAnchor(hqWithAnchor, Anchor.ACCELERATING)) {
+        rc.takeAnchor(hqWithAnchor, Anchor.ACCELERATING);
+      } else if (rc.canTakeAnchor(hqWithAnchor, Anchor.STANDARD)) {
+        rc.takeAnchor(hqWithAnchor, Anchor.STANDARD);
+      } else {
+        pathing.moveTowards(hqWithAnchor);
+      }
+    }
     if (rc.getAnchor() != null) {
       if (islandLocationToClaim == null) {
         islandLocationToClaim = findIslandLocationToClaim();
       }
       moveTowardsUnclaimedIsland();
+      if (rc.getAnchor() == null) {
+        resetRole();
+      }
     }
   }
 
   private MapLocation findIslandLocationToClaim() throws GameActionException {
     // go to unclaimed island
     MapLocation closestUnclaimedIsland = null;
+    int closestDistance = Integer.MAX_VALUE;
     while (pathing.moveRandomly()) {
       int[] nearbyIslands = rc.senseNearbyIslands();
       for (int islandID : nearbyIslands) {
         if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {
           MapLocation islandLocation = rc.senseNearbyIslandLocations(islandID)[0];
-            if (closestUnclaimedIsland == null || rc.getLocation().distanceSquaredTo(islandLocation) < rc.getLocation().distanceSquaredTo(closestUnclaimedIsland)) {
+          int candidateDistance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandLocation);
+          if (candidateDistance < closestDistance) {
                 closestUnclaimedIsland = islandLocation;
-            }
+                closestDistance = candidateDistance;
+          }
         }
       }
     }
@@ -638,14 +671,14 @@ public class Carrier extends Robot {
     // someone else claimed it while we were moving to the unclaimed island
     if (rc.canSenseLocation(islandLocationToClaim)) {
         if (rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim)) != Team.NEUTRAL) {
-            islandLocationToClaim = null;
-            return;
+            islandLocationToClaim = findIslandLocationToClaim();
+            if (islandLocationToClaim == null) return;
         }
     }
 
     // check if we are on a claimable island
-    int myID = rc.senseIsland(Cache.PerTurn.CURRENT_LOCATION);
-    if ((myID != -1 && rc.senseTeamOccupyingIsland(myID) == Team.NEUTRAL) || Cache.PerTurn.CURRENT_LOCATION.equals(islandLocationToClaim)) {
+    int islandID = rc.senseIsland(Cache.PerTurn.CURRENT_LOCATION);
+    if ((islandID != -1 && rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL)) {
       if (rc.canPlaceAnchor()) rc.placeAnchor();
       islandLocationToClaim = null;
     } else {
@@ -656,7 +689,8 @@ public class Carrier extends Robot {
 
   private enum CarrierRole {
     ADAMANTIUM_COLLECTION,
-    MANA_COLLECTION;
+    MANA_COLLECTION,
+    CLAIM_ISLAND;
 
     private static final CarrierRole DEFAULT_ROLE = CarrierRole.ADAMANTIUM_COLLECTION;
 
