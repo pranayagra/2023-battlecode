@@ -4,10 +4,9 @@ import basicbot.communications.CommsHandler;
 import basicbot.containers.HashMap;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.utils.Cache;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
-
-import java.util.Arrays;
 
 public class Carrier extends Robot {
   private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
@@ -70,12 +69,11 @@ public class Carrier extends Robot {
         updateLastEnemy();
     }
      if (fleeingCounter > 0) {
-      // run from lastEnemyLocation
-      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
-      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      // todo: move towards fleeDirection
-      pathing.moveInDirLoose(away);
-      fleeingCounter--;
+       // run from lastEnemyLocation
+       Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
+       MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
+       pathing.moveTowards(fleeDirection);
+       fleeingCounter--;
     }
 
     switch (this.role) {
@@ -617,7 +615,7 @@ public class Carrier extends Robot {
     }
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
-//      Printer.print("lastEnemyLocation=" + lastEnemyLocation);
+      if (rc.getID() == 11840) Printer.print("lastEnemyLocation=" + lastEnemyLocation);
       lastEnemyLocation = nearestCombatEnemy;
       fleeingCounter = 6;
     } else {
@@ -647,6 +645,7 @@ public class Carrier extends Robot {
       }
       moveTowardsUnclaimedIsland();
       if (rc.getAnchor() == null) {
+        this.role = null;
         resetRole();
       }
     }
