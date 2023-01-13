@@ -1,10 +1,8 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
 import basicbot.containers.HashMap;
 import basicbot.utils.Cache;
-import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -12,6 +10,8 @@ public class Carrier extends Robot {
   private MapLocation targetWell;
   private boolean targetWellUpgraded;
   private MapLocation targetHQ;
+
+  private MapLocation islandLocationToClaim;
 
   HashMap<MapLocation, Direction> wellApproachDirection;
 
@@ -63,8 +63,7 @@ public class Carrier extends Robot {
         }
         updateLastEnemy();
     }
-
-    if (fleeingCounter > 0) {
+     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
       Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
       MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
@@ -72,6 +71,8 @@ public class Carrier extends Robot {
       pathing.moveInDirLoose(away);
       fleeingCounter--;
     }
+
+     if (rc.getAnchor() != null) executeIslandClaimProtocol();
 
     switch (this.role) {
       case ADAMANTIUM_COLLECTION:
@@ -336,6 +337,55 @@ public class Carrier extends Robot {
       fleeingCounter = 0;
     }
   }
+
+  private void executeIslandClaimProtocol() throws GameActionException {
+    if (rc.getAnchor() != null) {
+      if (islandLocationToClaim == null) {
+        islandLocationToClaim = findIslandLocationToClaim();
+      }
+      moveTowardsUnclaimedIsland();
+    }
+  }
+
+  private MapLocation findIslandLocationToClaim() throws GameActionException {
+    // go to unclaimed island
+    MapLocation closestUnclaimedIsland = null;
+    while (pathing.moveRandomly()) {
+      int[] nearbyIslands = rc.senseNearbyIslands();
+      for (int islandID : nearbyIslands) {
+        if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {
+          MapLocation islandLocation = rc.senseNearbyIslandLocations(islandID)[0];
+            if (closestUnclaimedIsland == null || rc.getLocation().distanceSquaredTo(islandLocation) < rc.getLocation().distanceSquaredTo(closestUnclaimedIsland)) {
+                closestUnclaimedIsland = islandLocation;
+            }
+        }
+      }
+    }
+    return closestUnclaimedIsland;
+  }
+
+  private void moveTowardsUnclaimedIsland() throws GameActionException {
+    // go to unclaimed island
+    if (islandLocationToClaim == null) return;
+
+    // someone else claimed it while we were moving to the unclaimed island
+    if (rc.canSenseLocation(islandLocationToClaim)) {
+        if (rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim)) != Team.NEUTRAL) {
+            islandLocationToClaim = null;
+            return;
+        }
+    }
+
+    // check if we are on a claimable island
+    int myID = rc.senseIsland(Cache.PerTurn.CURRENT_LOCATION);
+    if ((myID != -1 && rc.senseTeamOccupyingIsland(myID) == Team.NEUTRAL) || Cache.PerTurn.CURRENT_LOCATION.equals(islandLocationToClaim)) {
+      if (rc.canPlaceAnchor()) rc.placeAnchor();
+      islandLocationToClaim = null;
+    } else {
+      pathing.moveTowards(islandLocationToClaim);
+    }
+  }
+
 
   private enum CarrierRole {
     ADAMANTIUM_COLLECTION,
