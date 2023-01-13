@@ -1,7 +1,7 @@
-package basicbot.communications;
+package actualcarrierecon.communications;
 
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
+import actualcarrierecon.utils.Global;
+import actualcarrierecon.utils.Printer;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.WellInfo;
