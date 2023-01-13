@@ -144,7 +144,7 @@ public class Communicator {
 
     public int registerHQ(WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
       int hqID = hqInfo.hqCount;
-      Printer.print("Registering HQ " + hqID);
+//      Printer.print("Registering HQ " + hqID);
       hqInfo.hqCount++;
       commsHandler.writeHqCount(hqInfo.hqCount);
       commsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
@@ -190,7 +190,7 @@ public class Communicator {
       if (!writer.readWellExists(i)) {
         writer.writeWellLocation(i, well.getMapLocation());
         writer.writeWellUpgraded(i, well.isUpgraded());
-        Printer.print("Published new well! " + well.getMapLocation());
+//        Printer.print("Published new well! " + well.getMapLocation());
         return true;
       } else if (writer.readWellLocation(i).equals(well.getMapLocation())) {
         if (writer.readWellUpgraded(i) != well.isUpgraded()) {

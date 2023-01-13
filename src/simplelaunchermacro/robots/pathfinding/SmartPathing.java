@@ -20,7 +20,7 @@ public class SmartPathing extends Pathing {
   public boolean moveTowards(MapLocation target) throws GameActionException {
     int interestingTilesCounter = 0;
 //    for (MapInfo mapInfo : rc.senseNearbyMapInfos()) {
-//      if (!mapInfo.isPassable() || mapInfo.getCooldownMuliplier(Cache.Permanent.OUR_TEAM) != 1) {
+//      if (!mapInfo.isPassable() || mapInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM) != 1) {
 //        interestingTilesCounter++;
 //      }
 //    }

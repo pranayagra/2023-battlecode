@@ -579,7 +579,7 @@ public class CarrierPathing implements UnitPathing {
               d$x_1$y0 = d$x0$y0 | 6; // from (0, 0)
               // dir$x_1$y0 = Direction.WEST;
 
-              d$x_1$y0 += ((int) (rc.senseMapInfo(l$x_1$y0).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x_1$y0 += ((int) (rc.senseMapInfo(l$x_1$y0).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -588,7 +588,7 @@ public class CarrierPathing implements UnitPathing {
               d$x0$y_1 = d$x0$y0 | 4; // from (0, 0)
               // dir$x0$y_1 = Direction.SOUTH;
 
-              d$x0$y_1 += ((int) (rc.senseMapInfo(l$x0$y_1).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x0$y_1 += ((int) (rc.senseMapInfo(l$x0$y_1).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -597,7 +597,7 @@ public class CarrierPathing implements UnitPathing {
               d$x0$y1 = d$x0$y0; // from (0, 0)
               // dir$x0$y1 = Direction.NORTH;
 
-              d$x0$y1 += ((int) (rc.senseMapInfo(l$x0$y1).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x0$y1 += ((int) (rc.senseMapInfo(l$x0$y1).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -606,7 +606,7 @@ public class CarrierPathing implements UnitPathing {
               d$x1$y0 = d$x0$y0 | 2; // from (0, 0)
               // dir$x1$y0 = Direction.EAST;
 
-              d$x1$y0 += ((int) (rc.senseMapInfo(l$x1$y0).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x1$y0 += ((int) (rc.senseMapInfo(l$x1$y0).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -615,7 +615,7 @@ public class CarrierPathing implements UnitPathing {
               d$x_1$y_1 = d$x0$y0 | 5; // from (0, 0)
               // dir$x_1$y_1 = Direction.SOUTHWEST;
 
-              d$x_1$y_1 += ((int) (rc.senseMapInfo(l$x_1$y_1).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x_1$y_1 += ((int) (rc.senseMapInfo(l$x_1$y_1).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -624,7 +624,7 @@ public class CarrierPathing implements UnitPathing {
               d$x_1$y1 = d$x0$y0 | 7; // from (0, 0)
               // dir$x_1$y1 = Direction.NORTHWEST;
 
-              d$x_1$y1 += ((int) (rc.senseMapInfo(l$x_1$y1).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x_1$y1 += ((int) (rc.senseMapInfo(l$x_1$y1).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -633,7 +633,7 @@ public class CarrierPathing implements UnitPathing {
               d$x1$y_1 = d$x0$y0 | 3; // from (0, 0)
               // dir$x1$y_1 = Direction.SOUTHEAST;
 
-              d$x1$y_1 += ((int) (rc.senseMapInfo(l$x1$y_1).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x1$y_1 += ((int) (rc.senseMapInfo(l$x1$y_1).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
@@ -642,7 +642,7 @@ public class CarrierPathing implements UnitPathing {
               d$x1$y1 = d$x0$y0 | 1; // from (0, 0)
               // dir$x1$y1 = Direction.NORTHEAST;
 
-              d$x1$y1 += ((int) (rc.senseMapInfo(l$x1$y1).getCooldownMuliplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
+              d$x1$y1 += ((int) (rc.senseMapInfo(l$x1$y1).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << 3;
           }
         }
 
