@@ -13,10 +13,10 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['actualcarrierecon', 'betterlaunchermacro', 'simplelaunchermacro', 'spamcarrierlauncher', 'fastpathing']
+bots = ['betterlaunchermacro', 'simplelaunchermacro']
 botsSet = set(bots)
+# maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
-# maps = ['maptestsmall', 'eckleburg', 'intersection']
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
