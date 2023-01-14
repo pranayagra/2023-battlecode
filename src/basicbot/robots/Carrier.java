@@ -613,7 +613,6 @@ public class Carrier extends MobileRobot {
     }
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
-      if (rc.getID() == 11840) Printer.print("lastEnemyLocation=" + lastEnemyLocation);
       lastEnemyLocation = nearestCombatEnemy;
       fleeingCounter = 6;
     } else {
