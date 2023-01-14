@@ -11,11 +11,11 @@ emojiMap = {
     'Error': ':heavy_exclamation_mark:'
 }
 errors = []
-currentBot = 'bfspathing'
+currentBot = 'basicbot'
 
-bots = ['dangersoldiers', 'soldiermacro']
+bots = ['actualcarrierecon', 'betterlaunchermacro', 'simplelaunchermacro', 'spamcarrierlauncher', 'fastpathing']
 botsSet = set(bots)
-maps = ['maptestsmall', 'eckleburg', 'intersection', 'colosseum', 'fortress', 'jellyfish', 'nottestsmall', 'progress', 'rivers', 'sandwich', 'squer', 'uncomfortable', 'underground', 'valley']
+maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
 # maps = ['maptestsmall', 'eckleburg', 'intersection']
 mapsSet = set(maps)
 
