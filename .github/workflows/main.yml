@@ -6,7 +6,7 @@ concurrency:
 jobs:
   test_private_action_job:
     name: Run Matches
-    runs-on: core4 #ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       # checkout this repo
       - name: Checkout Repo
