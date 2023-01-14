@@ -77,6 +77,16 @@ public class Carrier extends MobileRobot {
        fleeingCounter--;
     }
 
+     if (rc.getWeight() == 0 && rc.getHealth() == rc.getType().health) {
+       for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+         if (robot.type == RobotType.HEADQUARTERS) {
+           if (robot.getTotalAnchors() > 0) {
+             this.role = CarrierRole.CLAIM_ISLAND;
+           }
+         }
+       }
+     }
+
     switch (this.role) {
       case ADAMANTIUM_COLLECTION:
       case MANA_COLLECTION:
@@ -620,21 +630,25 @@ public class Carrier extends MobileRobot {
     }
   }
 
+  private void takeAnchorIfExists() throws GameActionException {
+    int closestHQ = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
+    MapLocation hqWithAnchor = CommsHandler.readOurHqLocation(closestHQ);
+    if (!rc.canSenseLocation(hqWithAnchor) || rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
+      resetRole();
+      return;
+    }
+    if (rc.canTakeAnchor(hqWithAnchor, Anchor.ACCELERATING)) {
+      rc.takeAnchor(hqWithAnchor, Anchor.ACCELERATING);
+    } else if (rc.canTakeAnchor(hqWithAnchor, Anchor.STANDARD)) {
+      rc.takeAnchor(hqWithAnchor, Anchor.STANDARD);
+    } else {
+      pathing.moveTowards(hqWithAnchor);
+    }
+  }
+
   private void executeIslandClaimProtocol() throws GameActionException {
     if (rc.getAnchor() == null) {
-      int closestHQ = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
-      MapLocation hqWithAnchor = CommsHandler.readOurHqLocation(closestHQ);
-      if (!rc.canSenseLocation(hqWithAnchor) || rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
-        resetRole();
-        return;
-      }
-      if (rc.canTakeAnchor(hqWithAnchor, Anchor.ACCELERATING)) {
-        rc.takeAnchor(hqWithAnchor, Anchor.ACCELERATING);
-      } else if (rc.canTakeAnchor(hqWithAnchor, Anchor.STANDARD)) {
-        rc.takeAnchor(hqWithAnchor, Anchor.STANDARD);
-      } else {
-        pathing.moveTowards(hqWithAnchor);
-      }
+      takeAnchorIfExists();
     }
     if (rc.getAnchor() != null) {
       if (islandLocationToClaim == null) {

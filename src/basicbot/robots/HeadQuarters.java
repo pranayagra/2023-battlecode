@@ -17,6 +17,7 @@ public class HeadQuarters extends Robot {
 
   private HQRole role;
 
+  int numArchorCreated = 0;
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
@@ -37,6 +38,13 @@ public class HeadQuarters extends Robot {
     if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
       this.role = HQRole.BUILD_ANCHORS;
     }
+    if (Cache.PerTurn.ROUND_NUM >= 500 && numArchorCreated < 1) {
+      if (createAnchors()) {
+        numArchorCreated++;
+      }
+      return;
+    }
+
     make_carriers: if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
       if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
         int emptyCarrierCount = 0;
