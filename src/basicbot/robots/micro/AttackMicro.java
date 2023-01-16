@@ -21,19 +21,19 @@ public class AttackMicro {
 
   public static MapLocation getBestTarget() throws GameActionException {
     MapLocation bestAttackingTarget = getBestAttackingTarget();
-    if (chickenBehavior) {
-      MapLocation ans = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-      if (ans != null) {
-        if (bestAttackingTarget != null && !AttackerMovementMicro.ishurt(Cache.PerTurn.HEALTH, Cache.Permanent.MAX_HEALTH)){
-          if (bestAttackingTarget.distanceSquaredTo(ans) <= 53){
-            return bestAttackingTarget;
-          }
-        }
-        int d = ans.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
-        if (d <= 13) return Cache.PerTurn.CURRENT_LOCATION;
-        return ans;
-      }
-    }
+//    if (chickenBehavior) {
+//      MapLocation ans = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+//      if (ans != null) {
+//        if (bestAttackingTarget != null && !AttackerMovementMicro.ishurt(Cache.PerTurn.HEALTH, Cache.Permanent.MAX_HEALTH)){
+//          if (bestAttackingTarget.distanceSquaredTo(ans) <= 53){
+//            return bestAttackingTarget;
+//          }
+//        }
+//        int d = ans.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
+//        if (d <= 13) return Cache.PerTurn.CURRENT_LOCATION;
+//        return ans;
+//      }
+//    }
     return bestAttackingTarget;
   }
 
