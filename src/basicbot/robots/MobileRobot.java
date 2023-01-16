@@ -46,14 +46,17 @@ public abstract class MobileRobot extends Robot {
       case LAUNCHER:
         int randomHqIndex = Utils.rng.nextInt(HqMetaInfo.hqCount);
         explorationTarget = HqMetaInfo.enemyHqLocations[randomHqIndex];
-        if (rc.canSenseRobotAtLocation(explorationTarget) && rc.senseRobotAtLocation(explorationTarget).type != RobotType.HEADQUARTERS) {
-          Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry and retrying..." + MapMetaInfo.guessedSymmetry + " " + MapMetaInfo.knownSymmetry);
-          if (rc.canWriteSharedArray(0,0)) {
-            MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
-          }
-          // TODO: eliminate symmetry and retry
+        if (rc.canSenseLocation(explorationTarget)) {
+          RobotInfo robot = rc.senseRobotAtLocation(explorationTarget);
+          if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry and retrying...");
+            if (rc.canWriteSharedArray(0,0)) {
+              MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
+            }
+            // TODO: eliminate symmetry and retry
 //          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
 //          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget);
+          }
         }
         if (checkShouldNotCrossMidpoint()) { // TODO: this will make the unit stay at the mid point
           MapLocation friendly = HqMetaInfo.getClosestHqLocation(explorationTarget);
