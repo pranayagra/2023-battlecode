@@ -140,6 +140,21 @@ public class HeadQuarters extends Robot {
     return true;
   }
 
+  private boolean spawnAmplifierTowardsEnemyHQ() throws GameActionException {
+    MapLocation goal = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, Utils.MapSymmetry.ROTATIONAL);
+    MapLocation toSpawn = goal;
+    while (!buildRobot(RobotType.AMPLIFIER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
+      if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
+        Direction dir = Utils.randomDirection();
+        goal = goal.add(dir).add(dir);
+        toSpawn = goal;
+      }
+      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
+    }
+    return true;
+  }
+
   private boolean createAnchors() throws GameActionException {
     return buildAnchor(Anchor.ACCELERATING) || buildAnchor(Anchor.STANDARD);
   }

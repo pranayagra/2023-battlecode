@@ -7,7 +7,7 @@ import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
-public class Amplifier extends Robot {
+public class Amplifier extends MobileRobot {
   public Amplifier(RobotController rc) throws GameActionException {
     super(rc);
   }
@@ -16,32 +16,83 @@ public class Amplifier extends Robot {
   protected void runTurn() throws GameActionException {
     MapLocation closestEnemyLocation = closestEnemyLauncher();
     if (closestEnemyLocation != null) {
-      //todo: comm() location
-      //todo: update so we stay slighly out of range of enemy launcher
+//      rc.setIndicatorDot(closestEnemyLocation, 255, 0, 0);
       int currDistance = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(closestEnemyLocation);
-      if (currDistance >= 20) {
-        // safe, chill here
+      // if furthestDistance is < 27, maximize distance
+      // if furthestDistance is >= 27, minimize distance
+      MapLocation bestLocation = bestTileToMove(closestEnemyLocation, currDistance);
+      pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(bestLocation));
 
-      } else {
-        Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(closestEnemyLocation).opposite();
-        MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-        pathing.moveTowards(fleeDirection);
-        return;
+      if (rc.isMovementReady()) {
+        if (currDistance <= 20) {
+          // todo: consider trying to run even if we have to get closer to enemy
+          pathing.moveAwayFrom(closestEnemyLocation);
+        }
       }
+      return;
     }
 
     MapLocation targetLocation = locationToStayInFrontOfFriendlyLaunchers();
-    if (targetLocation != null) {
-      pathing.moveTowards(targetLocation);
+    if (targetLocation == null) {
+      doExploration();
     } else {
-//      pathing.moveTowards(Cache.Permanent.ENEMY_HQ_LOCATION);
-
+      if (separateFromOtherAmplifiers(targetLocation)) {
+        // todo: think of better logic to separate
+        randomizeExplorationTarget(true);
+        doExploration();
+      }
+//      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, targetLocation, 0, 255, 0);
+      pathing.moveTowards(targetLocation);
     }
   }
 
-  private void separateFromOtherAmplifiers() {
 
+  private MapLocation bestTileToMove(MapLocation closestEnemyLocation, int currDistance) throws GameActionException {
+    // if possible, get closest distance that is >= 27
+    MapLocation bestLocation = Cache.PerTurn.CURRENT_LOCATION;
+    int bestDistance = currDistance;
+    if (rc.isMovementReady()) {
+      for (Direction d : Utils.directionsNine) {
+        if (!rc.canMove(d)) continue;
+
+        MapLocation candidateLocation = Cache.PerTurn.CURRENT_LOCATION.add(d);
+        int candidateDistance = candidateLocation.distanceSquaredTo(closestEnemyLocation);
+
+        // always better to move out of danger
+        if (bestDistance <= 26 && candidateDistance >= 27) {
+          bestLocation = candidateLocation;
+          bestDistance = candidateDistance;
+        }
+
+        // if both are in danger, move to the one that is further away
+        if (bestDistance <= 26 && candidateDistance > bestDistance) {
+          bestLocation = candidateLocation;
+          bestDistance = candidateDistance;
+        }
+
+        // if both are out of danger, move to the one that is closer but still safe
+        if (candidateDistance >= 27 && candidateDistance < bestDistance) {
+          bestLocation = candidateLocation;
+          bestDistance = candidateDistance;
+        }
+      }
+    }
+    return bestLocation;
   }
+
+  private boolean separateFromOtherAmplifiers(MapLocation targetLocation) throws GameActionException {
+    int myDistanceToTarget = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, targetLocation);
+    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      if (robot.type == RobotType.AMPLIFIER) {
+        if (myDistanceToTarget > Utils.maxSingleAxisDist(robot.location, targetLocation)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+
 
   private MapLocation closestEnemyLauncher() {
     MapLocation closestLauncher = null;
@@ -125,15 +176,7 @@ public class Amplifier extends Robot {
     }
 
     Direction towardsEnemyHQ = furthestFriendlyLauncherFromBase.directionTo(HQLocations[closestGlobalHQ]);
-    MapLocation targetLocation = furthestFriendlyLauncherFromBase.add(towardsEnemyHQ).add(towardsEnemyHQ).add(towardsEnemyHQ);
+    MapLocation targetLocation = furthestFriendlyLauncherFromBase.add(towardsEnemyHQ).add(towardsEnemyHQ);
     return targetLocation;
-  }
-
-  private void commEnemies() {
-
-  }
-
-  private void goBehindLaunchers() {
-
   }
 }

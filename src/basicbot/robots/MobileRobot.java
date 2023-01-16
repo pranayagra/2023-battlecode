@@ -44,6 +44,7 @@ public abstract class MobileRobot extends Robot {
         }
         break;
       case LAUNCHER:
+      case AMPLIFIER:
         int randomHqIndex = Utils.rng.nextInt(HqMetaInfo.hqCount);
         explorationTarget = HqMetaInfo.enemyHqLocations[randomHqIndex];
         if (rc.canSenseLocation(explorationTarget)) {
