@@ -76,18 +76,22 @@ public class SmitePathing {
     }
 
     // if i'm adjacent to my destination and it is unoccupied / not high rubble, move there
-    if (Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(target) <= 2) { // TODO: maybe use adjacentTo if bytecode ok?
+    if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(target)) { // TODO: maybe use adjacentTo if bytecode ok?
       // TODO: also check if not cloud/current (smite checks against high rubble)
-      if (rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target))) {
-        return smiteMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target));
-      }
-      return false;
+      return smiteMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target));
+//      if (rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target))) {
+//      }
+//      return false;
     }
 
 //    Utils.startByteCodeCounting("unit-bfs");
     // get bfs best direction
     Direction dir = up.bestDir(target); // ~5000 bytecode (4700 avg&median)
 //    Utils.finishByteCodeCounting("unit-bfs");
+
+//    if (Cache.PerTurn.ROUND_NUM >= 129 && Cache.Permanent.ID == 10961) {
+//      Printer.print("nav towards: " + destination, "best dir: " + dir);
+//    }
 
 //    if (dir == null || !rc.canMove(dir)) return false; // TODO: this checks null but if null should do something else
     if (dir != null && !rc.canMove(dir)) return false;

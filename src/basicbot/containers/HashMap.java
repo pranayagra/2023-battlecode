@@ -13,6 +13,14 @@ public class HashMap<K, V> {
             table[i] = new LinkedList<>();
         }
     }
+
+    /**
+     * puts the key in the hashmap
+     * ONLY IF not already preset
+     * @param key
+     * @param obj
+     * @return
+     */
     public boolean put(K key, V obj) {
         int index = (Math.abs(key.hashCode())) % this.capacity;
 

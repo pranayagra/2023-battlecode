@@ -52,7 +52,9 @@ DIRECTION_BIT_VEC = {
   (-1, 0): 6,#'Direction.WEST',
   (-1, 1): 7,#'Direction.NORTHWEST',
 }
-DIRECTION_BITS = 3
+for k,v in DIRECTION_BIT_VEC.items():
+  DIRECTION_BIT_VEC[k] = v + 1
+DIRECTION_BITS = max(len(bin(v)) - 2 for v in DIRECTION_BIT_VEC.values())
 
 def dist(x, y):
   return x*x + y*y
@@ -117,30 +119,31 @@ def gen_bfs(radius, type):
           indent = "  "
           if r2 <= 2:
             out += f"""
-            if (rc.sensePassability(l{encode(x,y)}) && !rc.isLocationOccupied(l{encode(x,y)})) {{ """
+          if (rc.sensePassability(l{encode(x,y)}) && !rc.isLocationOccupied(l{encode(x,y)})) {{ """
           else:
             out += f"""
-            if (rc.sensePassability(l{encode(x,y)})) {{ """
+          if (rc.sensePassability(l{encode(x,y)})) {{ """
           if r2 > 2:
             dxdy = [(dx, dy) for dx in range(-1, 2) for dy in range(-1, 2) if (dx, dy) != (0, 0) and dist(x+dx,y+dy) <= radius]
             dxdy = sorted(dxdy, key=lambda dd: dist(x+dd[0], y+dd[1]))
             for dx, dy in dxdy:
               if encode(x+dx, y+dy) in visited:
                 out += f"""
-            {indent}if (d{encode(x,y)} > d{encode(x+dx,y+dy)}) {{ // from ({x+dx}, {y+dy})
-                {indent}d{encode(x,y)} = d{encode(x+dx,y+dy)};
-                {indent}// dir{encode(x,y)} = dir{encode(x+dx,y+dy)};
-            {indent}}}"""#DIRECTIONS[(-dx, -dy)]
+          {indent}if (d{encode(x,y)} > d{encode(x+dx,y+dy)}) {{ // from ({x+dx}, {y+dy})
+              {indent}d{encode(x,y)} = d{encode(x+dx,y+dy)};
+              {indent}// dir{encode(x,y)} = dir{encode(x+dx,y+dy)};
+          {indent}}}"""#DIRECTIONS[(-dx, -dy)]
           else:
+            # print(unit, (x, y, r2, radius), DIRECTION_BIT_VEC[(x, y)], encode(x,y))
             out += f"""
-            {indent}d{encode(x,y)} = d{encode(0,0)} | {DIRECTION_BIT_VEC[(x,y)]}; // from (0, 0)
-            {indent}// dir{encode(x,y)} = {DIRECTIONS[(x, y)]};
+          {indent}d{encode(x,y)} = d{encode(0,0)} | {DIRECTION_BIT_VEC[(x,y)]}; // from (0, 0)
+          {indent}// dir{encode(x,y)} = {DIRECTIONS[(x, y)]};
 """.replace(' | 0', '')
           # cost_string = f"((int) (rc.senseCooldownMultiplier(l{encode(x,y)}) * moveCooldown))"
           # cost_string = f"((int) (rc.senseCooldownMultiplier(l{encode(x,y)}) * 20))"
           cost_string = f"((int) (rc.senseMapInfo(l{encode(x,y)}).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * moveCooldown)) << {DIRECTION_BITS}" if r2 <= 2 else f"shiftedMoveCD"#("0b1"+"0"*DIRECTION_BITS)
           out += f"""
-            {indent}d{encode(x,y)} += {cost_string};""" # should be "* moveCooldown" but bytecode
+          {indent}d{encode(x,y)} += {cost_string};""" # should be "* moveCooldown" but bytecode
                                       #rc.senseRubble(l{encode(x,y)}) + 10;""" ## should be the incurred cooldown cost of movement here
           # if r2 <= 2:
           out += f"""
@@ -155,6 +158,7 @@ def gen_selection(radius, smaller_radius):
   out = f"""
         int target_dx = target.x - l{encode(0,0)}.x;
         int target_dy = target.y - l{encode(0,0)}.y;
+        int dirEnc;
         switch (target_dx) {{"""
   for tdx in range(-7, 8):
     if tdx**2 <= radius:
@@ -165,7 +169,8 @@ def gen_selection(radius, smaller_radius):
         if dist(tdx, tdy) <= radius:
           out += f"""
                         case {tdy}:
-                            return Utils.directions[d{encode(tdx, tdy)} & 0b111]; // dir{encode(tdx, tdy)}; // destination is at relative location ({tdx}, {tdy})"""
+                            dirEnc = d{encode(tdx, tdy)} & 0b{"1"*DIRECTION_BITS};
+                            return dirEnc-- == 0 ? null : Utils.directions[dirEnc]; // dir{encode(tdx, tdy)}; // destination is at relative location ({tdx}, {tdy})"""
       out += f"""
                     }}
                     break;"""
@@ -242,7 +247,8 @@ public class {unit}Pathing implements UnitPathing {{
 {gen_print(radius)}
 {gen_selection(radius, smaller_radius)}
         
-        return Utils.directions[ans & 0b111];
+        dirEnc = ans & 0b{"1"*DIRECTION_BITS};
+        return dirEnc-- == 0 ? null : Utils.directions[dirEnc];
     }}
 }}
 """)
