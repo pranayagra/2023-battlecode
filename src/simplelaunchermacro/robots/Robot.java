@@ -12,8 +12,8 @@ import simplelaunchermacro.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Robot {
-  private static final boolean RESIGN_ON_GAME_EXCEPTION = true;
-  private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = true;
+  private static final boolean RESIGN_ON_GAME_EXCEPTION = false;
+  private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = false;
 
   private static final int MAX_TURNS_FIGURE_SYMMETRY = 200;
 

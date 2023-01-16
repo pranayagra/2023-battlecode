@@ -97,4 +97,105 @@ public class Communicator {
     }
     return closest;
   }
+
+  /**
+   * writes the given enemy into the shared array of enemies
+   * @param enemy the enemy to put into comms
+   * @return true if the enemy was successfully written (or already in comms)
+   * @throws GameActionException if any issues with reading/writing to comms
+   */
+  public static boolean writeEnemy(RobotInfo enemy) throws GameActionException {
+    if (Cache.PerTurn.ROUND_NUM % 2 == 0) { // write to even array
+      for (int i = CommsHandler.ENEMY_SLOTS; --i >= 0;) {
+        if (CommsHandler.readEnemyEvenExists(i)) {
+          if (CommsHandler.readEnemyEvenLocation(i).equals(enemy.location)) {
+            return true;
+          }
+        } else {
+          CommsHandler.writeEnemyEvenLocation(i, enemy.location);
+//          CommsHandler.writeEnemyEvenType(i, enemy.type);
+//          CommsHandler.writeEnemyEvenExists(i, true);
+          return true;
+        }
+      }
+    } else { // write to odd array
+      for (int i = CommsHandler.ENEMY_SLOTS; --i >= 0;) {
+        if (CommsHandler.readEnemyOddExists(i)) {
+          if (CommsHandler.readEnemyOddLocation(i).equals(enemy.location)) {
+            return true;
+          }
+        } else {
+          CommsHandler.writeEnemyOddLocation(i, enemy.location);
+//          CommsHandler.writeEnemyOddType(i, enemy.type);
+//          CommsHandler.writeEnemyOddExists(i, true);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * gets the closest enemy to the given location
+   * @param toHere the location from which to find the closest enemy
+   * @return the location of the closest enemy (or null if no enemies are known)
+   * @throws GameActionException if any issues with reading from comms
+   */
+  public static MapLocation getClosestEnemy(MapLocation toHere) throws GameActionException {
+    MapLocation closest = null;
+    int closestDist = Integer.MAX_VALUE;
+    for (int i = CommsHandler.ENEMY_SLOTS; --i >= 0;) {
+      if (Cache.PerTurn.ROUND_NUM % 2 == 0) { // even round - read from the odd writes
+        if (!CommsHandler.readEnemyOddExists(i)) {
+          break;
+        } else {
+          MapLocation enemyLocation = CommsHandler.readEnemyOddLocation(i);
+          int dist = toHere.distanceSquaredTo(enemyLocation);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = enemyLocation;
+          }
+        }
+      } else { // odd round - read from the even writes
+        if (!CommsHandler.readEnemyEvenExists(i)) {
+          break;
+        } else {
+          MapLocation enemyLocation = CommsHandler.readEnemyEvenLocation(i);
+          int dist = toHere.distanceSquaredTo(enemyLocation);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = enemyLocation;
+          }
+        }
+      }
+    }
+    return closest;
+  }
+
+  /**
+   * empties out the commed enemies for fresh writes
+   * @return the number of cleared enemies from comms
+   * @throws GameActionException any issues with reading/writing to comms
+   */
+  public static int clearEnemyComms() throws GameActionException {
+    int cleared = 0;
+    for (int i = CommsHandler.ENEMY_SLOTS; --i >= 0;) {
+      if (Cache.PerTurn.ROUND_NUM % 2 == 0) { // even round - empty the even spaces for writing
+        if (!CommsHandler.readEnemyEvenExists(i)) {
+          break;
+        } else {
+          CommsHandler.writeEnemyEvenLocation(i, CommsHandler.NONEXISTENT_MAP_LOC);
+          cleared++;
+        }
+      } else { // odd round - empty the odd spaces for writing
+        if (!CommsHandler.readEnemyOddExists(i)) {
+          break;
+        } else {
+          CommsHandler.writeEnemyOddLocation(i, CommsHandler.NONEXISTENT_MAP_LOC);
+          cleared++;
+        }
+      }
+    }
+    return cleared;
+  }
 }

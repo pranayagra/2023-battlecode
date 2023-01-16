@@ -48,8 +48,8 @@ public abstract class Pathing {
 //            Printer.print("Can only force move to adjacent locations" + Cache.PerTurn.CURRENT_LOCATION + "->" + mapLocation);
 //        }
     assert Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(mapLocation);
-    rc.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(mapLocation));
-    Cache.PerTurn.whenMoved();
+    move(Cache.PerTurn.CURRENT_LOCATION.directionTo(mapLocation));
+//    Cache.PerTurn.whenMoved();
   }
 
   /**

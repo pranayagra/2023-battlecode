@@ -11,8 +11,8 @@ import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Robot {
-  private static final boolean RESIGN_ON_GAME_EXCEPTION = true;
-  private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = true;
+  private static final boolean RESIGN_ON_GAME_EXCEPTION = false;
+  private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = false;
 
   private static final int MAX_TURNS_FIGURE_SYMMETRY = 200;
 
@@ -319,32 +319,7 @@ public abstract class Robot {
    */
   protected void commNearbyEnemies() throws GameActionException {
     if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
-      RobotInfo enemy = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0];
-      for (RobotInfo enemyInfo : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) { // look for archons
-        if (enemyInfo.type == RobotType.HEADQUARTERS) {
-          enemy = enemyInfo;
-//          int nearestEnemyIndex = communicator.archonInfo.getNearestEnemyArchonIndex(enemyInfo.location);
-//          if (nearestEnemyIndex == -1) {
-//            communicator.archonInfo.setEnemyArchonLoc(1, enemyInfo.location);
-//          } else if (!communicator.archonInfo.getEnemyArchon(nearestEnemyIndex).equals(enemyInfo.location)) {
-//            communicator.archonInfo.setEnemyArchonLoc(nearestEnemyIndex, enemyInfo.location);
-//          }
-//          System.out.println("Update enemy archon locs!");
-//          communicator.archonInfo.readEnemyArchonLocs();
-//          Printer.cleanPrint();
-//          Printer.print("Set enemy mirror");
-//          Printer.print("our 1: " + communicator.archonInfo.ourArchon1);
-//          Printer.print("our 2: " + communicator.archonInfo.ourArchon2);
-//          Printer.print("our 3: " + communicator.archonInfo.ourArchon3);
-//          Printer.print("our 4: " + communicator.archonInfo.ourArchon4);
-//          Printer.print("enemy 1: " + communicator.archonInfo.enemyArchon1);
-//          Printer.print("enemy 2: " + communicator.archonInfo.enemyArchon2);
-//          Printer.print("enemy 3: " + communicator.archonInfo.enemyArchon3);
-//          Printer.print("enemy 4: " + communicator.archonInfo.enemyArchon4);
-//          Printer.submitPrint();
-          break;
-        }
-      }
+
       // no already seen enemy or closest seen is very far
 //      Printer.cleanPrint();
 //      Printer.print("closestCommedEnemy: " + closestCommedEnemy, "enemy: " + enemy);
@@ -352,9 +327,19 @@ public abstract class Robot {
 //        Printer.print("dist: " + closestCommedEnemy.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION));
 //      }
 //      Printer.submitPrint();
-      if (closestCommedEnemy == null
-          || !closestCommedEnemy.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)) {
-//        communicator.enqueueMessage(new EnemyFoundMessage(enemy));
+//      if (closestCommedEnemy == null
+//          || !closestCommedEnemy.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)) {
+////        communicator.enqueueMessage(new EnemyFoundMessage(enemy));
+//      }
+      if (!rc.canWriteSharedArray(0,0)) return;
+      for (RobotInfo enemy : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+        switch (enemy.type) {
+          case CARRIER:
+          case HEADQUARTERS:
+            break;
+          default:
+            Communicator.writeEnemy(enemy);
+        }
       }
     }
   }
