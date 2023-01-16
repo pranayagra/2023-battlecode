@@ -41,7 +41,7 @@ public class AttackMicro {
     MoveTarget bestTarget = null;
     RobotInfo[] enemies = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     for (RobotInfo enemy : enemies){
-      if (HqMetaInfo.isEnemyTerritory(enemy.location)) continue;
+      if (HqMetaInfo.isEnemyTerritory(enemy.location) && enemy.type != RobotType.CARRIER) continue;
       MoveTarget mt = new MoveTarget(enemy);
       if (mt.isBetterThan(bestTarget)) bestTarget = mt;
     }

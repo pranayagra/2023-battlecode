@@ -22,6 +22,8 @@ public class Carrier extends MobileRobot {
   private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 3;
   private static final int MAX_CARRIERS_FILLING_IN_FRONT = 8;
   private static final int TURNS_TO_FLEE = 4;
+  private static final int MAX_SCOUT_TURNS = 50;
+  private static final int MAX_TURNS_TO_LOOK_FOR_WELL = 10;
 
   CarrierTask currentTask;
   CarrierTask forcedNextTask;
@@ -292,8 +294,19 @@ public class Carrier extends MobileRobot {
       if (currentTask.targetWell != null) break no_well;
       WellInfo[] nearby = rc.senseNearbyWells(resourceType);
       if (nearby.length == 0) {
-        forcedNextTask = CarrierTask.SCOUT;
-        return true;
+        if (currentTask.turnsRunning > MAX_TURNS_TO_LOOK_FOR_WELL) {
+          forcedNextTask = CarrierTask.SCOUT;
+          return true;
+        } else {
+          while (tryExplorationMove()) {
+            nearby = rc.senseNearbyWells(resourceType);
+            if (nearby.length > 0) {
+              currentTask.targetWell = nearby[Utils.rng.nextInt(nearby.length)].getMapLocation();
+              break no_well;
+            }
+          }
+          return false;
+        }
       }
       currentTask.targetWell = nearby[Utils.rng.nextInt(nearby.length)].getMapLocation();
     }
@@ -346,6 +359,9 @@ public class Carrier extends MobileRobot {
    */
   private boolean executeScout() throws GameActionException {
     if (MapMetaInfo.knownSymmetry != null) return true;
+    if (currentTask.turnsRunning >= MAX_SCOUT_TURNS) {
+      return true;
+    }
     doExploration();
     return false;
   }
@@ -392,9 +408,9 @@ public class Carrier extends MobileRobot {
       if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         wellApproachDirection.put(wellLocation, wellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION));
         wellQueueOrder = CarrierWellPathing.getPathForWell(wellLocation, wellApproachDirection.get(wellLocation));
-        wellEntryPoint = null;
+        wellEntryPoint = wellQueueOrder[0];
         for (int i = 0; i < wellQueueOrder.length; i++) {
-          if (rc.sensePassability(wellQueueOrder[i])) {
+          if (rc.canSenseLocation(wellQueueOrder[i]) && rc.sensePassability(wellQueueOrder[i])) {
             RobotInfo robot = rc.senseRobotAtLocation(wellQueueOrder[i]);
             if (robot == null || robot.type != RobotType.HEADQUARTERS) {
               wellEntryPoint = wellQueueOrder[i];
@@ -784,12 +800,14 @@ public class Carrier extends MobileRobot {
     public MapLocation targetWell;
     final public ResourceType collectionType;
     public MapLocation targetIsland;
+    public int turnsRunning;
 
     CarrierTask(ResourceType resourceType) {
       collectionType = resourceType;
     }
 
     public void onTaskStart(Carrier carrier) throws GameActionException {
+      turnsRunning = 0;
       switch (this) {
         case FETCH_ADAMANTIUM:
         case FETCH_MANA:
@@ -836,7 +854,8 @@ public class Carrier extends MobileRobot {
      * @throws GameActionException any exception thrown by the robot controller
      */
     public boolean execute(Carrier carrier) throws GameActionException {
-      carrier.rc.setIndicatorString("Carrier - current task: " + this);
+      turnsRunning++;
+      carrier.rc.setIndicatorString("Carrier - current task: " + this + " - turns: " + turnsRunning);
       switch (this) {
         case FETCH_ADAMANTIUM:
           return carrier.executeFetchResource(ResourceType.ADAMANTIUM);
