@@ -96,7 +96,7 @@ public class SmitePathing {
     if (dir == null || isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir))) {
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try fuzzy movement for " + MAX_FUZZY_MOVES + " turns");
       fuzzyMovesLeft = MAX_FUZZY_MOVES;
-      return pathTo(target);
+      return fuzzyMove(target);
     } else {
       return smiteMove(dir);
       // rc.setIndicatorDot(rc.getLocation(), 255, 255, 255);

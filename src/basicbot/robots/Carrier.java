@@ -2,508 +2,126 @@ package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
 import basicbot.communications.HqMetaInfo;
+import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.utils.Cache;
-import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public class Carrier extends MobileRobot {
+
+  private static final int MAX_CARRYING_CAPACITY = GameConstants.CARRIER_CAPACITY;
+  private static final int FAR_FROM_FULL_CAPACITY = MAX_CARRYING_CAPACITY * 4 / 5;
+  private static final int MAX_RSS_TO_ENABLE_SCOUT = 1000;
   private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
-  private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 2;
+  private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 3;
+  private static final int MAX_CARRIERS_FILLING_IN_FRONT = 8;
+  private static final int TURNS_TO_FLEE = 4;
 
-  private MapLocation targetHQ;
+  CarrierTask currentTask;
+  CarrierTask forcedNextTask;
 
-  private MapLocation targetWell;
-  private boolean targetWellUpgraded;
 
-  private MapLocation islandLocationToClaim;
-
-  HashMap<MapLocation, Direction> wellApproachDirection;
-  MapLocation[] wellPathToFollow;
-  int wellPathTargetIndex;
+  private HashMap<MapLocation, Direction> wellApproachDirection;
+  private MapLocation[] wellQueueOrder;
+  int wellQueueTargetIndex;
   private int emptierRobotsSeen;
   private int fullerRobotsSeen;
-  private int roundsWaitingForPath;
+  private int roundsWaitingForQueueSpot;
 
-  private CarrierRole role;
-  private int turnsSinceRoleChange;
-
-  private int maxResourceToCarry;
 
   int fleeingCounter;
   MapLocation lastEnemyLocation;
 
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
-    this.turnsSinceRoleChange = Integer.MAX_VALUE;
     wellApproachDirection = new HashMap<>(3);
-    wellPathToFollow = null;
-    resetRole();
+    wellQueueOrder = null;
+    resetTask();
+  }
+
+  private void resetTask() throws GameActionException {
+    CarrierTask previousTask = currentTask;
+    currentTask = null;
+    if (previousTask != null) {
+      previousTask.onTaskEnd();
+    }
+    currentTask = forcedNextTask == null ? determineNewTask() : forcedNextTask;
+    if (currentTask != null) {
+      currentTask.onTaskStart(this);
+    }
+    forcedNextTask = null;
+  }
+  
+  private CarrierTask determineNewTask() throws GameActionException {
+    if (rc.getWeight() >= MAX_CARRYING_CAPACITY) {
+      return CarrierTask.DELIVER_RSS_HOME;
+    }
+    MapLocation closestHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    RobotInfo closestHQ = rc.canSenseRobotAtLocation(closestHQLoc) ? rc.senseRobotAtLocation(closestHQLoc) : null;
+    if (closestHQ != null && closestHQ.getTotalAnchors() > 0) {
+      return CarrierTask.ANCHOR_ISLAND;
+    }
+    // TODO: figure out which resource we should be collecting
+    int totalAdamantiumAroundMe = 0;
+    int totalManaAroundMe = 0;
+    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      switch (robot.type) {
+        case CARRIER:
+        case HEADQUARTERS:
+          totalAdamantiumAroundMe += robot.getResourceAmount(ResourceType.ADAMANTIUM);
+          totalManaAroundMe += robot.getResourceAmount(ResourceType.MANA);
+      }
+    }
+    if (totalAdamantiumAroundMe >= MAX_RSS_TO_ENABLE_SCOUT && totalManaAroundMe >= MAX_RSS_TO_ENABLE_SCOUT) {
+      return CarrierTask.SCOUT;
+    }
+    if (totalManaAroundMe > totalAdamantiumAroundMe) {
+      return CarrierTask.FETCH_ADAMANTIUM;
+    } else {
+      return CarrierTask.FETCH_MANA;
+    }
   }
 
   @Override
   protected void runTurn() throws GameActionException {
-//    if (Cache.PerTurn.ROUND_NUM == 400) {
+    //    if (Cache.PerTurn.ROUND_NUM == 400) {
 //      rc.resign();
 //    }
 //    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
     if (enemyExists()) {
-        RobotInfo enemyToAttack = enemyToAttackIfWorth();
-        if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
+      RobotInfo enemyToAttack = enemyToAttackIfWorth();
+      if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
 //        Printer.print("enemyToAttack - " + enemyToAttack);
-        if (enemyToAttack != null && rc.isActionReady()) {
-          // todo: attack it!
-          if (rc.canAttack(enemyToAttack.location)) {
+      if (enemyToAttack != null && rc.isActionReady()) {
+        // todo: attack it!
+        if (rc.canAttack(enemyToAttack.location)) {
 //            Printer.print("it can attack w/o moving");
-            rc.attack(enemyToAttack.location);
-          } else {
-            // move and then attack
-            pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
-//            Printer.print("moved to attack... " + rc.canAttack(enemyToAttack.location), "loc=" + enemyToAttack.location, "canAct=" + rc.canActLocation(enemyToAttack.location), "robInfo=" + rc.senseRobotAtLocation(enemyToAttack.location));
-            if (rc.canAttack(enemyToAttack.location)) {
-              rc.attack(enemyToAttack.location);
-            }
-          }
-        }
-        updateLastEnemy();
-    }
-     if (fleeingCounter > 0) {
-       // run from lastEnemyLocation
-       Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
-       MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-       pathing.moveTowards(fleeDirection);
-       fleeingCounter--;
-    }
-
-     if (rc.getWeight() == 0 && rc.getHealth() == rc.getType().health) {
-       for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-         if (robot.type == RobotType.HEADQUARTERS) {
-           if (robot.getTotalAnchors() > 0) {
-             this.role = CarrierRole.CLAIM_ISLAND;
-           }
-         }
-       }
-     }
-
-    switch (this.role) {
-      case ADAMANTIUM_COLLECTION:
-      case MANA_COLLECTION:
-        if (this.targetWell == null) searchForTargetWell();
-        if (this.targetWell != null) runCollection(role.getResourceCollectionType());
-        break;
-      case CLAIM_ISLAND:
-        executeIslandClaimProtocol();
-        break;
-      default:
-        resetRole();
-    }
-//    if (turnCount % 10 == 9) {
-//      resetRole();
-//    }
-    turnsSinceRoleChange++;
-  }
-
-  private void resetRole() throws GameActionException {
-    resetRole(null);
-  }
-  private void resetRole(CarrierRole newRole) throws GameActionException {
-    if (newRole == null) newRole = determineRole();
-    if (newRole != this.role) {
-      this.role = newRole;
-      turnsSinceRoleChange = 0;
-      switch (this.role) {
-        case ADAMANTIUM_COLLECTION:
-          initAdamantiumCollection();
-          break;
-        case MANA_COLLECTION:
-          initManaCollection();
-          break;
-      }
-      rc.setIndicatorString("Reset Role: " + this.role + " (" + targetWell + "->" + targetHQ + ")");
-    }
-  }
-
-  private CarrierRole determineRole() throws GameActionException {
-    if (this.role == null) {
-      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        if (robot.type == RobotType.HEADQUARTERS) {
-          if (robot.getTotalAnchors() > 0) {
-            return CarrierRole.CLAIM_ISLAND;
-          }
-        }
-      }
-      return CarrierRole.DEFAULT_ROLE;
-    }
-//    if (this.role == CarrierRole.CLAIM_ISLAND) return CarrierRole.CLAIM_ISLAND;
-
-//    this.role = CarrierRole.ADAMANTIUM_COLLECTION;
-    int numLocalCarriers = 0;
-    for (RobotInfo friend : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-      if (friend.type == RobotType.CARRIER && friend.getResourceAmount(role.getResourceCollectionType()) > 0) {
-        numLocalCarriers++;
-      }
-    }
-    if (numLocalCarriers > 10 && turnsSinceRoleChange >= 100 && rc.getResourceAmount(role.getResourceCollectionType()) == 0) {
-      return this.role.toggleCollectionType();
-    }
-    return this.role;
-  }
-
-  private boolean searchForTargetWell() throws GameActionException {
-    while (tryExplorationMove()) {
-      WellInfo well = getClosestWell(role.getResourceCollectionType());
-      if (well != null) {
-        rc.setIndicatorString("found well: " + well);
-        setTargetWell(well);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private void initAdamantiumCollection() throws GameActionException {
-    determineTargetWell(ResourceType.ADAMANTIUM);
-    maxResourceToCarry = GameConstants.CARRIER_CAPACITY;
-  }
-
-  private void initManaCollection() throws GameActionException {
-    determineTargetWell(ResourceType.MANA);
-    maxResourceToCarry = GameConstants.CARRIER_CAPACITY;
-  }
-
-  private void runCollection(ResourceType resourceType) throws GameActionException {
-    if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
-      rc.setIndicatorString("RET " + resourceType + ": " + targetWell + "->" + targetHQ);
-      doTransfer(targetHQ, resourceType); //        rc.setIndicatorString("transfer failed - " + targetHQ + "..ActCD=" + rc.getActionCooldownTurns() + "..canAct=" + rc.canActLocation(targetHQ) + "..robInfo=" + (rc.canSenseLocation(targetHQ) ? rc.senseRobotAtLocation(targetHQ) : "unknown"));
-
-      if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(targetWell)) {
-        MapLocation targetPosition = targetHQ;
-        if (targetWell != null) {
-          targetPosition = targetWell;
-          while (!targetPosition.isAdjacentTo(targetHQ)) {
-            Direction toHQ = targetPosition.directionTo(targetHQ);
-            targetPosition = targetPosition.add(Utils.randomSimilarDirectionPrefer(toHQ));
-          }
-        }
-        while (pathing.moveTowards(targetPosition)) {}
-//      while (pathing.moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetPosition))) {}
-        while (pathing.moveRandomly()) {}
-      } else { // currently adjacent to well, need to gtfo
-        // move away from the well and towards the HQ
-        Direction awayFromWell = targetWell.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-        Direction awayLeft = awayFromWell.rotateLeft();
-        Direction awayRight = awayFromWell.rotateRight();
-        Direction towardsHQ = Cache.PerTurn.CURRENT_LOCATION.directionTo(targetHQ);
-        Direction hqLeft = towardsHQ.rotateLeft();
-        Direction hqRight = towardsHQ.rotateRight();
-        if      (awayFromWell == Direction.CENTER && (pathing.moveInDirLoose(towardsHQ) || pathing.moveRandomly() || true)) {}
-        else if (awayFromWell == towardsHQ && pathing.move(awayFromWell)) {}
-        else if (awayLeft  == towardsHQ && pathing.move(awayLeft)) {}
-        else if (awayRight == towardsHQ && pathing.move(awayRight)) {}
-        else if (awayLeft  == hqLeft && pathing.move(awayLeft)) {}
-        else if (awayLeft  == hqRight && pathing.move(awayLeft)) {}
-        else if (awayRight == hqLeft && pathing.move(awayRight)) {}
-        else if (awayRight == hqRight && pathing.move(awayRight)) {}
-        else if (pathing.moveTowards(targetHQ)) {}
-        else if (pathing.moveAwayFrom(targetWell)) {}
-      }
-      doTransfer(targetHQ, resourceType);
-    } else if (this.targetWell != null) {
-//      rc.setIndicatorString("COL " + resourceType + ": " + targetWell + "->" + targetHQ);
-      doWellCollection(resourceType);
-
-      if (wellPathToFollow == null) {
-        rc.setIndicatorString("no well path -- approaching=" + targetWell + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(targetWell));
-        while (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(targetWell, SET_WELL_PATH_DISTANCE)
-            && pathing.moveTowards(targetWell)) {
-//          wellApproachDirection.setAlreadyContainedValue(targetWell, targetWell.directionTo(Cache.PerTurn.CURRENT_LOCATION));
-//          Printer.print("moved towards well: " + targetWell + " now=" + Cache.PerTurn.CURRENT_LOCATION);//, "new dir back: " + wellApproachDirection.get(targetWell));
-          rc.setIndicatorString("did pathing towards well:" + Cache.PerTurn.CURRENT_LOCATION + "->" + targetWell);
-        }
-        if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(targetWell, SET_WELL_PATH_DISTANCE)) {
-          wellApproachDirection.setAlreadyContainedValue(targetWell, targetWell.directionTo(Cache.PerTurn.CURRENT_LOCATION));
-          wellPathToFollow = CarrierWellPathing.getPathForWell(targetWell, wellApproachDirection.get(targetWell));
-//          Printer.print("well path: " + Arrays.toString(wellPathToFollow), "from direction: " + wellApproachDirection.get(targetWell));
-          rc.setIndicatorString("set well path:" + Cache.PerTurn.CURRENT_LOCATION + "->" + targetWell);
-        }
-      }
-      if (wellPathToFollow != null) {
-        rc.setIndicatorString("follow well path: " + targetWell);
-        followWellPath();
-//      } else {
-//        Printer.print("Cannot get to well! -- canMove=" + rc.isMovementReady());
-      }
-
-//      while (pathing.moveInDirRandom(Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell))) {}
-//      while (pathing.moveRandomly()) {}
-
-      doWellCollection(resourceType);
-    } else {
-//      while (pathing.moveRandomly()) {}
-      // periodically check comms for new target
-    }
-  }
-
-  private boolean doTransfer(MapLocation target, ResourceType resourceType) throws GameActionException {
-    if (rc.canTransferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType))) {
-      rc.transferResource(targetHQ, resourceType, rc.getResourceAmount(resourceType));
-      return true;
-    }
-//    rc.setIndicatorString("FAILED TO TRANSFER" + targetHQ + " " + resourceType + " " + rc.getResourceAmount(resourceType));
-    return false;
-  }
-
-  /**
-   * will collect as much as possible from the target well based on upgrade status
-   * @param resourceType the resource to collect
-   * @throws GameActionException any issues during collection
-   */
-  private void doWellCollection(ResourceType resourceType) throws GameActionException {
-    while (collectResource(targetWell, getWellRate())) {
-      if (rc.getResourceAmount(resourceType) >= maxResourceToCarry) {
-        return;
-      }
-    }
-  }
-
-  /**
-   * will follow the collection path of the well (circle around the well)
-   * will move along path depending on robots seen
-   */
-  private void followWellPath() throws GameActionException {
-//    if (wellPathTargetIndex == -1) {
-//      updateWellPathTarget();
-////      if (wellPathTargetIndex != -1) {
-////        Printer.print("set target: " + wellPathTargetIndex + ":" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
-////      }
-//    }
-    updateRobotsSeenInQueue(role.getResourceCollectionType());
-    updateWellPathTarget();
-//    if (wellPathTargetIndex != -1) {
-//      Printer.print("  emptier=" + emptierRobotsSeen + "--fuller=" + fullerRobotsSeen, "new target: " + wellPathTargetIndex + ":" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
-//    }
-
-    if (wellPathTargetIndex != -1) {
-//      MapLocation target = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]];
-      rc.setIndicatorString("well path target: " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]]);
-      while (rc.isMovementReady() && !Cache.PerTurn.CURRENT_LOCATION.equals(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]])) {
-        // not yet in the path, just go to the entry point
-        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(targetWell)) {
-          if (pathing.moveTowards(wellPathToFollow[0])) {
-            continue;
-          }
-        }
-
-        // in the path, so try to get towards the correct point by navigating through the path
-        int currentPathIndex = -1;
-        for (int i = 0; i < wellPathToFollow.length; i++) {
-          if (Cache.PerTurn.CURRENT_LOCATION.equals(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[i]])) {
-            currentPathIndex = i;
-            break;
-          }
-        }
-
-        int moveTrial = wellPathTargetIndex;
-        if (currentPathIndex < wellPathTargetIndex || currentPathIndex == -1) {
-          while (moveTrial >= 0 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]])))) {
-            // we can't move (adjacent + can move)
-            moveTrial--;
-          }
-          if (moveTrial < 0) {
-            break;
-          }
-        }
-        if (currentPathIndex > wellPathTargetIndex || currentPathIndex == -1) {
-          while (moveTrial < 9 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]])))) {
-            // we can't move (adjacent + can move)
-            moveTrial++;
-          }
-          if (moveTrial >= 9) {
-            break;
-          }
-        }
-//        Printer.print("following path: " + Cache.PerTurn.CURRENT_LOCATION + "|" + rc.getLocation() + " --> " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
-//        Printer.print("following path: ->" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
-        pathing.forceMoveTo(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
-      }
-//      while (pathing.moveTowards(wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[wellPathTargetIndex]])) {}
-    } else {
-      // we aren't there yet, so just get out of the way      || we're already full so get out
-      if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(targetWell) || rc.getResourceAmount(role.getResourceCollectionType()) >= maxResourceToCarry) {
-//        pathing.moveTowards(targetWell);
-        rc.setIndicatorString("there's people in the way so ima dip");
-//        while (pathing.moveAwayFrom(targetWell)) {}
-        roundsWaitingForPath++;
-        if (roundsWaitingForPath > MAX_ROUNDS_WAIT_FOR_WELL_PATH) {
-          resetRole(role.toggleCollectionType());
+          rc.attack(enemyToAttack.location);
         } else {
-          rc.setIndicatorString("waiting for well path @ " + targetWell + " turn#" + roundsWaitingForPath);
-        }
-      } else {
-        pathing.moveToOrAdjacent(targetWell);
-      }
-    }
-  }
-
-  /**
-   * fins the first coordinate in the well path that can be moved to
-   * @throws GameActionException any issues during computation
-   */
-  private void updateWellPathTarget() throws GameActionException {
-    if (wellPathToFollow == null) return;
-    wellPathTargetIndex = -1;
-    int minFillSpot = emptierRobotsSeen;
-    int maxFillSpot = 8 - fullerRobotsSeen;
-    int testSpot;
-    while (minFillSpot <= maxFillSpot) {
-      if (minFillSpot < (8-maxFillSpot)) {
-        testSpot = minFillSpot;
-        minFillSpot++;
-      } else {
-        testSpot = maxFillSpot;
-        maxFillSpot--;
-      }
-      MapLocation pathTarget = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[testSpot]];
-      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget) && rc.sensePassability(pathTarget))) {
-        // we can move to the target (or already there)
-        wellPathTargetIndex = testSpot;
-        roundsWaitingForPath = 0;
-        return;
-//      } else {
-//        Printer.print("can't move from=" + Cache.PerTurn.CURRENT_LOCATION + ".to=" + pathTarget + " sense=" + rc.canSenseLocation(pathTarget) + ".bot=" + rc.canSenseRobotAtLocation(pathTarget));
-      }
-    }
-    while (maxFillSpot >= 0) {
-      MapLocation pathTarget = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[maxFillSpot]];
-      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
-        // we can move to the target (or already there)
-        wellPathTargetIndex = maxFillSpot;
-        roundsWaitingForPath = 0;
-        return;
-//      } else {
-//        Printer.print("can't move from=" + Cache.PerTurn.CURRENT_LOCATION + ".to=" + pathTarget + " sense=" + rc.canSenseLocation(pathTarget) + ".bot=" + rc.canSenseRobotAtLocation(pathTarget));
-      }
-      maxFillSpot--;
-    }
-//    for (int i = 0; i < maxFillSpot; i++) {
-//      MapLocation pathTarget = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[i]];
-//      // already there or can move there
-//      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
-//        wellPathTargetIndex = i;
-//        if (i >= emptierRobotsSeen) {
-//          return;
-//        }
-//      }
-//    }
-  }
-
-  /**
-   * senses around and updates the number of emptier/fuller robots seen near this well
-   * if we aren't close to the well, leave the info as is
-   * @param resourceType the resource type to check for
-   * @return whether an update was made or not
-   */
-  private boolean updateRobotsSeenInQueue(ResourceType resourceType) {
-    if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(targetWell, 9)) {
-      if (emptierRobotsSeen > 0 || fullerRobotsSeen > 0) {
-//        Printer.print("not close to well, so not updating emptier/fuller robots seen");
-        emptierRobotsSeen = 0;
-        fullerRobotsSeen = 0;
-        return true;
-      }
-      return false;
-    }
-    int newEmptierSeen = 0;
-    int newFullerSeen = 0;
-    int myAmount = rc.getResourceAmount(resourceType);
-    for (RobotInfo friendly : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-      if (friendly.type == RobotType.CARRIER) {
-        int friendlyAmount = friendly.getResourceAmount(resourceType);
-        if (friendlyAmount == myAmount) {
-          if (friendly.ID < Cache.Permanent.ID) {
-            newEmptierSeen++;
-          } else {
-            newFullerSeen++;
+          // move and then attack
+          pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
+//            Printer.print("moved to attack... " + rc.canAttack(enemyToAttack.location), "loc=" + enemyToAttack.location, "canAct=" + rc.canActLocation(enemyToAttack.location), "robInfo=" + rc.senseRobotAtLocation(enemyToAttack.location));
+          if (rc.canAttack(enemyToAttack.location)) {
+            rc.attack(enemyToAttack.location);
           }
-        } else if (friendlyAmount < myAmount) {
-          newEmptierSeen++;
-        } else if (friendlyAmount < maxResourceToCarry) {
-          newFullerSeen++;
         }
       }
+      updateLastEnemy();
     }
-    boolean changed = newEmptierSeen != emptierRobotsSeen || newFullerSeen != fullerRobotsSeen;
-    emptierRobotsSeen = newEmptierSeen;
-    fullerRobotsSeen = newFullerSeen;
-    return changed;
-  }
-
-  /**
-   * @return the rate at which the well is producing resources
-   */
-  private int getWellRate() {
-    return targetWellUpgraded ? GameConstants.WELL_ACCELERATED_RATE : GameConstants.WELL_STANDARD_RATE;
-  }
-  private boolean collectResource(MapLocation well, int amount) throws GameActionException {
-    if (rc.canCollectResource(well, amount)) {
-      rc.collectResource(well, amount);
-      return true;
-    }
-    return false;
-  }
-
-  private void determineTargetWell(ResourceType resourceType) throws GameActionException {
-    CommsHandler.ResourceTypeReaderWriter resourceTypeReaderWriter = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
-    boolean closestUpgraded = false;
-    int closestWellDistance = Integer.MAX_VALUE;
-    MapLocation closestWellLocation = null;
-    MapLocation tmpLocation;
-    for (int i = 0; i < 4; i++) {
-      if (!resourceTypeReaderWriter.readWellExists(i)) continue;
-
-      tmpLocation = resourceTypeReaderWriter.readWellLocation(i);
-      int dist = tmpLocation.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
-      if (dist >= closestWellDistance) continue;
-
-      closestWellDistance = dist;
-      closestWellLocation = tmpLocation;
-      closestUpgraded = resourceTypeReaderWriter.readWellUpgraded(i);
+    if (fleeingCounter > 0) {
+      // run from lastEnemyLocation
+      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
+      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
+      pathing.moveTowards(fleeDirection);
+      fleeingCounter--;
     }
 
-    int hqWithClosestWell = closestWellLocation != null ? HqMetaInfo.getClosestHQ(closestWellLocation) : HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
-    targetHQ = CommsHandler.readOurHqLocation(hqWithClosestWell);
-//    if (resourceType == ResourceType.MANA) {
-////      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
-//      hqWithClosestWell++;
-//      hqWithClosestWell %= communicator.metaInfo.hqInfo.hqCount;
-//      targetHQ = communicator.commsHandler.readOurHqLocation(hqWithClosestWell);
-////      Printer.print("MANA: " + targetWell + " " + targetWellUpgraded + " " + targetHQ);
-//    }
-
-    setTargetWell(closestWellLocation, closestUpgraded);
-  }
-
-
-  private void setTargetWell(MapLocation targetWell, boolean targetWellUpgraded) {
-    if (this.targetWell != targetWell) {
-      this.wellPathToFollow = null;
-      this.wellPathTargetIndex = -1;
-      this.emptierRobotsSeen = 0;
-      this.fullerRobotsSeen = 0;
+    // run the current task until we fail to complete it (incomplete -> finish on next turn/later)
+    while (currentTask != null && currentTask.execute(this)) {
+      resetTask();
     }
-    this.targetWell = targetWell;
-    this.targetWellUpgraded = targetWellUpgraded;
-    Direction dirBackFromWell = targetWell.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-    if (targetHQ != null && targetHQ.isWithinDistanceSquared(targetWell, RobotType.HEADQUARTERS.visionRadiusSquared)) {
-      dirBackFromWell = targetWell.directionTo(targetHQ);
-    }
-    this.wellApproachDirection.put(targetWell, dirBackFromWell);
-//    Printer.print("put new well (" + targetWell + ") dir: " + dirBackFromWell, "return rss to " + targetHQ);
-  }
-  private void setTargetWell(WellInfo targetWell) {
-    setTargetWell(targetWell.getMapLocation(), targetWell.isUpgraded());
   }
 
   /*
@@ -560,16 +178,6 @@ public class Carrier extends MobileRobot {
     //todo: perform the attack here?
   }
 
-  private int numMoves() {
-    int moves = 0;
-    int cd = rc.getMovementCooldownTurns();
-    while (cd < 10 && moves < 5) {
-      cd += rc.getType().movementCooldown;
-      ++moves;
-    }
-    return moves;
-  }
-
   private RobotInfo attackEnemyIfCannotRun() throws GameActionException {
 //    Printer.print("attackEnemyIfCannotRun()");
     int myInvSize = rc.getWeight();
@@ -588,7 +196,7 @@ public class Carrier extends MobileRobot {
       }
       if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, rc.getType().actionRadiusSquared)) { // todo: need to consider movement here
         if (enemyToAttack == null || (enemyToAttack.type != RobotType.LAUNCHER && enemyRobot.type == RobotType.LAUNCHER))
-        enemyToAttack = enemyRobot;
+          enemyToAttack = enemyRobot;
       }
     }
 
@@ -624,109 +232,550 @@ public class Carrier extends MobileRobot {
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
       lastEnemyLocation = nearestCombatEnemy;
-      fleeingCounter = 6;
+      fleeingCounter = TURNS_TO_FLEE;
     } else {
       fleeingCounter = 0;
     }
   }
 
-  private void takeAnchorIfExists() throws GameActionException {
-    int closestHQ = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
-    MapLocation hqWithAnchor = CommsHandler.readOurHqLocation(closestHQ);
-    if (!rc.canSenseLocation(hqWithAnchor) || rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
-      resetRole();
-      return;
+  /**
+   * executes the DELIVER_RSS_HOME task
+   * @return true if the task is complete
+   * @throws GameActionException
+   */
+  private boolean executeDeliverRssHome() throws GameActionException {
+    if (rc.getWeight() == 0) {
+      return true;
     }
-    if (rc.canTakeAnchor(hqWithAnchor, Anchor.ACCELERATING)) {
-      rc.takeAnchor(hqWithAnchor, Anchor.ACCELERATING);
-    } else if (rc.canTakeAnchor(hqWithAnchor, Anchor.STANDARD)) {
-      rc.takeAnchor(hqWithAnchor, Anchor.STANDARD);
-    } else {
-      pathing.moveTowards(hqWithAnchor);
+    if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(currentTask.targetHQLoc)) {
+      pathing.moveTowards(currentTask.targetHQLoc);
     }
+    if (!rc.isActionReady()) {
+      pathing.goTowardsOrStayAtEmptiestLocationNextTo(currentTask.targetHQLoc);
+    }
+    for (ResourceType type : ResourceType.values()) {
+      if (transferResource(currentTask.targetHQLoc, type, rc.getResourceAmount(type)) && rc.getWeight() == 0) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  private void executeIslandClaimProtocol() throws GameActionException {
+  /**
+   * executes one of the resource fetch tasks (Ad, Ma, El)
+   * @param resourceType the type to collect
+   * @return true if task complete
+   */
+  private boolean executeFetchResource(ResourceType resourceType) throws GameActionException {
+    if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
+    no_well: if (currentTask.targetWell == null) {
+      findNewWell(currentTask.collectionType, currentTask.targetWell);
+      if (currentTask.targetWell != null) break no_well;
+      WellInfo[] nearby = rc.senseNearbyWells(resourceType);
+      if (nearby.length == 0) {
+        forcedNextTask = CarrierTask.SCOUT;
+        return true;
+      }
+      currentTask.targetWell = nearby[Utils.rng.nextInt(nearby.length)].getMapLocation();
+    }
+    if (currentTask.targetWell == null) {
+      assert false;
+    }
+
+    if (doWellCollection(currentTask.targetWell)) {
+      return true; // we are full
+    }
+    approachWell(currentTask.targetWell);
+    return currentTask.targetWell != null && doWellCollection(currentTask.targetWell);
+  }
+
+  /**
+   * executes the ANCHOR_ISLAND task
+   * @return true if complete
+   * @throws GameActionException any exceptions with anchoring
+   */
+  private boolean executeAnchorIsland() throws GameActionException {
     if (rc.getAnchor() == null) {
-      takeAnchorIfExists();
+      MapLocation hqWithAnchor = currentTask.targetHQLoc;
+//      if (rc.canSenseLocation(hqWithAnchor) && rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
+//        forcedNextTask = CarrierTask.SCOUT;
+//        return true;
+//      }
+      do {
+        if (takeAnchor(hqWithAnchor, Anchor.ACCELERATING) || takeAnchor(hqWithAnchor, Anchor.STANDARD)) {
+          break;
+        } else if (rc.canSenseLocation(hqWithAnchor) && rc.senseRobotAtLocation(hqWithAnchor).getTotalAnchors() == 0) {
+          forcedNextTask = CarrierTask.SCOUT;
+          return true;
+        }
+      } while (pathing.moveTowards(hqWithAnchor));
     }
     if (rc.getAnchor() != null) {
-      if (islandLocationToClaim == null) {
-        islandLocationToClaim = findIslandLocationToClaim();
+      if (currentTask.targetIsland == null) {
+        currentTask.targetIsland = findIslandLocationToClaim();
       }
-      moveTowardsUnclaimedIsland();
-      if (rc.getAnchor() == null) {
-        this.role = null;
-        resetRole();
+      return moveTowardsIslandAndClaim();
+    }
+    return false;
+  }
+
+  /**
+   * executes the SCOUT task
+   * will simply explore until symmetry is known
+   * @return true if scouting complete
+   * @throws GameActionException any issues with moving
+   */
+  private boolean executeScout() throws GameActionException {
+    if (MapMetaInfo.knownSymmetry != null) return true;
+    doExploration();
+    return false;
+  }
+
+  /**
+   * executes ATTACK task
+   * currently does nothing
+   * @return true if attack task complete
+   * @throws GameActionException any issues while attacking
+   */
+  private boolean executeAttack() throws GameActionException {
+    return true;
+  }
+
+  /**
+   * will appreach the given well and keep track of the entry direction and well queue etc
+   * MAY OVERWRITE target well to null
+   * @param wellLocation the well to go to
+   * @throws GameActionException any issues with sensing/moving
+   */
+  private void approachWell(MapLocation wellLocation) throws GameActionException {
+    if (wellQueueOrder == null) {
+      rc.setIndicatorString("no well path -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
+      while (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)
+          && pathing.moveTowards(wellLocation)) {
+//          wellApproachDirection.setAlreadyContainedValue(targetWell, targetWell.directionTo(Cache.PerTurn.CURRENT_LOCATION));
+//          Printer.print("moved towards well: " + targetWell + " now=" + Cache.PerTurn.CURRENT_LOCATION);//, "new dir back: " + wellApproachDirection.get(targetWell));
+        wellApproachDirection.setAlreadyContainedValue(wellLocation, wellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION));
+        rc.setIndicatorString("did pathing towards well:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
+      }
+      if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
+        wellQueueOrder = CarrierWellPathing.getPathForWell(wellLocation, wellApproachDirection.get(wellLocation));
+//        Printer.print("well path: " + Arrays.toString(wellQueueOrder), "from direction: " + wellApproachDirection.get(wellLocation));
+        rc.setIndicatorString("set well path:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
+      }
+    }
+    if (wellQueueOrder != null) {
+      rc.setIndicatorString("follow well path: " + wellLocation);
+      followWellQueue(wellLocation);
+//      } else {
+//        Printer.print("Cannot get to well! -- canMove=" + rc.isMovementReady());
+    }
+  }
+
+  /**
+   * will follow the collection quuee of the well (circle around the well)
+   * will move along path depending on robots seen
+   */
+  private void followWellQueue(MapLocation wellLocation) throws GameActionException {
+    updateRobotsSeenInQueue(wellLocation);
+    updateWellQueueTarget();
+
+    if (wellQueueTargetIndex == -1) { // no spot in queue
+      // we aren't there yet, so consider switching wells
+      if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation) || rc.getWeight() >= MAX_CARRYING_CAPACITY) {
+
+        int numCarriersFarFromFull = 0;
+        for (RobotInfo friendly : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+          if (friendly.type == RobotType.CARRIER && friendly.location.isAdjacentTo(wellLocation)) {
+            int friendlyAmount = getInvWeight(friendly);
+            if (friendlyAmount < FAR_FROM_FULL_CAPACITY) {
+              numCarriersFarFromFull++;
+            }
+          }
+        }
+
+        if (numCarriersFarFromFull > MAX_CARRIERS_FILLING_IN_FRONT) {
+          rc.setIndicatorString("there's people in the way so ima dip");
+          findNewWell(currentTask.collectionType, currentTask.targetWell);
+        } else {
+          roundsWaitingForQueueSpot++;
+          if (roundsWaitingForQueueSpot > MAX_ROUNDS_WAIT_FOR_WELL_PATH) {
+            rc.setIndicatorString("there's people in the way so ima dip");
+            findNewWell(currentTask.collectionType, currentTask.targetWell);
+          } else {
+            do {
+              if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[0])) {
+                pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[0]));
+              }
+            } while (pathing.goTowardsOrStayAtEmptiestLocationNextTo(wellQueueOrder[0]));
+            rc.setIndicatorString("waiting for well path @ " + wellLocation + " turn#" + roundsWaitingForQueueSpot);
+          }
+        }
+      } else { // we're
+        pathing.moveTowards(wellQueueOrder[0]);
+      }
+    }
+
+    updateWellQueueTarget();
+
+    if (wellQueueTargetIndex != -1) {  // we have a spot in the queue (wellQueueTargetIndex)
+      rc.setIndicatorString("well path target: " + wellQueueOrder[wellQueueTargetIndex]);
+      while (rc.isMovementReady() && !Cache.PerTurn.CURRENT_LOCATION.equals(wellQueueOrder[wellQueueTargetIndex])) {
+        // not yet in the path, just go to the entry point
+        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)) {
+          while (pathing.moveTowards(wellQueueOrder[0])) {}
+          break;
+        }
+
+        // in the path, so try to get towards the correct point by navigating through the path
+        int currentPathIndex = -1;
+        for (int i = 0; i < wellQueueOrder.length; i++) {
+          if (Cache.PerTurn.CURRENT_LOCATION.equals(wellQueueOrder[i])) {
+            currentPathIndex = i;
+            break;
+          }
+        }
+        rc.setIndicatorString("well path target: " + wellQueueTargetIndex + "=" + wellQueueOrder[wellQueueTargetIndex] + " -- currently at ind=" + currentPathIndex + "=" + wellQueueOrder[currentPathIndex]);
+
+////        Printer.print("following path: " + Cache.PerTurn.CURRENT_LOCATION + "|" + rc.getLocation() + " --> " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+////        Printer.print("following path: ->" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+//        boolean moved = false;
+//        if (currentPathIndex < wellQueueTargetIndex) {
+//          moved = pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[currentPathIndex + 1])) || pathing.stayAtEmptiestLocationNextTo(wellLocation);
+//        } else {
+//          moved = pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[currentPathIndex - 1])) || pathing.stayAtEmptiestLocationNextTo(wellLocation);
+//        }
+//        if (!moved) break;
+        int moveTrial = wellQueueTargetIndex;
+        if (currentPathIndex < wellQueueTargetIndex || currentPathIndex == -1) {
+          while (moveTrial >= 0 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[moveTrial]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[moveTrial])))) {
+            // we can't move (adjacent + can move)
+            moveTrial--;
+          }
+          if (moveTrial < 0) {
+            break;
+          }
+        }
+        if (currentPathIndex > wellQueueTargetIndex || currentPathIndex == -1) {
+          while (moveTrial < 9 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[moveTrial]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[moveTrial])))) {
+            // we can't move (adjacent + can move)
+            moveTrial++;
+          }
+          if (moveTrial >= 9) {
+            break;
+          }
+        }
+//        Printer.print("following path: " + Cache.PerTurn.CURRENT_LOCATION + "|" + rc.getLocation() + " --> " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+//        Printer.print("following path: ->" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
+        pathing.forceMoveTo(wellQueueOrder[moveTrial]);
       }
     }
   }
 
-  private MapLocation findIslandLocationToClaim() throws GameActionException {
-    // go to unclaimed island
-    MapLocation closestUnclaimedIsland = null;
-    int closestDistance = Integer.MAX_VALUE;
-    while (tryExplorationMove()) {
-      int[] nearbyIslands = rc.senseNearbyIslands();
-      for (int islandID : nearbyIslands) {
-        if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {
-          MapLocation islandLocation = rc.senseNearbyIslandLocations(islandID)[0];
-          int candidateDistance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandLocation);
-          if (candidateDistance < closestDistance) {
-                closestUnclaimedIsland = islandLocation;
-                closestDistance = candidateDistance;
+  /**
+   * senses around and updates the number of emptier/fuller robots seen near this well
+   * if we aren't close to the well, leave the info as is
+   * @return whether an update was made or not
+   */
+  private boolean updateRobotsSeenInQueue(MapLocation wellLocation) throws GameActionException {
+    if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, 9)) { // well is still far away
+      if (emptierRobotsSeen > 0 || fullerRobotsSeen > 0) {
+//        Printer.print("not close to well, so not updating emptier/fuller robots seen");
+        emptierRobotsSeen = 0;
+        fullerRobotsSeen = 0;
+        return true;
+      }
+      return false;
+    }
+    int newEmptierSeen = 0;
+    int newFullerSeen = 0;
+    int myAmount = rc.getWeight();
+    for (RobotInfo friendly : rc.senseNearbyRobots(wellLocation, Utils.DSQ_2by2, Cache.Permanent.OUR_TEAM)) {
+      if (friendly.type == RobotType.CARRIER) {
+        int friendlyAmount = getInvWeight(friendly);
+        if (friendlyAmount == myAmount) {
+          if (friendly.ID < Cache.Permanent.ID) {
+            newEmptierSeen++;
+          } else {
+            newFullerSeen++;
+          }
+        } else if (friendlyAmount < myAmount) {
+          newEmptierSeen++;
+        } else if (friendlyAmount < MAX_CARRYING_CAPACITY) {
+          newFullerSeen++;
+        }
+      }
+    }
+    boolean changed = newEmptierSeen != emptierRobotsSeen || newFullerSeen != fullerRobotsSeen;
+    emptierRobotsSeen = newEmptierSeen;
+    fullerRobotsSeen = newFullerSeen;
+    return changed;
+  }
+  /**
+   * finds the optimal point in the well queue to stand
+   * @throws GameActionException any issues during computation
+   */
+  private void updateWellQueueTarget() throws GameActionException {
+    if (wellQueueOrder == null) return;
+    wellQueueTargetIndex = -1;
+    int minFillSpot = emptierRobotsSeen;
+    int maxFillSpot = 8 - fullerRobotsSeen;
+    int testSpot;
+    while (minFillSpot <= maxFillSpot) {
+      if (minFillSpot < (8-maxFillSpot)) {
+        testSpot = minFillSpot;
+        minFillSpot++;
+      } else {
+        testSpot = maxFillSpot;
+        maxFillSpot--;
+      }
+      MapLocation pathTarget = wellQueueOrder[CarrierWellPathing.WELL_PATH_FILL_ORDER[testSpot]];
+      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget) && rc.sensePassability(pathTarget))) {
+        // we can move to the target (or already there)
+        wellQueueTargetIndex = testSpot;
+        roundsWaitingForQueueSpot = 0;
+        return;
+//      } else {
+//        Printer.print("can't move from=" + Cache.PerTurn.CURRENT_LOCATION + ".to=" + pathTarget + " sense=" + rc.canSenseLocation(pathTarget) + ".bot=" + rc.canSenseRobotAtLocation(pathTarget));
+      }
+    }
+    while (maxFillSpot >= 0) {
+      MapLocation pathTarget = wellQueueOrder[CarrierWellPathing.WELL_PATH_FILL_ORDER[maxFillSpot]];
+      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
+        // we can move to the target (or already there)
+        wellQueueTargetIndex = maxFillSpot;
+        roundsWaitingForQueueSpot = 0;
+        return;
+//      } else {
+//        Printer.print("can't move from=" + Cache.PerTurn.CURRENT_LOCATION + ".to=" + pathTarget + " sense=" + rc.canSenseLocation(pathTarget) + ".bot=" + rc.canSenseRobotAtLocation(pathTarget));
+      }
+      maxFillSpot--;
+    }
+//    for (int i = 0; i < maxFillSpot; i++) {
+//      MapLocation pathTarget = wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[i]];
+//      // already there or can move there
+//      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
+//        wellPathTargetIndex = i;
+//        if (i >= emptierRobotsSeen) {
+//          return;
+//        }
+//      }
+//    }
+  }
+
+  /**
+   * will figure out the next best well to go to
+   * @param resourceType the well type to look for
+   * @param toAvoid a map location to exclude from the search
+   * @throws GameActionException any issues duirng search (comms, sensing)
+   */
+  private void findNewWell(ResourceType resourceType, MapLocation toAvoid) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    MapLocation closestWellLocation = null;
+    int closestDist = Integer.MAX_VALUE;
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (writer.readWellExists(i)) {
+        MapLocation wellLocation = writer.readWellLocation(i);
+        if (!wellLocation.equals(toAvoid)) {
+          int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestWellLocation = wellLocation;
           }
         }
       }
     }
-    return closestUnclaimedIsland;
+    currentTask.targetWell = closestWellLocation;
+    this.wellQueueOrder = null;
+    this.wellQueueTargetIndex = -1;
+    this.emptierRobotsSeen = 0;
+    this.fullerRobotsSeen = 0;
+    if (closestWellLocation != null) {
+      Direction dirBackFromWell = closestWellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+      MapLocation targetHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+      if (targetHQ != null && targetHQ.isWithinDistanceSquared(closestWellLocation, RobotType.HEADQUARTERS.visionRadiusSquared)) {
+//        Printer.print("close to HQ, use hq dir - hq=" + targetHQ + " -- well=" + closestWellLocation + " -- dir=" + closestWellLocation.directionTo(targetHQ));
+        dirBackFromWell = closestWellLocation.directionTo(targetHQ);
+      }
+      this.wellApproachDirection.put(closestWellLocation, dirBackFromWell);
+    }
   }
 
-  private void moveTowardsUnclaimedIsland() throws GameActionException {
+  /**
+   * will explore around until an island location is found
+   * @return the found location of the island
+   * @throws GameActionException any errors while sensing
+   */
+  private MapLocation findIslandLocationToClaim() throws GameActionException {
     // go to unclaimed island
-    if (islandLocationToClaim == null) return;
+    while (tryExplorationMove()) {
+      int[] nearbyIslands = rc.senseNearbyIslands();
+      if (nearbyIslands.length > 0) {
+        MapLocation closestUnclaimedIsland = null;
+        int closestDistance = Integer.MAX_VALUE;
+        for (int islandID : nearbyIslands) {
+          if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {
+            MapLocation islandLocation = rc.senseNearbyIslandLocations(islandID)[0];
+            int candidateDistance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandLocation);
+            if (candidateDistance < closestDistance) {
+              closestUnclaimedIsland = islandLocation;
+              closestDistance = candidateDistance;
+            }
+          }
+        }
+        return closestUnclaimedIsland;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * moves towards an unclaimed island and tries to claim it
+   * @return true if anchor placed / island claimed
+   * @throws GameActionException any issues with sensing / anchoring
+   */
+  private boolean moveTowardsIslandAndClaim() throws GameActionException {
+    // go to unclaimed island
+    MapLocation islandLocationToClaim = currentTask.targetIsland;
+    if (islandLocationToClaim == null) return false;
 
     // someone else claimed it while we were moving to the unclaimed island
     if (rc.canSenseLocation(islandLocationToClaim)) {
-        if (rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim)) != Team.NEUTRAL) {
-            islandLocationToClaim = findIslandLocationToClaim();
-            if (islandLocationToClaim == null) return;
-        }
+      if (rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim)) != Team.NEUTRAL) {
+        islandLocationToClaim = findIslandLocationToClaim();
+        if (islandLocationToClaim == null) return false;
+      }
     }
 
     // check if we are on a claimable island
-    int islandID = rc.senseIsland(Cache.PerTurn.CURRENT_LOCATION);
-    if ((islandID != -1 && rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL)) {
-      if (rc.canPlaceAnchor()) rc.placeAnchor();
-      islandLocationToClaim = null;
-    } else {
-      pathing.moveTowards(islandLocationToClaim);
+    do {
+      int islandID = rc.senseIsland(Cache.PerTurn.CURRENT_LOCATION);
+      if ((islandID != -1 && rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL)) {
+        if (rc.canPlaceAnchor()) {
+          rc.placeAnchor();
+          return true;
+        }
+      }
+    } while (pathing.moveTowards(islandLocationToClaim));
+    return false;
+  }
+
+  private enum CarrierTask {
+    FETCH_ADAMANTIUM(ResourceType.ADAMANTIUM),
+    FETCH_MANA(ResourceType.MANA),
+    FETCH_ELIXIR(ResourceType.ELIXIR),
+    DELIVER_RSS_HOME(ResourceType.NO_RESOURCE),
+    ANCHOR_ISLAND(ResourceType.NO_RESOURCE),
+    SCOUT(ResourceType.NO_RESOURCE),
+    ATTACK(ResourceType.NO_RESOURCE);
+
+    public MapLocation targetHQLoc;
+    public MapLocation targetWell;
+    final public ResourceType collectionType;
+    public MapLocation targetIsland;
+
+    CarrierTask(ResourceType resourceType) {
+      collectionType = resourceType;
+    }
+
+    public void onTaskStart(Carrier carrier) throws GameActionException {
+      switch (this) {
+        case FETCH_ADAMANTIUM:
+        case FETCH_MANA:
+        case FETCH_ELIXIR:
+          carrier.findNewWell(this.collectionType, null);
+          break;
+        case DELIVER_RSS_HOME:
+          targetHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+          break;
+        case ANCHOR_ISLAND:
+          targetHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+          break;
+        case SCOUT:
+          break;
+        case ATTACK:
+          break;
+      }
+    }
+
+    public void onTaskEnd() throws GameActionException {
+      switch (this) {
+        case FETCH_ADAMANTIUM:
+        case FETCH_MANA:
+        case FETCH_ELIXIR:
+          targetWell = null;
+          break;
+        case DELIVER_RSS_HOME:
+          targetHQLoc = null;
+          break;
+        case ANCHOR_ISLAND:
+          targetHQLoc = null;
+          break;
+        case SCOUT:
+          break;
+        case ATTACK:
+          break;
+      }
+    }
+
+    /**
+     * executes the turn logic for the given task
+     * @param carrier the carrier on which to run the tasl
+     * @return true if the task is complete
+     * @throws GameActionException any exception thrown by the robot controller
+     */
+    public boolean execute(Carrier carrier) throws GameActionException {
+      carrier.rc.setIndicatorString("Carrier - current task: " + this);
+      switch (this) {
+        case FETCH_ADAMANTIUM:
+          return carrier.executeFetchResource(ResourceType.ADAMANTIUM);
+        case FETCH_MANA:
+          return carrier.executeFetchResource(ResourceType.MANA);
+        case FETCH_ELIXIR:
+          return carrier.executeFetchResource(ResourceType.ELIXIR);
+        case DELIVER_RSS_HOME:
+          return carrier.executeDeliverRssHome();
+        case ANCHOR_ISLAND:
+          return carrier.executeAnchorIsland();
+        case SCOUT:
+          return carrier.executeScout();
+        case ATTACK:
+          return carrier.executeAttack();
+      }
+      return false;
     }
   }
 
-
-  private enum CarrierRole {
-    ADAMANTIUM_COLLECTION,
-    MANA_COLLECTION,
-    CLAIM_ISLAND;
-
-    private static final CarrierRole DEFAULT_ROLE = CarrierRole.ADAMANTIUM_COLLECTION;
-
-    CarrierRole toggleCollectionType() {
-      switch (this) {
-        case ADAMANTIUM_COLLECTION: return MANA_COLLECTION;
-        case MANA_COLLECTION: return ADAMANTIUM_COLLECTION;
-      }
-      return null;
+  private boolean transferResource(MapLocation target, ResourceType resourceType, int resourceAmount) throws GameActionException {
+    if (!rc.canTransferResource(target, resourceType, resourceAmount)) {
+      return false;
     }
+    rc.transferResource(target, resourceType, resourceAmount);
+    return true;
+  }
 
-    public ResourceType getResourceCollectionType() {
-      switch (this) {
-        case ADAMANTIUM_COLLECTION: return ResourceType.ADAMANTIUM;
-        case MANA_COLLECTION: return ResourceType.MANA;
-        case CLAIM_ISLAND: return ResourceType.NO_RESOURCE;
-      }
-      return null;
+  /**
+   * will collect as much as possible from the target well
+   * @return true if full now
+   * @throws GameActionException any issues during collection
+   */
+  private boolean doWellCollection(MapLocation wellLoc) throws GameActionException {
+    while (collectResource(wellLoc, -1)) {
+      if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
     }
+    return false;
+  }
+
+  private boolean collectResource(MapLocation well, int amount) throws GameActionException {
+    if (rc.canCollectResource(well, amount)) {
+      rc.collectResource(well, amount);
+      return true;
+    }
+    return false;
+  }
+
+  private boolean takeAnchor(MapLocation hq, Anchor anchorType) throws GameActionException {
+    if (!rc.canTakeAnchor(hq, anchorType)) return false;
+    rc.takeAnchor(hq, anchorType);
+    return true;
   }
 }

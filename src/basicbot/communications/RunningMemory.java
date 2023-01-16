@@ -2,6 +2,7 @@ package basicbot.communications;
 
 import basicbot.utils.Global;
 import basicbot.utils.Printer;
+import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.WellInfo;
@@ -45,9 +46,11 @@ public class RunningMemory {
    * @return the number of wells flushed
    */
   public static int broadcastMemorizedWells() throws GameActionException {
+    if (wellCount == 0) return 0;
     if (!Global.rc.canWriteSharedArray(0,0)) return 0;
+    if (Clock.getBytecodesLeft() < wellCount * 250) return 0;
     int oldCount = wellCount;
-//    Printer.print("flushing " + wellCount + " wells");
+//    Printer.print("flushing " + wellCount + " wells - bc=" + Clock.getBytecodesLeft());
     while (wellCount > 0 && Communicator.writeNextWell(wells[wellCount-1])) {
 //      Printer.print("flushed well " + wells[wellCount-1].getMapLocation());
       wellCount--;

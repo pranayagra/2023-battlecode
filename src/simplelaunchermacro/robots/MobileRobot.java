@@ -45,7 +45,7 @@ public abstract class MobileRobot extends Robot {
       case LAUNCHER:
         explorationTarget = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         if (rc.canSenseRobotAtLocation(explorationTarget) && rc.senseRobotAtLocation(explorationTarget).type != RobotType.HEADQUARTERS) {
-          Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry and retrying...");
+//          Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry and retrying...");
           // TODO: eliminate symmetry and retry
 //          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
 //          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget);

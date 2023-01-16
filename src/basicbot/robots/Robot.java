@@ -2,7 +2,6 @@ package basicbot.robots;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.MapMetaInfo;
-import basicbot.communications.Message;
 import basicbot.communications.RunningMemory;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.utils.Cache;
@@ -286,7 +285,11 @@ public abstract class Robot {
 //    if (wellsPublished > 0) {
 //      Printer.print("Found " + wellsPublished + " new wells");
 //    }
+//    if (Clock.getBytecodesLeft() < 200) return;
+//    int count = RunningMemory.wellCount;
+//    Utils.startByteCodeCounting("broadcast-" + count + "-wells");
     int wellsBroadcast = RunningMemory.broadcastMemorizedWells();
+//    Utils.finishByteCodeCounting("broadcast-" + count + "-wells");
 //    if (wellsBroadcast > 0) {
 //      Printer.print("Broadcasted " + wellsBroadcast + " wells");
 //    }
@@ -432,8 +435,8 @@ public abstract class Robot {
   }
 
 
-  protected int getInvWeight(RobotInfo ri) {
-    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() == 0 ? 0 : 40));
+  protected static int getInvWeight(RobotInfo ri) {
+    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() * GameConstants.ANCHOR_WEIGHT));
   }
 
   protected void becomeDoNothingBot() {

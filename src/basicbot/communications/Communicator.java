@@ -78,4 +78,21 @@ public class Communicator {
 //    Printer.print("Failed to write well " + well);
     return false;
   }
+
+  public static MapLocation getClosestWellLocation(MapLocation fromHere, ResourceType resourceType) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    MapLocation closest = null;
+    int closestDist = Integer.MAX_VALUE;
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (writer.readWellExists(i)) {
+        MapLocation wellLocation = writer.readWellLocation(i);
+        int dist = fromHere.distanceSquaredTo(wellLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = wellLocation;
+        }
+      }
+    }
+    return closest;
+  }
 }

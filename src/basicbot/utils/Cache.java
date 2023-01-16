@@ -161,18 +161,10 @@ public class Cache {
         public static RobotInfo[] ALL_NEARBY_ROBOTS;
         public static RobotInfo[] ALL_NEARBY_FRIENDLY_ROBOTS;
         public static RobotInfo[] ALL_NEARBY_ENEMY_ROBOTS;
-        public static RobotInfo ENEMY_0;
-        public static RobotInfo ENEMY_1;
-        public static RobotInfo ENEMY_2;
-        public static RobotInfo ENEMY_3;
-        public static RobotInfo ENEMY_4;
-        public static RobotInfo ENEMY_5;
-        public static RobotInfo ENEMY_6;
-        public static RobotInfo ENEMY_7;
-        public static RobotInfo ENEMY_8;
-        public static RobotInfo ENEMY_9;
+
         public static MapLocation CURRENT_LOCATION;
         public static MapLocation PREVIOUS_LOCATION;
+        public static int ROUND_LAST_MOVED;
 
         public static final int[] GLOBAL_VISITED_LOCS = new int[113];
 //        public static int LEVEL;
@@ -199,6 +191,7 @@ public class Cache {
             GLOBAL_VISITED_LOCS[visitedBit >>> 5] |= 1 << (31 - visitedBit & 31);
           }
           PerTurn.CURRENT_LOCATION = Global.rc.getLocation();
+          PerTurn.ROUND_LAST_MOVED = PerTurn.ROUND_NUM;
           PerTurn.ALL_NEARBY_ROBOTS = Global.rc.senseNearbyRobots();
           PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OUR_TEAM);
           PerTurn.ALL_NEARBY_ENEMY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OPPONENT_TEAM);

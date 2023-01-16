@@ -7,6 +7,7 @@ import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
+  private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
   private int hqID;
   public final WellInfo closestAdamantium;
   public final WellInfo closestMana;
@@ -15,9 +16,11 @@ public class HeadQuarters extends Robot {
   private MapLocation targetWell;
   private boolean targetWellUpgraded;
 
+  private int numAnchorsMade;
+
+
   private HQRole role;
 
-  int numArchorCreated = 0;
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
@@ -34,17 +37,17 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) Communicator.MetaInfo.reinitForHQ();
-//    if (Cache.PerTurn.ROUND_NUM == 50) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM == 100) rc.resign();
     if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
       this.role = HQRole.BUILD_ANCHORS;
     }
-    if (Cache.PerTurn.ROUND_NUM >= 500 && numArchorCreated < 1) {
+    if (Cache.PerTurn.ROUND_NUM >= 1000 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+      rc.setIndicatorString("Build anchor");
       if (createAnchors()) {
-        numArchorCreated++;
+        numAnchorsMade++;
       }
       return;
     }
-
     make_carriers: if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
       if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
         int emptyCarrierCount = 0;
@@ -81,8 +84,10 @@ public class HeadQuarters extends Robot {
     }
     if (this.role == HQRole.BUILD_ANCHORS || canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
       rc.setIndicatorString("Build anchor");
-      createAnchors();
-      determineRole();
+      if (createAnchors()) {
+        numAnchorsMade++;
+        determineRole();
+      }
     }
   }
 
