@@ -13,8 +13,4 @@ public class Global {
     Global.rc = rc;
     Global.robot = robot;
   }
-
-  public static void configureCommunicator() throws GameActionException {
-    Communicator.init(rc);
-  }
 }

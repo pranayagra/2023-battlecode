@@ -7,6 +7,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
 
 public class HqMetaInfo {
+  private static final int ENEMY_TERRITORY_HQ_DANGER_RADIUS_SQ = 145;
   public static int hqCount;
   public static MapLocation[] hqLocations;
   public static MapLocation[] enemyHqLocations;
@@ -145,5 +146,14 @@ public class HqMetaInfo {
           throw new RuntimeException("Invalid HQ count: " + hqCount);
         }
     }
+  }
+
+  public static boolean isEnemyTerritory(MapLocation location) {
+    MapLocation closestEnemyHQ = getClosestEnemyHqLocation(location);
+    int enemyDist = location.distanceSquaredTo(closestEnemyHQ);
+    if (enemyDist <= ENEMY_TERRITORY_HQ_DANGER_RADIUS_SQ) return true;
+    MapLocation closestHQ = getClosestHqLocation(location);
+    int friendlyDist = location.distanceSquaredTo(closestHQ);
+    return enemyDist < friendlyDist;
   }
 }

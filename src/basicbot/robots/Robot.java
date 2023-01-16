@@ -3,6 +3,8 @@ package basicbot.robots;
 import basicbot.communications.Communicator;
 import basicbot.communications.MapMetaInfo;
 import basicbot.communications.RunningMemory;
+import basicbot.robots.micro.AttackMicro;
+import basicbot.robots.micro.AttackerMovementMicro;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.utils.Cache;
 import basicbot.utils.Global;
@@ -36,14 +38,17 @@ public abstract class Robot {
    * @param rc the controller
    */
   public Robot(RobotController rc) throws GameActionException {
+    this.rc = rc;
+
     Global.setupGlobals(rc, this);
     Utils.setUpStatics();
     Cache.setup();
     Printer.cleanPrint();
-    this.rc = rc;
-    Global.configureCommunicator();
+    Communicator.init(rc);
 
     pathing = Pathing.create(rc);
+    AttackerMovementMicro.init(rc, pathing);
+    AttackMicro.init(rc);
 
     rc.setIndicatorString("Just spawned!");
     turnCount = -1;
