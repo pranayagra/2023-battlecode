@@ -25,6 +25,7 @@ public class Carrier extends MobileRobot {
 
   private HashMap<MapLocation, Direction> wellApproachDirection;
   private MapLocation[] wellQueueOrder;
+  private MapLocation wellEntryPoint;
   int wellQueueTargetIndex;
   private int emptierRobotsSeen;
   private int fullerRobotsSeen;
@@ -359,6 +360,16 @@ public class Carrier extends MobileRobot {
       }
       if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         wellQueueOrder = CarrierWellPathing.getPathForWell(wellLocation, wellApproachDirection.get(wellLocation));
+        wellEntryPoint = null;
+        for (int i = 0; i < wellQueueOrder.length; i++) {
+          if (rc.sensePassability(wellQueueOrder[i])) {
+            RobotInfo robot = rc.senseRobotAtLocation(wellQueueOrder[i]);
+            if (robot == null || robot.type != RobotType.HEADQUARTERS) {
+              wellEntryPoint = wellQueueOrder[i];
+              break;
+            }
+          }
+        }
 //        Printer.print("well path: " + Arrays.toString(wellQueueOrder), "from direction: " + wellApproachDirection.get(wellLocation));
         rc.setIndicatorString("set well path:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
       }
@@ -403,26 +414,27 @@ public class Carrier extends MobileRobot {
             findNewWell(currentTask.collectionType, currentTask.targetWell);
           } else {
             do {
-              if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[0])) {
-                pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[0]));
+              if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellEntryPoint)) {
+                pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellEntryPoint));
               }
-            } while (pathing.goTowardsOrStayAtEmptiestLocationNextTo(wellQueueOrder[0]));
+            } while (pathing.goTowardsOrStayAtEmptiestLocationNextTo(wellEntryPoint));
             rc.setIndicatorString("waiting for well path @ " + wellLocation + " turn#" + roundsWaitingForQueueSpot);
           }
         }
       } else { // we're
-        pathing.moveTowards(wellQueueOrder[0]);
+        pathing.moveTowards(wellEntryPoint);
       }
     }
 
     updateWellQueueTarget();
 
     if (wellQueueTargetIndex != -1) {  // we have a spot in the queue (wellQueueTargetIndex)
-      rc.setIndicatorString("well path target: " + wellQueueOrder[wellQueueTargetIndex]);
+      rc.setIndicatorString("well queue target position: " + wellQueueOrder[wellQueueTargetIndex]);
       while (rc.isMovementReady() && !Cache.PerTurn.CURRENT_LOCATION.equals(wellQueueOrder[wellQueueTargetIndex])) {
         // not yet in the path, just go to the entry point
         if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)) {
-          while (pathing.moveTowards(wellQueueOrder[0])) {}
+          rc.setIndicatorString("approaching well via: " + wellEntryPoint);
+          while (pathing.moveTowards(wellEntryPoint)) {}
           break;
         }
 
@@ -434,7 +446,7 @@ public class Carrier extends MobileRobot {
             break;
           }
         }
-        rc.setIndicatorString("well path target: " + wellQueueTargetIndex + "=" + wellQueueOrder[wellQueueTargetIndex] + " -- currently at ind=" + currentPathIndex + "=" + wellQueueOrder[currentPathIndex]);
+        rc.setIndicatorString("moving in well queue: " + wellQueueTargetIndex + "=" + wellQueueOrder[wellQueueTargetIndex] + " -- currently at ind=" + currentPathIndex + "=" + wellQueueOrder[currentPathIndex]);
 
 ////        Printer.print("following path: " + Cache.PerTurn.CURRENT_LOCATION + "|" + rc.getLocation() + " --> " + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
 ////        Printer.print("following path: ->" + wellPathToFollow[CarrierWellPathing.WELL_PATH_FILL_ORDER[moveTrial]]);
@@ -540,7 +552,7 @@ public class Carrier extends MobileRobot {
     }
     while (maxFillSpot >= 0) {
       MapLocation pathTarget = wellQueueOrder[CarrierWellPathing.WELL_PATH_FILL_ORDER[maxFillSpot]];
-      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget))) {
+      if (pathTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || (rc.canSenseLocation(pathTarget) && !rc.canSenseRobotAtLocation(pathTarget) && rc.sensePassability(pathTarget))) {
         // we can move to the target (or already there)
         wellQueueTargetIndex = maxFillSpot;
         roundsWaitingForQueueSpot = 0;

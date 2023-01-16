@@ -5,7 +5,6 @@ import basicbot.utils.Utils;
 import battlecode.common.GameActionException;
 
 public class MapMetaInfo {
-  private final Communicator communicator;
   public static final Utils.MapSymmetry[] SYMMETRY_KNOWN_MAP = {
       null,
       null,
@@ -28,8 +27,8 @@ public class MapMetaInfo {
   };
 
   private static int symmetryInfo;
-  public static Utils.MapSymmetry knownSymmetry; // determined by next three bools
-  public static Utils.MapSymmetry guessedSymmetry; // determined by next three bools
+  public static Utils.MapSymmetry knownSymmetry = SYMMETRY_KNOWN_MAP[0]; // determined by next three bools
+  public static Utils.MapSymmetry guessedSymmetry = SYMMETRY_GUESS_MAP[0]; // determined by next three bools
   private static final int NOT_HORIZ_MASK = 0b100;
   public static boolean notHorizontal;     // 0-1               -- 1 bit  [3]
   private static final int NOT_VERT_MASK = 0b10;
@@ -37,18 +36,22 @@ public class MapMetaInfo {
   private static final int NOT_ROT_MASK = 0b1;
   public static boolean notRotational;     // 0-1               -- 1 bit  [1]
 
-  public MapMetaInfo(Communicator communicator) {
-    this.communicator = communicator;
-  }
-
-  public static void updateSymmetry() throws GameActionException {
-    if (knownSymmetry != null) return;
-    symmetryInfo = CommsHandler.readMapSymmetry();
+  /**
+   * read from shared array and update symmetry info
+   * @return true if updated
+   * @throws GameActionException
+   */
+  public static boolean updateSymmetry() throws GameActionException {
+    if (knownSymmetry != null) return false;
+    int newSymmetryInfo = CommsHandler.readMapSymmetry();
+    if (newSymmetryInfo == symmetryInfo) return false;
+    symmetryInfo = newSymmetryInfo;
     knownSymmetry = SYMMETRY_KNOWN_MAP[symmetryInfo];
     notHorizontal = (symmetryInfo & NOT_HORIZ_MASK) > 0;
     notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
     notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
     guessedSymmetry = knownSymmetry != null ? knownSymmetry : SYMMETRY_GUESS_MAP[symmetryInfo];
+    return true;
   }
 
   public static void writeNot(Utils.MapSymmetry symmetryToEliminate) throws GameActionException {

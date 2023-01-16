@@ -62,7 +62,10 @@ public class Amplifier extends Robot {
     if (rc.canSenseLocation(HQLocation)) {
       RobotInfo robot = rc.senseRobotAtLocation(HQLocation);
       if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-        Printer.print("ERROR: expected enemy HQ is not an HQ " + HQLocation, "symmetry guess must be wrong, eliminating symmetry and retrying...");
+//        Printer.print("ERROR: expected enemy HQ is not an HQ " + HQLocation, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
+        if (rc.canWriteSharedArray(0,0)) {
+          MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
+        }
         // TODO: eliminate symmetry and retry
 //          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
 //          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget)

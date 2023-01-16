@@ -39,7 +39,9 @@ public class Communicator {
     }
 
     public static void updateOnTurnStart() throws GameActionException {
-      MapMetaInfo.updateSymmetry();
+      if (MapMetaInfo.updateSymmetry()) {
+        HqMetaInfo.recomputeEnemyHqLocations();
+      }
     }
   }
 

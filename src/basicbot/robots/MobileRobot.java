@@ -49,7 +49,7 @@ public abstract class MobileRobot extends Robot {
         if (rc.canSenseLocation(explorationTarget)) {
           RobotInfo robot = rc.senseRobotAtLocation(explorationTarget);
           if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry and retrying...");
+//            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
             if (rc.canWriteSharedArray(0,0)) {
               MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
             }
