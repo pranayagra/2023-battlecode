@@ -38,6 +38,9 @@ public class HeadQuarters extends Robot {
   protected void runTurn() throws GameActionException {
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) Communicator.MetaInfo.reinitForHQ();
 //    if (Cache.PerTurn.ROUND_NUM == 200) rc.resign();
+
+    Communicator.clearEnemyComms();
+
     if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
       this.role = HQRole.BUILD_ANCHORS;
     }

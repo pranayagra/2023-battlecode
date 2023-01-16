@@ -1,5 +1,7 @@
 package basicbot.robots;
 
+import basicbot.communications.Communicator;
+import basicbot.communications.HqMetaInfo;
 import basicbot.utils.Cache;
 import basicbot.utils.Printer;
 import battlecode.common.GameActionException;
@@ -8,12 +10,15 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 
 public class Launcher extends MobileRobot {
+  private static final int MIN_TURN_TO_MOVE = 9;
+
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
   }
 
   @Override
   protected void runTurn() throws GameActionException {
+    rc.setIndicatorString("Ooga booga im a launcher");
     RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     for (int i = allNearbyEnemyRobots.length; --i >= 0 && rc.isActionReady();) {
       RobotInfo enemy = allNearbyEnemyRobots[i];
@@ -24,16 +29,44 @@ public class Launcher extends MobileRobot {
     // need to be careful with cd multiplier causing isAction to be false after a couple successful attacks
     if (rc.isActionReady()) {
       if (attemptCloudAttack()) {
+        rc.setIndicatorString("successful cloud attack -> exit early");
         return;
       }
     }
 
-    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
-      randomizeExplorationTarget(true);
+    if (Cache.PerTurn.ROUND_NUM >= MIN_TURN_TO_MOVE) {
+      MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+      MapLocation closestEnemy = Communicator.getClosestEnemy(closestHQ);
+      int closestDist = closestEnemy == null ? Integer.MAX_VALUE : closestEnemy.distanceSquaredTo(closestHQ);
+      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+        switch (robot.type) {
+          case CARRIER:
+          case HEADQUARTERS:
+            break;
+          default:
+            int dist = robot.location.distanceSquaredTo(closestHQ);
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestEnemy = robot.location;
+            }
+        }
+      }
+      no_enemy:
+      if (closestEnemy == null) {
+//      if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
+//        randomizeExplorationTarget(true);
+////        break no_enemy;
+//      }
+        rc.setIndicatorString("no enemies -> do exploration: " + explorationTarget);
+        doExploration();
+      }
+      if (closestEnemy != null) { // only go to enemies if we aren't already dealing with some enemy
+        rc.setIndicatorString("Approach commed enemy: " + closestEnemy);
+        pathing.moveTowards(closestEnemy);
+      }
     }
-    doExploration();
 
-    rc.setIndicatorString("Enemies near me: " + Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length + " -- canAct=" + rc.isActionReady());
+//    rc.setIndicatorString("Enemies near me: " + Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length + " -- canAct=" + rc.isActionReady());
 
     allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     for (int i = allNearbyEnemyRobots.length; --i >= 0 && rc.isActionReady();) {

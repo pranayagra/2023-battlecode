@@ -18,6 +18,7 @@ public class Carrier extends MobileRobot {
   private static final int FAR_FROM_FULL_CAPACITY = MAX_CARRYING_CAPACITY * 4 / 5;
   private static final int MAX_RSS_TO_ENABLE_SCOUT = 1000;
   private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
+  private static final int MAX_TURNS_STUCK = 3;
   private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 3;
   private static final int MAX_CARRIERS_FILLING_IN_FRONT = 8;
   private static final int TURNS_TO_FLEE = 4;
@@ -26,6 +27,7 @@ public class Carrier extends MobileRobot {
   CarrierTask forcedNextTask;
 
 
+  private int turnsStuckApproachingWell;
   private HashMap<MapLocation, Direction> wellApproachDirection;
   private MapLocation[] wellQueueOrder;
   private MapLocation wellEntryPoint;
@@ -83,22 +85,22 @@ public class Carrier extends MobileRobot {
     }
 //    Printer.print("totalAdamantiumAroundMe: " + totalAdamantiumAroundMe);
 //    Printer.print("totalManaAroundMe: " + totalManaAroundMe);
-//    if (totalManaAroundMe <= 1.5 * totalAdamantiumAroundMe) { // ad < 0.666 * mana
+    if (totalManaAroundMe <= 1.75 * totalAdamantiumAroundMe) { // ad < 0.666 * mana
 //      Printer.print("Collecting mana");
-//      return CarrierTask.FETCH_MANA;
-//    }
-//    if (totalAdamantiumAroundMe < 0.5 * totalManaAroundMe) {
-//      Printer.print("Collecting adamantium");
-//      return CarrierTask.FETCH_ADAMANTIUM;
-//    }
-//    Printer.print("selecting mana");
-//    return CarrierTask.FETCH_MANA;
-//    return Utils.rng.nextBoolean() ? CarrierTask.FETCH_ADAMANTIUM : CarrierTask.FETCH_MANA;
-    if (totalManaAroundMe > totalAdamantiumAroundMe) {
-      return CarrierTask.FETCH_ADAMANTIUM;
-    } else {
       return CarrierTask.FETCH_MANA;
     }
+    if (totalAdamantiumAroundMe < 0.5 * totalManaAroundMe) {
+//      Printer.print("Collecting adamantium");
+      return CarrierTask.FETCH_ADAMANTIUM;
+    }
+//    Printer.print("Collecting mana");
+    return CarrierTask.FETCH_MANA;
+//    return Utils.rng.nextBoolean() ? CarrierTask.FETCH_ADAMANTIUM : CarrierTask.FETCH_MANA;
+//    if (totalManaAroundMe > totalAdamantiumAroundMe) {
+//      return CarrierTask.FETCH_ADAMANTIUM;
+//    } else {
+//      return CarrierTask.FETCH_MANA;
+//    }
   }
 
   @Override
@@ -375,6 +377,14 @@ public class Carrier extends MobileRobot {
         } else {
           if (rc.isMovementReady()) {
             rc.setIndicatorString("could not path towards well:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
+            turnsStuckApproachingWell++;
+            if (turnsStuckApproachingWell >= MAX_TURNS_STUCK) {
+              findNewWell(currentTask.collectionType, currentTask.targetWell);
+              if (currentTask.targetWell != null) {
+                approachWell(currentTask.targetWell);
+                return;
+              }
+            }
           }
           break;
         }
@@ -470,6 +480,16 @@ public class Carrier extends MobileRobot {
         if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)) {
           rc.setIndicatorString("approaching well via: " + wellEntryPoint);
           while (pathing.moveTowards(wellEntryPoint)) {}
+          if (rc.isMovementReady()) {
+            turnsStuckApproachingWell++;
+            if (turnsStuckApproachingWell >= MAX_TURNS_STUCK) {
+              findNewWell(currentTask.collectionType, currentTask.targetWell);
+              if (currentTask.targetWell != null) {
+                approachWell(currentTask.targetWell);
+                return;
+              }
+            }
+          }
           break;
         }
 
@@ -676,6 +696,7 @@ public class Carrier extends MobileRobot {
       }
     }
     currentTask.targetWell = closestWellLocation;
+    this.turnsStuckApproachingWell = 0;
     this.wellQueueOrder = null;
     this.wellQueueTargetIndex = -1;
     this.emptierRobotsSeen = 0;

@@ -26,7 +26,7 @@ SUFFIX_TO_GENERAL = {
       'exists': ['boolean','!(({}).equals(NONEXISTENT_MAP_LOC))'], # type, format string analyze result of reading
     },
     'extra_consts': [
-      'private static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1);',
+      'public static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1);',
     ]
   },
   BOOL_KEY: {
@@ -89,10 +89,11 @@ SCHEMA = {
       **WELL_SCHEMA,
     }
   },
-  'attack_target': {
-    'slots': 8,
+  'enemy': {
+    'slots': 30,
     'bits': {
-      'loc': LOCATION_BITS,
+      'odd_loc': LOCATION_BITS,
+      'even_loc': LOCATION_BITS,
     }
   },
   # 'attack_pod': {
@@ -334,7 +335,7 @@ def gen():
 def gen_resource():
   out = """"""
   resource_datatypes = list(set([re.sub(re.compile(f"({'|'.join(RESOURCES)})"), '{}', datatype) for datatype in SCHEMA if any(rss in datatype for rss in RESOURCES)]))
-  print('schemas for resources:',resource_datatypes)
+  # print('schemas for resources:',resource_datatypes)
   for datatype_fmt in resource_datatypes:
     valid_rss = [rss for rss in RESOURCES if datatype_fmt.format(rss) in SCHEMA]
     if not valid_rss:
@@ -346,7 +347,7 @@ def gen_resource():
     generic_name = re.sub(r'_?\{\}_?', '', datatype_fmt)
     base_type = datatype_fmt.format(valid_rss[0])
     for attribute,out_type,can_write in get_generated_attrs(SCHEMA[base_type]):
-      print(f"  {attribute} can be specialized by rss under schema for {generic_name}")
+      # print(f"  {attribute} can be specialized by rss under schema for {generic_name}")
 
       # read
       if SCHEMA[base_type]['slots'] == 1:
