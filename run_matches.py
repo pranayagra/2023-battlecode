@@ -1,6 +1,7 @@
 from itertools import product
 import subprocess
 import time
+import itertools
 
 emojiMode = True
 emojiMap = {
@@ -13,12 +14,12 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
-# bots = ['spawnorder']
+# bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
+bots = ['spawnorder']
 botsSet = set(bots)
-maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
+# maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
-# maps = ['SmallElements']
+maps = ['SmallElements']
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -114,9 +115,9 @@ def run_match(bot, map):
         else:
             if not loseBString in outputB:
                 return 'Error'
-        outStr1 = numWinsMapping[numWins] #+ ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
+        outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
         outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
-        return outStr1 + ' ' + outStr2
+        return outStr1 + '\n' + outStr2
 
 
 results = {}
@@ -145,7 +146,9 @@ with open('matches-summary.txt', 'w') as f:
     table = [[''] + bots, [':---:' for i in range(len(bots) + 1)]] + [[map] + row for map, row in zip(maps, table)]
     for line in table:
         f.write('| ')
-        f.write(' | '.join(line))
+        actual_lines = itertools.zip_longest(*[part.split('\n') for part in line])
+        for act_l in actual_lines:
+            f.write(' | '.join(act_l))
         f.write(' |')
         f.write('\n')
     f.write('\n')
