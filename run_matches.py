@@ -32,11 +32,11 @@ numWinsMapping = {
 def retrieveTotalUnitsSpawned(output):
     totalValueA = 0
     for i in range(4):
-        startString = f'HQA{i}--'
+        startString = f'HQA{i} ('
         startIndex = output.find(startString)
         if startIndex == -1:
             continue
-        endIndex = output.find('--', startIndex)
+        endIndex = output.find(')', startIndex)
         if endIndex == -1:
             continue
         print(startIndex, endIndex)
