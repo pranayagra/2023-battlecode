@@ -114,7 +114,7 @@ def run_match(bot, map):
         else:
             if not loseBString in outputB:
                 return 'Error'
-        outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
+        outStr1 = numWinsMapping[numWins] #+ ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
         outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
         return outStr1 + ' ' + outStr2
 

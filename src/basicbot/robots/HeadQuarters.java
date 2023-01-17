@@ -76,7 +76,7 @@ public class HeadQuarters extends Robot {
       Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
     }
 
-    if (Cache.PerTurn.ROUND_NUM == 750) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
 
     // spawn order
     // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)
