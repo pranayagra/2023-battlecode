@@ -88,15 +88,20 @@ def run_match(bot, map):
 
         AMoreUnits = 0
         BMoreUnits = 0
+        numUnitWins = 0
         if int(gameLengthA) >= 250:
             totalUnitSpawnedT1A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA, 'A')
             totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA, 'B')
             AMoreUnits = totalUnitSpawnedT1A - totalUnitSpawnedT2A
+            if AMoreUnits >= 50:
+                numUnitWins += 1
             print('totalUnitSpawnedT1A: ', totalUnitSpawnedT1A, 'totalUnitSpawnedT2A: ', totalUnitSpawnedT2A, 'AMoreUnits: ', AMoreUnits)
         if int(gameLengthB) >= 250:
             totalUnitSpawnedT1B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB, 'A')
             totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB, 'B')
             BMoreUnits = totalUnitSpawnedT2B - totalUnitSpawnedT1B
+            if BMoreUnits >= 50:
+                numUnitWins += 1
             print('totalUnitSpawnedT1B: ', totalUnitSpawnedT1B, 'totalUnitSpawnedT2B: ', totalUnitSpawnedT2B, 'BMoreUnits: ', BMoreUnits)
 
         if winAString in outputA:
@@ -109,7 +114,9 @@ def run_match(bot, map):
         else:
             if not loseBString in outputB:
                 return 'Error'
-        return numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')' + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
+        outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
+        outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
+        return outStr1 + '\n' + outStr2
 
 
 results = {}
