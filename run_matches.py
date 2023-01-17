@@ -13,7 +13,7 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['launchercomms', 'betterlaunchermacro', 'carrieroverhaul', 'carrierpathing']
+bots = ['spawnorder', 'bugfixessprint', 'launchercomms', 'betterlaunchermacro']
 botsSet = set(bots)
 maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
