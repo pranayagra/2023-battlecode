@@ -16,9 +16,9 @@ currentBot = 'basicbot'
 bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
 # bots = ['spawnorder']
 botsSet = set(bots)
-# maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
+maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
-maps = ['SmallElements']
+# maps = ['SmallElements']
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -116,7 +116,7 @@ def run_match(bot, map):
                 return 'Error'
         outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
         outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
-        return outStr1 + '\t' + outStr2
+        return outStr1 + ' ' + outStr2
 
 
 results = {}
