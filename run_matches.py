@@ -13,10 +13,11 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'bugfixessprint', 'launchercomms', 'betterlaunchermacro', 'alexlaunchermacro']
+bots = ['spawnorder']
 botsSet = set(bots)
-maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
+# maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
+maps = ['maptestsmall']
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -56,6 +57,9 @@ def run_match(bot, map):
         # print("outputaA type: {}, {}".format(type(outputA), outputA))
         
         numWins = 0
+
+        print('outputA: ', outputA)
+        print('outputB: ', outputB)
         
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
