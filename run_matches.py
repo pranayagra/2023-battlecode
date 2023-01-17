@@ -34,33 +34,32 @@ def retrieveTotalUnitsSpawned(output):
     for i in range(4):
         startString = f'HQA{i}--'
         startIndex = output.find(startString)
-
         if startIndex == -1:
             continue
         endIndex = output.find('--', startIndex)
         if endIndex == -1:
             continue
-        value = output[startIndex + len(startString) + 1:endIndex]
+        value = output[startIndex + len(startString):endIndex]
         print(value)
-        totalValueA += int(value)
-    print(totalValueA)
+        # totalValueA += int(value)
+    # print(totalValueA)
 
-    totalValueB = 0
-    for i in range(4):
-        startString = f'HQB{i}--'
-        startIndex = output.find(startString)
+    # totalValueB = 0
+    # for i in range(4):
+    #     startString = f'HQB{i}--'
+    #     startIndex = output.find(startString)
+    #
+    #     if startIndex == -1:
+    #         continue
+    #     endIndex = output.find('--', startIndex)
+    #     if endIndex == -1:
+    #         continue
+    #     value = output[startIndex + len(startString) + 1:endIndex]
+    #     print(value)
+    #     totalValueB += int(value)
+    # print(totalValueB)
 
-        if startIndex == -1:
-            continue
-        endIndex = output.find('--', startIndex)
-        if endIndex == -1:
-            continue
-        value = output[startIndex + len(startString) + 1:endIndex]
-        print(value)
-        totalValueB += int(value)
-    print(totalValueB)
-
-    return totalValueA
+    # return totalValueA
 
 
 
