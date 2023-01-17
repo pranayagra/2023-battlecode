@@ -73,7 +73,7 @@ public class HeadQuarters extends Robot {
     Communicator.clearEnemyComms();
 
     if (Cache.PerTurn.ROUND_NUM == 10) {
-      Printer.print("HQ" + hqID + "--" + totalSpawns + "--");
+      Printer.print("HQ" + Cache.Permanent.OUR_TEAM + hqID + "--" + totalSpawns + "--");
     }
 
     if (Cache.PerTurn.ROUND_NUM == 20) {
