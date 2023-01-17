@@ -1,25 +1,19 @@
 package basicbot.robots.micro;
 
-import basicbot.communications.HqMetaInfo;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.utils.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
-public class AttackerMovementMicro {
-
-  public static final int CRITICAL_HEALTH = 10;
-  private static final int MAX_MICRO_BYTECODE_REMAINING = 2000;
-  public static final int ATTACK_TURN = 250;
+public class AttackerFightingMicro {
 
   public static RobotController rc;
   public static Pathing pathing;
 
 
-  static final int INF = 1000000;
   static boolean attacker = false;
   static boolean shouldPlaySafe = false;
-  static boolean alwaysInRange = false;
+  static boolean shouldStayInRange = false;
   static boolean hurt = false; //TODO: if hurt we want to go back to archon
   static int myRange;
   static int myVisionRange;
@@ -35,12 +29,10 @@ public class AttackerMovementMicro {
   static double currentActionRadius;
   static boolean canAttack;
 
-  final static double MAX_COOLDOWN_DIFF = 1.2; // TODO: i have no idea what this should be
-
 
   public static void init(RobotController rc, Pathing pathing) {
-    AttackerMovementMicro.rc = rc;
-    AttackerMovementMicro.pathing = pathing;
+    AttackerFightingMicro.rc = rc;
+    AttackerFightingMicro.pathing = pathing;
     switch (Cache.Permanent.ROBOT_TYPE) {
       case LAUNCHER:
         attacker = true;
@@ -71,9 +63,9 @@ public class AttackerMovementMicro {
     canAttack = rc.isActionReady();
 
     int uIndex = enemyRobots.length;
-    while (uIndex-- > 0){
+    while (uIndex-- > 0) {
       RobotInfo r = enemyRobots[uIndex];
-      switch(r.type){
+      switch(r.type) {
         case LAUNCHER:
         case DESTABILIZER:
           shouldPlaySafe = true;
@@ -84,9 +76,9 @@ public class AttackerMovementMicro {
     }
     if (!shouldPlaySafe) return false;
 
-    alwaysInRange = false;
-    if (!rc.isActionReady()) alwaysInRange = true;
-    if (severelyHurt) alwaysInRange = true;
+    shouldStayInRange = false;
+    if (!rc.isActionReady()) shouldStayInRange = true;
+    if (severelyHurt) shouldStayInRange = true;
 
     MicroInfo[] microInfo = new MicroInfo[9];
     for (int i = 0; i < 9; ++i) microInfo[i] = new MicroInfo(Utils.directionsNine[i]);
@@ -101,7 +93,7 @@ public class AttackerMovementMicro {
     if (microInfo[1].canMove && minCooldown > microInfo[1].cooldownMultiplier) minCooldown = microInfo[1].cooldownMultiplier;
     if (microInfo[0].canMove && minCooldown > microInfo[0].cooldownMultiplier) minCooldown = microInfo[0].cooldownMultiplier;
 
-    minCooldown *= MAX_COOLDOWN_DIFF;
+    minCooldown *= MicroConstants.MAX_COOLDOWN_DIFF;
 
     if (microInfo[8].cooldownMultiplier > minCooldown) microInfo[8].canMove = false;
     if (microInfo[7].cooldownMultiplier > minCooldown) microInfo[7].canMove = false;
@@ -113,48 +105,48 @@ public class AttackerMovementMicro {
     if (microInfo[1].cooldownMultiplier > minCooldown) microInfo[1].canMove = false;
     if (microInfo[0].cooldownMultiplier > minCooldown) microInfo[0].canMove = false;
 
-    boolean danger = false;
-    if (Cache.PerTurn.ROUND_NUM <= ATTACK_TURN) {
-      MapLocation closestEnemyHQ = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-      MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-      if (closestEnemyHQ.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < closestHQ.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION)) {
-        danger = true;
-      }
-    }
+//    boolean danger = false;
+//    if (Cache.PerTurn.ROUND_NUM <= MicroConstants.ATTACK_TURN) {
+//      MapLocation closestEnemyHQ = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+//      MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+//      if (closestEnemyHQ.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < closestHQ.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION)) {
+//        danger = true;
+//      }
+//    }
 
     for (RobotInfo enemy : enemyRobots) {
-      if (Clock.getBytecodesLeft() < MAX_MICRO_BYTECODE_REMAINING) break;
+      if (Clock.getBytecodesLeft() < MicroConstants.MAX_MICRO_BYTECODE_REMAINING) break;
       int t = enemy.type.ordinal();
       currentDPS = DPS[t] / ((int) (rc.senseCooldownMultiplier(enemy.location) * enemy.type.actionCooldown));
       if (currentDPS <= 0) continue;
       //if (danger && Robot.comm.isEnemyTerritory(unit.getLocation())) currentDPS*=1.5;
       currentRangeExtended = rangeExtended[t];
       currentActionRadius = enemy.type.actionRadiusSquared;
-      microInfo[0].updateEnemy(enemy);
-      microInfo[1].updateEnemy(enemy);
-      microInfo[2].updateEnemy(enemy);
-      microInfo[3].updateEnemy(enemy);
-      microInfo[4].updateEnemy(enemy);
-      microInfo[5].updateEnemy(enemy);
-      microInfo[6].updateEnemy(enemy);
-      microInfo[7].updateEnemy(enemy);
-      microInfo[8].updateEnemy(enemy);
+      microInfo[0].updateForEnemy(enemy);
+      microInfo[1].updateForEnemy(enemy);
+      microInfo[2].updateForEnemy(enemy);
+      microInfo[3].updateForEnemy(enemy);
+      microInfo[4].updateForEnemy(enemy);
+      microInfo[5].updateForEnemy(enemy);
+      microInfo[6].updateForEnemy(enemy);
+      microInfo[7].updateForEnemy(enemy);
+      microInfo[8].updateForEnemy(enemy);
     }
 
     RobotInfo[] friendlyRobots = Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS;
     for (RobotInfo friendly : friendlyRobots) {
-      if (Clock.getBytecodesLeft() < MAX_MICRO_BYTECODE_REMAINING) break;
+      if (Clock.getBytecodesLeft() < MicroConstants.MAX_MICRO_BYTECODE_REMAINING) break;
       currentDPS = DPS[friendly.type.ordinal()] / ((int) (rc.senseCooldownMultiplier(friendly.location) * friendly.type.actionCooldown));
       if (currentDPS <= 0) continue;
-      microInfo[0].updateAlly(friendly);
-      microInfo[1].updateAlly(friendly);
-      microInfo[2].updateAlly(friendly);
-      microInfo[3].updateAlly(friendly);
-      microInfo[4].updateAlly(friendly);
-      microInfo[5].updateAlly(friendly);
-      microInfo[6].updateAlly(friendly);
-      microInfo[7].updateAlly(friendly);
-      microInfo[8].updateAlly(friendly);
+      microInfo[0].updateForAlly(friendly);
+      microInfo[1].updateForAlly(friendly);
+      microInfo[2].updateForAlly(friendly);
+      microInfo[3].updateForAlly(friendly);
+      microInfo[4].updateForAlly(friendly);
+      microInfo[5].updateForAlly(friendly);
+      microInfo[6].updateForAlly(friendly);
+      microInfo[7].updateForAlly(friendly);
+      microInfo[8].updateForAlly(friendly);
     }
 
     MicroInfo bestMicro = microInfo[8];
@@ -176,7 +168,7 @@ public class AttackerMovementMicro {
 
     Direction dir;
     MapLocation location;
-    int minDistanceToEnemy = INF;
+    int minDistanceToEnemy;
     MapLocation closestEnemyLocation = null;
     double DPSreceived = 0;
     double enemiesTargeting = 0;
@@ -192,69 +184,69 @@ public class AttackerMovementMicro {
       else {
         cooldownMultiplier = rc.canSenseLocation(this.location) ? rc.senseCooldownMultiplier(this.location) : 1;
         actionCooldown = (int) (Cache.Permanent.ROBOT_TYPE.actionCooldown * cooldownMultiplier);
-        if (!hurt){
+        if (!hurt) {
           this.DPSreceived -= myDPS / actionCooldown;
           this.alliesTargeting += myDPS / actionCooldown;
           minDistanceToEnemy = rangeExtended[RobotType.LAUNCHER.ordinal()];
         } else {
-          minDistanceToEnemy = INF;
+          minDistanceToEnemy = Integer.MAX_VALUE;
         }
       }
     }
 
-    void updateEnemy(RobotInfo unit){
+    void updateForEnemy(RobotInfo enemy) {
       if (!canMove) return;
-      int dist = unit.location.distanceSquaredTo(location);
+      int dist = enemy.location.distanceSquaredTo(location);
       if (dist < minDistanceToEnemy) {
         minDistanceToEnemy = dist;
-        closestEnemyLocation = unit.location;
+        closestEnemyLocation = enemy.location;
       }
       if (dist <= currentActionRadius) DPSreceived += currentDPS;
       if (dist <= currentRangeExtended) enemiesTargeting += currentDPS;
     }
 
-    void updateAlly(RobotInfo unit){
+    void updateForAlly(RobotInfo ally) {
       if (!canMove) return;
 //      alliesTargeting += currentDPS;
       if (closestEnemyLocation == null) return;
-      int dist = unit.location.distanceSquaredTo(closestEnemyLocation);
+      int dist = ally.location.distanceSquaredTo(closestEnemyLocation);
 //      if (dist <= currentActionRadius) DPSreceived += currentDPS;
       if (dist <= currentRangeExtended) alliesTargeting += currentDPS;
     }
 
 
-    int safe(){
+    int safe() {
       if (!canMove) return -1;
       if (DPSreceived > 0) return 0;
       if (enemiesTargeting > alliesTargeting) return 1;
       return 2;
     }
 
-    boolean inRange(){
-      if (alwaysInRange) return true;
+    boolean inRange() {
+      if (shouldStayInRange) return true;
       return minDistanceToEnemy <= myRange;
     }
 
     //equal => true
-    boolean isBetter(MicroInfo M){
+    boolean isBetter(MicroInfo otherMicro) {
 
-      if (safe() > M.safe()) return true;
-      if (safe() < M.safe()) return false;
+      if (safe() > otherMicro.safe()) return true;
+      if (safe() < otherMicro.safe()) return false;
 
-      if (inRange() && !M.inRange()) return true;
-      if (!inRange() && M.inRange()) return false;
+      if (inRange() && !otherMicro.inRange()) return true;
+      if (!inRange() && otherMicro.inRange()) return false;
 
       if (!severelyHurt) {
-        if (alliesTargeting > M.alliesTargeting) return true;
-        if (alliesTargeting < M.alliesTargeting) return false;
+        if (alliesTargeting > otherMicro.alliesTargeting) return true;
+        if (alliesTargeting < otherMicro.alliesTargeting) return false;
       }
 
-      if (inRange()) return minDistanceToEnemy >= M.minDistanceToEnemy;
-      else return minDistanceToEnemy <= M.minDistanceToEnemy;
+      if (inRange()) return minDistanceToEnemy >= otherMicro.minDistanceToEnemy;
+      else return minDistanceToEnemy <= otherMicro.minDistanceToEnemy;
     }
   }
 
   public static boolean ishurt(int health, int maxHealth) {
-    return health < CRITICAL_HEALTH;
+    return health < MicroConstants.CRITICAL_HEALTH;
   }
 }

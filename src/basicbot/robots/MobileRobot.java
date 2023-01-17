@@ -14,7 +14,7 @@ public abstract class MobileRobot extends Robot {
   protected int turnsExploring;
   /** true if the exploration target is set to random location instead of unexplored lands */
   protected boolean exploringRandomly = false;
-  private final int EXPLORATION_REACHED_RADIUS;
+  public final int EXPLORATION_REACHED_RADIUS;
 
   MobileRobot (RobotController rc) throws GameActionException {
     super(rc);

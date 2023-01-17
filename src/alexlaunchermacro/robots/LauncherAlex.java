@@ -111,7 +111,7 @@ public class LauncherAlex extends MobileRobot {
 //      return;
 //    }
     // restore old target
-    if(oldTarget != null) {
+    if (oldTarget != null) {
       targetLocation = oldTarget;
       oldTarget = null;
     }
@@ -119,7 +119,7 @@ public class LauncherAlex extends MobileRobot {
       numTurnsNearTarget = 0;
       // update the target
       currentTargetType = currentTargetType.next();
-      switch(currentTargetType) {
+      switch (currentTargetType) {
         case OUR_WELL:
 //          ResourceType rt = ResourceType.ADAMANTIUM;
 //          if(Utils.rng.nextBoolean()) rt = ResourceType.MANA;
@@ -130,7 +130,7 @@ public class LauncherAlex extends MobileRobot {
 
 //          targetLocation = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           MapLocation[] enemyHQs = HqMetaInfo.enemyHqLocations;
-          if(visitedLocations.size == enemyHQs.length) { visitedLocations = new HashSet<>(4);}
+          if (visitedLocations.size == enemyHQs.length) { visitedLocations = new HashSet<>(4);}
 
           MapLocation closestHQ = null;
           int bestDist = 1000000;

@@ -8,64 +8,74 @@ import battlecode.common.*;
 
 public class AttackMicro {
   public static RobotController rc;
-  private static boolean chickenBehavior;
 
   public static void init(RobotController rc) {
     AttackMicro.rc = rc;
   }
 
-  public static void checkChickenBehavior(){
-    if (!chickenBehavior && AttackerMovementMicro.ishurt(Cache.PerTurn.HEALTH, Cache.Permanent.MAX_HEALTH)) chickenBehavior = true;
-    if (chickenBehavior && Cache.PerTurn.HEALTH >= Cache.Permanent.MAX_HEALTH) chickenBehavior = false;
+  public static MapLocation getBestAttackTarget(boolean onlyAttackers) throws GameActionException {
+    RobotInfo[] enemies = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
+    AttackCandidate bestTarget = null;
+    for (RobotInfo enemy : enemies) {
+      if (onlyAttackers && !AttackMicro.isAttacker(enemy.getType())) continue;
+      if (rc.canAttack(enemy.location)) {
+        AttackCandidate at = new AttackCandidate(enemy);
+        if (at.isBetterThan(bestTarget)) bestTarget = at;
+      }
+    }
+    if (bestTarget == null) return null;
+    return bestTarget.mloc;
   }
 
-  public static MapLocation getBestTarget() throws GameActionException {
-    MapLocation bestAttackingTarget = getBestAttackingTarget();
-//    if (chickenBehavior) {
-//      MapLocation ans = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-//      if (ans != null) {
-//        if (bestAttackingTarget != null && !AttackerMovementMicro.ishurt(Cache.PerTurn.HEALTH, Cache.Permanent.MAX_HEALTH)){
-//          if (bestAttackingTarget.distanceSquaredTo(ans) <= 53){
-//            return bestAttackingTarget;
-//          }
-//        }
-//        int d = ans.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
-//        if (d <= 13) return Cache.PerTurn.CURRENT_LOCATION;
-//        return ans;
-//      }
-//    }
-    return bestAttackingTarget;
+  public static MapLocation getBestMovementPosition() throws GameActionException {
+    return getBestMovementForAttacking();
   }
 
-  static MapLocation getBestAttackingTarget() throws GameActionException {
-    MoveTarget bestTarget = null;
+  static MapLocation getBestMovementForAttacking() throws GameActionException {
+    EnemyTargetForMovement bestTarget = null;
     RobotInfo[] enemies = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     for (RobotInfo enemy : enemies){
-      if (HqMetaInfo.isEnemyTerritory(enemy.location) && enemy.type != RobotType.CARRIER) continue;
-      MoveTarget mt = new MoveTarget(enemy);
-      if (mt.isBetterThan(bestTarget)) bestTarget = mt;
+      switch (enemy.type) {
+        case HEADQUARTERS:
+          continue;
+        case LAUNCHER:
+        case DESTABILIZER:
+          if (Cache.PerTurn.ROUND_NUM <= MicroConstants.ATTACK_TURN && HqMetaInfo.isEnemyTerritory(enemy.location)) continue;
+        default:
+          EnemyTargetForMovement mt = new EnemyTargetForMovement(enemy);
+          if (mt.isBetterThan(bestTarget)) bestTarget = mt;
+      }
     }
-    if (bestTarget != null) {
-      MapLocation ans = bestAim(bestTarget.mloc);
-      if (ans.distanceSquaredTo(bestTarget.mloc) <= Cache.Permanent.ACTION_RADIUS_SQUARED) return ans;
-      return bestTarget.mloc;
+    MapLocation bestTargetLocation = bestTarget == null ? null : bestTarget.mloc;
+    no_target: if (bestTargetLocation == null) {
+      MapLocation closestEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+      if (closestEnemy == null) break no_target;
+      MapLocation towardsEnemy = rc.adjacentLocation(Cache.PerTurn.CURRENT_LOCATION.directionTo(closestEnemy));
+      if (towardsEnemy.isWithinDistanceSquared(closestEnemy, Cache.Permanent.VISION_RADIUS_SQUARED)) {
+        bestTargetLocation = closestEnemy;
+      }
     }
-    return Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+    if (bestTargetLocation != null) {
+      MapLocation aimPosition = bestPositionToAimFrom(bestTargetLocation);
+      if (aimPosition.isWithinDistanceSquared(bestTargetLocation, Cache.Permanent.ACTION_RADIUS_SQUARED)) return aimPosition;
+      return bestTargetLocation;
+    }
+    return null;//Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
   }
 
-  static MapLocation bestAim(MapLocation target) throws GameActionException {
+  static MapLocation bestPositionToAimFrom(MapLocation target) throws GameActionException {
     rc.setIndicatorDot(target, 0, 255, 0);
-    AimTarget[] aims = new AimTarget[9];
-    for (Direction dir : Utils.directionsNine) aims[dir.ordinal()] = new AimTarget(dir, target);
+    AimingPosition[] aims = new AimingPosition[9];
+    for (Direction dir : Utils.directionsNine) aims[dir.ordinal()] = new AimingPosition(dir, target);
     double minCooldownMultiplier = aims[8].cooldownMultiplier;
     for (int i = 8; i-- > 0; ){
       if (aims[i].canMove && aims[i].cooldownMultiplier < minCooldownMultiplier) minCooldownMultiplier = aims[i].cooldownMultiplier;
     }
-    minCooldownMultiplier *= AttackerMovementMicro.MAX_COOLDOWN_DIFF;
+    minCooldownMultiplier *= MicroConstants.MAX_COOLDOWN_DIFF;
     for (int i = 8; i-- > 0; ){
       if (aims[i].cooldownMultiplier > minCooldownMultiplier) aims[i].canMove = false;
     }
-    AimTarget bestTarget = aims[8];
+    AimingPosition bestTarget = aims[8];
     for (int i = 8; i-- > 0; ){
       if (aims[i].isBetterThan(bestTarget)){
         bestTarget = aims[i];
@@ -79,80 +89,77 @@ public class AttackMicro {
     return type == RobotType.LAUNCHER || type == RobotType.DESTABILIZER;
   }
 
-  public static class AttackTarget {
+  public static class AttackCandidate {
     RobotType type;
     int health;
-    boolean attacker = false;
+    boolean isAttacker;
     public MapLocation mloc;
+    private final int distanceToSelf;
 
-    public boolean isBetterThan(AttackTarget t){
+    public boolean isBetterThan(AttackCandidate t){
       if (t == null) return true;
-      if (attacker & !t.attacker) return true;
-      if (!attacker & t.attacker) return false;
-      return health <= t.health;
+      if (isAttacker != t.isAttacker) return isAttacker;
+      if (health != t.health) return health < t.health;
+      if (distanceToSelf != t.distanceToSelf) return distanceToSelf < t.distanceToSelf;
+      return true;
     }
 
-    public AttackTarget(RobotInfo r){
+    public AttackCandidate(RobotInfo r){
       type = r.type;
-      health = r.getHealth();
-      mloc = r.getLocation();
-      switch(type){
-        case LAUNCHER:
-        case DESTABILIZER:
-          attacker = true;
-        default:
-          break;
-      }
+      health = r.health;
+      mloc = r.location;
+      isAttacker = isAttacker(type);
+      distanceToSelf = mloc.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
     }
   }
 
-  static class MoveTarget {
+  static class EnemyTargetForMovement {
     RobotType type;
     int health;
-    int priority;
+    int enemyPriority;
     MapLocation mloc;
 
-    boolean isBetterThan(MoveTarget t) {
+    boolean isBetterThan(EnemyTargetForMovement t) {
       if (t == null) return true;
-      if (priority > t.priority) return true;
-      if (priority < t.priority) return true;
+      if (enemyPriority > t.enemyPriority) return true;
+      if (enemyPriority < t.enemyPriority) return true;
       return health <= t.health;
     }
 
-    MoveTarget(RobotInfo r) {
+    EnemyTargetForMovement(RobotInfo r) {
       this.type = r.type;
       this.health = r.health;
       this.mloc = r.location;
       switch (type){
         case HEADQUARTERS:
-          priority = 0;
+          enemyPriority = 0;
           break;
         case AMPLIFIER:
-          priority = 1;
+          enemyPriority = 1;
           break;
         case CARRIER:
-          priority = 2;
+          enemyPriority = 2;
           break;
         case BOOSTER:
-          priority = 3;
+          enemyPriority = 3;
           break;
         case LAUNCHER:
-          priority = 4;
+          enemyPriority = 4;
           break;
         case DESTABILIZER:
-          priority = 5;
+          enemyPriority = 5;
           break;
       }
     }
   }
 
-  static class AimTarget {
+  static class AimingPosition {
     MapLocation loc;
     int dist;
     double cooldownMultiplier;
     boolean canMove = true;
 
-    AimTarget(Direction dir, MapLocation target) throws GameActionException {
+    AimingPosition(Direction dir, MapLocation target) throws GameActionException {
       if (dir != Direction.CENTER && !rc.canMove(dir)){
         canMove = false;
         return;
@@ -162,11 +169,21 @@ public class AttackMicro {
       cooldownMultiplier = rc.canSenseLocation(loc) ? rc.senseCooldownMultiplier(loc) : 1;
     }
 
-    boolean isBetterThan(AimTarget at){
+    boolean isBetterThan(AimingPosition at) throws GameActionException {
+      if (canMove != at.canMove) return canMove;
       if (!canMove) return false;
-      if (!at.canMove) return true;
 
-      return dist < at.dist;
+      if (dist != at.dist) return dist < at.dist;
+      if (cooldownMultiplier != at.cooldownMultiplier) return cooldownMultiplier < at.cooldownMultiplier;
+
+      MapLocation closestToSelf = Communicator.getClosestEnemy(loc);
+      MapLocation closestToAt = Communicator.getClosestEnemy(at.loc);
+      if (closestToSelf != null && closestToAt != null){
+        int d1 = closestToSelf.distanceSquaredTo(loc);
+        int d2 = closestToAt.distanceSquaredTo(at.loc);
+        if (d1 != d2) return d1 < d2;
+      }
+      return loc.equals(Cache.PerTurn.CURRENT_LOCATION);
     }
   }
 }

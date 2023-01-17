@@ -2,10 +2,8 @@ package basicbot.robots;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashSet;
 import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerMovementMicro;
 import basicbot.utils.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.GameActionException;
@@ -14,8 +12,6 @@ import battlecode.common.ResourceType;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
-
-import java.util.Set;
 
 /**
  * Garbo written class for Sprint 1 just based on my general micro idea.
@@ -61,7 +57,7 @@ public class LauncherAlex extends MobileRobot {
 
   @Override
   protected void runTurn() throws GameActionException {
-    MapLocation ans = AttackMicro.getBestTarget();
+    MapLocation ans = AttackMicro.getBestMovementPosition();
     if (ans != null) {
       microBoi.runTurn();
       return;
@@ -88,7 +84,7 @@ public class LauncherAlex extends MobileRobot {
         return;
       }
     }
-    if(numEnemies == 0) {
+    if (numEnemies == 0) {
       // no enemies nearby
       runTurn_noEnemies();
       return;

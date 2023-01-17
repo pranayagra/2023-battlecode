@@ -1,11 +1,12 @@
 package basicbot.robots;
 
-import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerMovementMicro;
+import basicbot.robots.micro.AttackerFightingMicro;
+import basicbot.robots.micro.MicroConstants;
 import basicbot.utils.Cache;
+import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
@@ -19,13 +20,13 @@ public class Launcher extends MobileRobot {
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
 
-    AttackMicro.checkChickenBehavior();
     tryAttack(true);
 
     // do micro -- returns true if we did micro -> should exit early
     boolean didAnyMicro = false;
-    while (AttackerMovementMicro.doMicro()) {
+    while (AttackerFightingMicro.doMicro()) {
       didAnyMicro = true;
+      rc.setIndicatorString("did micro");
     }
     if (!didAnyMicro) {
       boolean canMove = Cache.PerTurn.ROUND_NUM >= MIN_TURN_TO_MOVE;
@@ -41,83 +42,39 @@ public class Launcher extends MobileRobot {
       if (canMove) {
         MapLocation target;
         do {
-          target = getTarget();
+          target = getPatrolTarget();
+          rc.setIndicatorString("patrol target: " + target);
         } while (target != null && pathing.moveTowards(target));
       }
     }
 
     tryAttack(false);
-
-//    RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
-//    for (int i = allNearbyEnemyRobots.length; --i >= 0 && rc.isActionReady();) {
-//      RobotInfo enemy = allNearbyEnemyRobots[i];
-//      attack(enemy.location);
-//    }
-//
-//    // if I could not attack anyone in my vision range above, then consider cloud attacks (and if success, we should move backwards?)
-//    // need to be careful with cd multiplier causing isAction to be false after a couple successful attacks
-//    if (rc.isActionReady()) {
-//      if (attemptCloudAttack()) {
-//        rc.setIndicatorString("successful cloud attack -> exit early");
-//        return;
-//      }
-//    }
-//
-//    if (Cache.PerTurn.ROUND_NUM >= MIN_TURN_TO_MOVE) {
-//      MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-//      MapLocation closestEnemy = Communicator.getClosestEnemy(closestHQ);
-//      int closestDist = closestEnemy == null ? Integer.MAX_VALUE : closestEnemy.distanceSquaredTo(closestHQ);
-//      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-//        switch (robot.type) {
-//          case CARRIER:
-//          case HEADQUARTERS:
-//            break;
-//          default:
-//            int dist = robot.location.distanceSquaredTo(closestHQ);
-//            if (dist < closestDist) {
-//              closestDist = dist;
-//              closestEnemy = robot.location;
-//            }
-//        }
-//      }
-//      no_enemy:
-//      if (closestEnemy == null) {
-////      if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
-////        randomizeExplorationTarget(true);
-//////        break no_enemy;
-////      }
-//        rc.setIndicatorString("no enemies -> do exploration: " + explorationTarget);
-//        doExploration();
-//      }
-//      if (closestEnemy != null) { // only go to enemies if we aren't already dealing with some enemy
-//        rc.setIndicatorString("Approach commed enemy: " + closestEnemy);
-//        pathing.moveTowards(closestEnemy);
-//      }
-//    }
-//
-////    rc.setIndicatorString("Enemies near me: " + Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length + " -- canAct=" + rc.isActionReady());
-//
-//    allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
-//    for (int i = allNearbyEnemyRobots.length; --i >= 0 && rc.isActionReady();) {
-//      RobotInfo enemy = allNearbyEnemyRobots[i];
-//      attack(enemy.location);
-//    }
-//
-//    if (rc.isActionReady()) {
-//      attemptCloudAttack();
-//    }
   }
 
-  private MapLocation getTarget() throws GameActionException {
-    if (rc.getRoundNum() < AttackerMovementMicro.ATTACK_TURN && HqMetaInfo.isEnemyTerritory(Cache.PerTurn.CURRENT_LOCATION)) {
-      randomizeExplorationTarget(true);
+  private MapLocation getPatrolTarget() throws GameActionException {
+    // immediately adjacent location to consider -> will chase a valid enemy if necessary
+    MapLocation patrolTarget = AttackMicro.getBestMovementPosition();
+    if (patrolTarget != null) return patrolTarget;
+    // closest enemy to our closest HQ -- friendlies in danger -> will come back to protect HQ
+    patrolTarget = Communicator.getClosestEnemy(HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION));
+    if (patrolTarget != null) return patrolTarget;
+
+    // early game -- just explore on our own side of the map
+    if (Cache.PerTurn.ROUND_NUM < MicroConstants.ATTACK_TURN && HqMetaInfo.isEnemyTerritory(Cache.PerTurn.CURRENT_LOCATION)) {
+      if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS)) {
+        randomizeExplorationTarget(true);
+      }
       return explorationTarget;
     }
-    MapLocation ans = AttackMicro.getBestTarget();
-    if (ans != null) return ans;
-    ans = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-    if (ans != null) return ans;
-    return explorationTarget;
+
+    // do actual patrolling -> cycle between different enemy hotspots (wells / HQs)
+    // TODO: add alex code here
+    patrolTarget = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    if (patrolTarget.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Utils.DSQ_2by2)) {
+      patrolTarget = HqMetaInfo.enemyHqLocations[Utils.rng.nextInt(HqMetaInfo.hqCount)];
+    }
+    return patrolTarget;
+//    return explorationTarget;
   }
 
   /**
@@ -129,23 +86,15 @@ public class Launcher extends MobileRobot {
    */
   boolean tryAttack(boolean onlyAttackers) throws GameActionException {
     if (!rc.isActionReady()) return false;
-    RobotInfo[] enemies = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
-    AttackMicro.AttackTarget bestTarget = null;
-    for (RobotInfo enemy : enemies){
-      if (onlyAttackers && !AttackMicro.isAttacker(enemy.getType())) continue;
-      if (rc.canAttack(enemy.location)){
-        AttackMicro.AttackTarget at = new AttackMicro.AttackTarget(enemy);
-        if (at.isBetterThan(bestTarget)) bestTarget = at;
-      }
-    }
-    boolean attacked = bestTarget != null && attack(bestTarget.mloc);
+    MapLocation bestAttackTarget = AttackMicro.getBestAttackTarget(onlyAttackers);
+    boolean attacked = bestAttackTarget != null && attack(bestAttackTarget);
     if (onlyAttackers) return attacked;
     return attemptCloudAttack();
   }
 
 
   private boolean attack(MapLocation loc) throws GameActionException {
-//    if (rc.canAttack(loc)) return false; //todo : Remove after!
+    // TODO: consider adding bytecode check here (like movement)
     if (rc.canAttack(loc)) {
       rc.attack(loc);
       return true;
