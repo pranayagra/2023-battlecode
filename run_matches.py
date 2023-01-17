@@ -99,7 +99,8 @@ def run_match(bot, map):
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
 
-        if gameLengthA == 2000:
+        # print('gameLengthA: ', gameLengthA)
+        if gameLengthA == 2000 or True:
             retrieveTotalUnitsSpawned(outputA)
 
         if winAString in outputA:
