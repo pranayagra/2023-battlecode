@@ -13,8 +13,8 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-# bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro']
-bots = ['spawnorder']
+bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
+# bots = ['spawnorder']
 botsSet = set(bots)
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
@@ -80,8 +80,8 @@ def run_match(bot, map):
         
         numWins = 0
 
-        print('outputA: ', outputA)
-        print('outputB: ', outputB)
+        # print('outputA: ', outputA)
+        # print('outputB: ', outputB)
         
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
