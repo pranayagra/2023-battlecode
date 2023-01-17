@@ -146,12 +146,9 @@ with open('matches-summary.txt', 'w') as f:
     table = [[''] + bots, [':---:' for i in range(len(bots) + 1)]] + [[map] + row for map, row in zip(maps, table)]
     for line in table:
         f.write('| ')
-        print('line=', line)
-        print([part.split('\n') for part in line])
-        actual_lines = itertools.zip_longest(*[part.split('\n') for part in line])
-        # for act_l in actual_lines:
-        #     f.write(' | '.join(act_l))
-        f.write(' |')
+        actual_lines = itertools.zip_longest(*[part.split('\n') for part in line], fillvalue="")
+        for act_l in actual_lines:
+            f.write(' | '.join(act_l))
         f.write('\n')
     f.write('\n')
     for error in errors:
