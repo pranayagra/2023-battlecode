@@ -13,7 +13,8 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro']
+# bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro']
+bots = ['spawnorder']
 botsSet = set(bots)
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
@@ -29,40 +30,24 @@ numWinsMapping = {
 }
 
 
-def retrieveTotalUnitsSpawned(numRounds, output):
+def retrieveTotalUnitsSpawned(numRounds, output, team):
     totalValueA = 0
     last249Round = ((numRounds // 250) * 250) - 1
-    print('numRounds: ', numRounds, 'last249Round: ', last249Round)
+    print('numRounds: ', numRounds, 'last249Round: ', last249Round, 'team: ', team)
     for i in range(4):
-        startString = f'HQ{last249Round}A{i} ('
+        startString = f'HQ{last249Round}{team}{i} ('
         startIndex = output.find(startString)
         if startIndex == -1:
             continue
         endIndex = output.find(')', startIndex)
         if endIndex == -1:
             continue
-        print(startIndex, endIndex)
         value = output[startIndex + len(startString):endIndex]
-        print(value)
+        print('count: ', value)
         totalValueA += int(value)
     print(totalValueA)
 
-    totalValueB = 0
-    for i in range(4):
-        startString = f'HQ{last249Round}B{i}--'
-        startIndex = output.find(startString)
-
-        if startIndex == -1:
-            continue
-        endIndex = output.find('--', startIndex)
-        if endIndex == -1:
-            continue
-        value = output[startIndex + len(startString) + 1:endIndex]
-        print(value)
-        totalValueB += int(value)
-    print(totalValueB)
-
-    return (totalValueA, totalValueB)
+    return totalValueA
 
 
 
@@ -104,11 +89,13 @@ def run_match(bot, map):
         AMoreUnits = 0
         BMoreUnits = 0
         if int(gameLengthA) >= 250:
-            totalUnitSpawnedT1A, totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA)
+            totalUnitSpawnedT1A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA, 'A')
+            totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA, 'B')
             AMoreUnits = totalUnitSpawnedT1A - totalUnitSpawnedT2A
             print('totalUnitSpawnedT1A: ', totalUnitSpawnedT1A, 'totalUnitSpawnedT2A: ', totalUnitSpawnedT2A, 'AMoreUnits: ', AMoreUnits)
         if int(gameLengthB) >= 250:
-            totalUnitSpawnedT1B, totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB)
+            totalUnitSpawnedT1B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB, 'A')
+            totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB, 'B')
             BMoreUnits = totalUnitSpawnedT2B - totalUnitSpawnedT1B
             print('totalUnitSpawnedT1B: ', totalUnitSpawnedT1B, 'totalUnitSpawnedT2B: ', totalUnitSpawnedT2B, 'BMoreUnits: ', BMoreUnits)
 
