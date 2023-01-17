@@ -14,12 +14,12 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-# bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
-bots = ['spawnorder']
+bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
+# bots = ['spawnorderg']
 botsSet = set(bots)
-# maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
+maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
-maps = ['SmallElements']
+# maps = ['SmallElements']
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
