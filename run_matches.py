@@ -40,7 +40,7 @@ def retrieveTotalUnitsSpawned(output):
         if endIndex == -1:
             continue
         print(startIndex, endIndex)
-        value = output[startIndex:endIndex]
+        value = output[startIndex + len(startString):endIndex]
         print(value)
         # totalValueA += int(value)
     # print(totalValueA)
@@ -98,6 +98,8 @@ def run_match(bot, map):
         
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
+
+        print(gameLengthA)
 
         # print('gameLengthA: ', gameLengthA)
         if gameLengthA == 2000 or True:
