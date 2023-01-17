@@ -116,7 +116,7 @@ def run_match(bot, map):
                 return 'Error'
         outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
         outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
-        return outStr1 + '\n' + outStr2
+        return outStr1 + '\t' + outStr2
 
 
 results = {}
