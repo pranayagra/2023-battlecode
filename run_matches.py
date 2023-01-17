@@ -13,7 +13,7 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder']
+bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
 botsSet = set(bots)
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
@@ -29,10 +29,12 @@ numWinsMapping = {
 }
 
 
-def retrieveTotalUnitsSpawned(output):
+def retrieveTotalUnitsSpawned(numRounds, output):
     totalValueA = 0
+    last249Round = ((numRounds // 250) * 250) - 1
+    print('numRounds: ', numRounds, 'last249Round: ', last249Round)
     for i in range(4):
-        startString = f'HQA{i} ('
+        startString = f'HQ{last249Round}A{i} ('
         startIndex = output.find(startString)
         if startIndex == -1:
             continue
@@ -47,7 +49,7 @@ def retrieveTotalUnitsSpawned(output):
 
     totalValueB = 0
     for i in range(4):
-        startString = f'HQB{i}--'
+        startString = f'HQ{last249Round}B{i}--'
         startIndex = output.find(startString)
 
         if startIndex == -1:
@@ -101,11 +103,11 @@ def run_match(bot, map):
 
         AMoreUnits = 0
         BMoreUnits = 0
-        if gameLengthA == 2000 or True:
+        if gameLengthA >= 250:
             totalUnitSpawnedT1A, totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(outputA)
             AMoreUnits = totalUnitSpawnedT1A - totalUnitSpawnedT2A
             print('totalUnitSpawnedT1A: ', totalUnitSpawnedT1A, 'totalUnitSpawnedT2A: ', totalUnitSpawnedT2A, 'AMoreUnits: ', AMoreUnits)
-        if gameLengthB == 2000 or True:
+        if gameLengthB >= 250:
             totalUnitSpawnedT1B, totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(outputB)
             BMoreUnits = totalUnitSpawnedT2B - totalUnitSpawnedT1B
             print('totalUnitSpawnedT1B: ', totalUnitSpawnedT1B, 'totalUnitSpawnedT2B: ', totalUnitSpawnedT2B, 'BMoreUnits: ', BMoreUnits)

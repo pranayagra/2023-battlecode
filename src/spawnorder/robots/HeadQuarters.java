@@ -41,6 +41,8 @@ public class HeadQuarters extends Robot {
 
   MapLocation[] spawnLocations;
 
+  private int totalSpawns = 0;
+
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
     this.closestAdamantium = getClosestWell(ResourceType.ADAMANTIUM);
@@ -69,6 +71,10 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
+
+    if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+    }
 
     // spawn order
     // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)
@@ -341,6 +347,7 @@ public class HeadQuarters extends Robot {
     if (rc.canBuildRobot(type, location)) {
       rc.buildRobot(type, location);
       lastSpawnLoc = location;
+      totalSpawns++;
       return true;
     }
     return false;
