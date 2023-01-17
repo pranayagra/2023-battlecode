@@ -39,7 +39,8 @@ def retrieveTotalUnitsSpawned(output):
         endIndex = output.find('--', startIndex)
         if endIndex == -1:
             continue
-        value = output[startIndex + len(startString):endIndex]
+        print(startIndex, endIndex)
+        value = output[startIndex:endIndex]
         print(value)
         # totalValueA += int(value)
     # print(totalValueA)
