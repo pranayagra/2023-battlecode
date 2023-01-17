@@ -13,7 +13,7 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
+bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro']
 botsSet = set(bots)
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
@@ -103,12 +103,12 @@ def run_match(bot, map):
 
         AMoreUnits = 0
         BMoreUnits = 0
-        if gameLengthA >= 250:
-            totalUnitSpawnedT1A, totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(outputA)
+        if int(gameLengthA) >= 250:
+            totalUnitSpawnedT1A, totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA)
             AMoreUnits = totalUnitSpawnedT1A - totalUnitSpawnedT2A
             print('totalUnitSpawnedT1A: ', totalUnitSpawnedT1A, 'totalUnitSpawnedT2A: ', totalUnitSpawnedT2A, 'AMoreUnits: ', AMoreUnits)
-        if gameLengthB >= 250:
-            totalUnitSpawnedT1B, totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(outputB)
+        if int(gameLengthB) >= 250:
+            totalUnitSpawnedT1B, totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB)
             BMoreUnits = totalUnitSpawnedT2B - totalUnitSpawnedT1B
             print('totalUnitSpawnedT1B: ', totalUnitSpawnedT1B, 'totalUnitSpawnedT2B: ', totalUnitSpawnedT2B, 'BMoreUnits: ', BMoreUnits)
 
