@@ -3,6 +3,7 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.utils.Cache;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -21,6 +22,24 @@ public class HeadQuarters extends Robot {
 
   private HQRole role;
 
+  private boolean spawnAmplifier;
+  private int spawnAmplifierSafe;
+  private int spawnAmplifierCooldown;
+
+  private MapLocation lastSpawnLoc = null;
+
+  private int carrierSpawnOrderIdx = 0;
+  private final SpawnType[] carrierSpawnOrder = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA};
+
+  private static final SpawnType[] spawnOrderEnemyHQHere = new SpawnType[] {SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA};
+  private static final SpawnType[] spawnOrder20x20 = new SpawnType[] {SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.CARRIER_ADAMANTIUM};
+  private static final SpawnType[] spawnOrder40x40 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
+  private static final SpawnType[] spawnOrder60x60 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
+
+  private int spawnIdx = 0;
+  private SpawnType[] spawnOrder;
+
+  MapLocation[] spawnLocations;
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
@@ -31,66 +50,38 @@ public class HeadQuarters extends Robot {
       this.closestWell = this.closestMana;
     }
     this.hqID = Communicator.MetaInfo.registerHQ(this.closestAdamantium, this.closestMana);
+    if (Cache.Permanent.MAP_AREA <= 20*20) spawnOrder = spawnOrder20x20;
+    else if (Cache.Permanent.MAP_AREA <= 40*40) spawnOrder = spawnOrder40x40;
+    else spawnOrder = spawnOrder60x60;
+
+    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
+      spawnOrder = spawnOrderEnemyHQHere;
+    }
+
+    spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);;
+
     determineRole();
   }
 
   @Override
   protected void runTurn() throws GameActionException {
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) Communicator.MetaInfo.reinitForHQ();
-//    if (Cache.PerTurn.ROUND_NUM == 200) rc.resign();
-
+//    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
 
-    if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
-      this.role = HQRole.BUILD_ANCHORS;
-    }
-    if (Cache.PerTurn.ROUND_NUM >= 1000 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
-      rc.setIndicatorString("Build anchor");
-      if (createAnchors()) {
-        numAnchorsMade++;
-      }
-      return;
-    }
-    make_carriers: if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
-      if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
-        int emptyCarrierCount = 0;
-        for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-          if (robot.type == RobotType.CARRIER && getInvWeight(robot) == 0) {
-            emptyCarrierCount++;
-          }
-        }
-        if (emptyCarrierCount >= 15) {
-          break make_carriers;
-        }
-      }
-      if (this.closestWell != null) {
-        rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
-        if (spawnCarrierTowardsWell(this.closestWell)) {
-//          testCount++;
-//          if (testCount >= 10) {
-//            becomeDoNothingBot();
-//          }
-        }
-      } else if (this.targetWell != null) {
-//        rc.disintegrate();
-        rc.setIndicatorString("Spawn towards target: " + this.targetWell);
-        spawnCarrierTowardsWell(this.targetWell);
-      } else {
-//        rc.disintegrate();
-        rc.setIndicatorString("Find target well");
-        determineTargetWell();
-      }
-    }
-    if (this.role == HQRole.MAKE_LAUNCHERS || canAfford(RobotType.LAUNCHER)) {
-      rc.setIndicatorString("Spawn towards enemy");
-      spawnLauncherTowardsEnemyHQ();
-    }
-    if (this.role == HQRole.BUILD_ANCHORS || canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
-      rc.setIndicatorString("Build anchor");
-      if (createAnchors()) {
-        numAnchorsMade++;
-        determineRole();
-      }
+    // spawn order
+    // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)
+    // if map size <40x40, do CAD CM CM CM L L L
+    // if map size >=40x40, do CAD CAD CM CM L L L
+    // then control ratio AD:M = 1:4
+
+    // give each HQ just spawned location + 4 bits, and then look at all and check 4 bits
+
+    if (spawnIdx < spawnOrder.length) {
+      forceSpawnOrder();
+    } else {
+      normalSpawnOrder();
     }
   }
 
@@ -98,6 +89,108 @@ public class HeadQuarters extends Robot {
     this.role = HQRole.MAKE_CARRIERS;
     if (this.closestWell == null) {
       this.role = HQRole.MAKE_LAUNCHERS;
+    }
+  }
+
+  private boolean spawnAndCommCarrier(MapLocation preferredSpawnLocation, SpawnType nextSpawn) throws GameActionException {
+    if (spawnCarrierTowardsWell(preferredSpawnLocation)) {
+      int commBits = nextSpawn.getCommBits();
+      MapLocation spawnLocation = lastSpawnLoc;
+//      Printer.print("Spawned " + nextSpawn + " at " + spawnLocation);
+      if (Cache.PerTurn.ROUND_NUM % 2 == 0) {
+        CommsHandler.writeOurHqOddSpawnLocation(this.hqID, spawnLocation);
+        CommsHandler.writeOurHqOddSpawnInstruction(this.hqID, commBits);
+      } else {
+        CommsHandler.writeOurHqEvenSpawnLocation(this.hqID, spawnLocation);
+        CommsHandler.writeOurHqEvenSpawnInstruction(this.hqID, commBits);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private MapLocation getPreferredCarrierSpawnLocation(SpawnType nextSpawn) throws GameActionException {
+    MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, nextSpawn.getResourceType());
+    if (closestWellLocation == null) {
+      closestWellLocation = Utils.randomMapLocation();
+    }
+    return closestWellLocation;
+  }
+
+  private void normalSpawnOrder() throws GameActionException {
+    if (spawnAmplifierCooldown > 0) --spawnAmplifierCooldown;
+
+    if (spawnAmplifier) {
+      if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0 && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0].type != RobotType.HEADQUARTERS) {
+        spawnAmplifier = false;
+        spawnAmplifierCooldown = 50;
+      } else {
+        spawnAmplifierSafe++;
+      }
+    }
+
+    if (Cache.PerTurn.ROUND_NUM >= 60 && spawnAmplifierCooldown <= 0) {
+      if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 8) {
+        if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 || (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 1 && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0].type == RobotType.HEADQUARTERS)) {
+          spawnAmplifier = true;
+          spawnAmplifierSafe = 0;
+        }
+      }
+    }
+
+    if (spawnAmplifier && spawnAmplifierSafe >= 5) {
+      if (canAfford(RobotType.AMPLIFIER)) {
+        if (spawnAmplifierTowardsEnemyHQ()) {
+          spawnAmplifier = false;
+          spawnAmplifierCooldown = 200;
+          spawnAmplifierSafe = 0;
+        }
+      }
+      return;
+    }
+
+    if (Cache.PerTurn.ROUND_NUM >= 500 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+      // consider anchor spawn
+      rc.setIndicatorString("Build anchor");
+      if (createAnchors()) {
+        numAnchorsMade++;
+      }
+      return;
+    }
+
+    if (canAfford(RobotType.LAUNCHER)) {
+      if (spawnLauncherTowardsEnemyHQ()) spawnAmplifierCooldown -= 2;
+    } else if (canAfford(RobotType.CARRIER)) {
+      SpawnType nextSpawn = carrierSpawnOrder[carrierSpawnOrderIdx];
+      MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
+      if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
+        carrierSpawnOrderIdx = (carrierSpawnOrderIdx + 1) % carrierSpawnOrder.length;
+        if (spawnAmplifierCooldown > 0) spawnAmplifierCooldown -= 2;
+      }
+    }
+
+  }
+
+  private void forceSpawnOrder() throws GameActionException {
+    SpawnType nextSpawn = spawnOrder[spawnIdx];
+    switch (nextSpawn) {
+      case CARRIER_MANA:
+      case CARRIER_ADAMANTIUM:
+        MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
+        if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
+          spawnIdx++;
+        }
+        break;
+      case LAUNCHER:
+        if (canAfford(RobotType.LAUNCHER)) {
+          if (spawnLauncherTowardsEnemyHQ()) {
+            int commBits = nextSpawn.getCommBits();
+            MapLocation spawnLocation = lastSpawnLoc;
+            //todo: do comms
+            ++spawnIdx;
+          }
+        }
+        break;
     }
   }
 
@@ -131,16 +224,41 @@ public class HeadQuarters extends Robot {
   private boolean spawnLauncherTowardsEnemyHQ() throws GameActionException {
     MapLocation goal = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, Utils.MapSymmetry.ROTATIONAL);
     MapLocation toSpawn = goal;
-    while (!buildRobot(RobotType.LAUNCHER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
-      if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
-        Direction dir = Utils.randomDirection();
-        goal = goal.add(dir).add(dir);
-        toSpawn = goal;
+//    Printer.print("Spawning launcher towards enemy HQ - " + goal);
+
+    MapLocation bestSpawnLocation = null;
+    int bestMoveDistance = Integer.MAX_VALUE;
+    int bestEucDistance = Integer.MAX_VALUE;
+    for (MapLocation spawnLocation : spawnLocations) {
+      if (rc.canBuildRobot(RobotType.LAUNCHER, spawnLocation)) {
+        int moveDistance = Utils.maxSingleAxisDist(spawnLocation, goal);
+        int euclideanDistance = spawnLocation.distanceSquaredTo(goal);
+        if (moveDistance < bestMoveDistance || (moveDistance == bestMoveDistance && euclideanDistance < bestEucDistance)) {
+          bestSpawnLocation = spawnLocation;
+          bestMoveDistance = moveDistance;
+          bestEucDistance = euclideanDistance;
+        }
       }
-      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
     }
-    return true;
+
+    if (bestSpawnLocation != null) {
+      if (buildRobot(RobotType.LAUNCHER, bestSpawnLocation)) {
+        return true;
+      }
+    }
+    return false;
+
+
+//    while (!buildRobot(RobotType.LAUNCHER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
+//      if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
+//        Direction dir = Utils.randomDirection();
+//        goal = goal.add(dir).add(dir);
+//        toSpawn = goal;
+//      }
+//      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+//      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
+//    }
+//    return true;
   }
 
   private boolean spawnAmplifierTowardsEnemyHQ() throws GameActionException {
@@ -222,6 +340,7 @@ public class HeadQuarters extends Robot {
   protected boolean buildRobot(RobotType type, MapLocation location) throws GameActionException {
     if (rc.canBuildRobot(type, location)) {
       rc.buildRobot(type, location);
+      lastSpawnLoc = location;
       return true;
     }
     return false;
@@ -258,6 +377,84 @@ public class HeadQuarters extends Robot {
         case BUILD_ANCHORS: return ResourceType.ELIXIR;
       }
       throw new RuntimeException("unknown role: " + this);
+    }
+  }
+
+  private enum SpawnType {
+    CARRIER_MANA,
+    CARRIER_ADAMANTIUM,
+    LAUNCHER;
+
+    public ResourceType getResourceType() {
+        switch (this) {
+            case CARRIER_MANA: return ResourceType.MANA;
+            case CARRIER_ADAMANTIUM: return ResourceType.ADAMANTIUM;
+            case LAUNCHER: return ResourceType.NO_RESOURCE;
+        }
+        throw new RuntimeException("unknown spawn type: " + this);
+    }
+
+    public int getCommBits() {
+        switch (this) {
+            case CARRIER_MANA: return 1;
+            case CARRIER_ADAMANTIUM: return 2;
+            case LAUNCHER: return 3;
+        }
+        throw new RuntimeException("unknown spawn type: " + this);
+    }
+  }
+
+  private void oldSpawnCode() throws GameActionException {
+    if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
+      this.role = HQRole.BUILD_ANCHORS;
+    }
+    if (Cache.PerTurn.ROUND_NUM >= 1000 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+      rc.setIndicatorString("Build anchor");
+      if (createAnchors()) {
+        numAnchorsMade++;
+      }
+      return;
+    }
+    make_carriers: if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
+      if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
+        int emptyCarrierCount = 0;
+        for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+          if (robot.type == RobotType.CARRIER && getInvWeight(robot) == 0) {
+            emptyCarrierCount++;
+          }
+        }
+        if (emptyCarrierCount >= 15) {
+          break make_carriers;
+        }
+      }
+      if (this.closestWell != null) {
+        rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
+        if (spawnCarrierTowardsWell(this.closestWell)) {
+//          testCount++;
+//          if (testCount >= 10) {
+//            becomeDoNothingBot();
+//          }
+        }
+      } else if (this.targetWell != null) {
+//        rc.disintegrate();
+        rc.setIndicatorString("Spawn towards target: " + this.targetWell);
+        spawnCarrierTowardsWell(this.targetWell);
+      } else {
+//        rc.disintegrate();
+        rc.setIndicatorString("Find target well");
+        determineTargetWell();
+      }
+    }
+    if (this.role == HQRole.MAKE_LAUNCHERS || canAfford(RobotType.LAUNCHER)) {
+      rc.setIndicatorString("Spawn towards enemy");
+      spawnLauncherTowardsEnemyHQ();
+    }
+    if (this.role == HQRole.BUILD_ANCHORS || canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
+      rc.setIndicatorString("Build anchor");
+      if (createAnchors()) {
+        numAnchorsMade++;
+        determineRole();
+      }
     }
   }
 }

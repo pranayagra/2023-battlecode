@@ -27,6 +27,7 @@ public class Carrier extends MobileRobot {
 
   CarrierTask currentTask;
   CarrierTask forcedNextTask;
+  CarrierTask HQAssignedTask;
 
 
   private int turnsStuckApproachingWell;
@@ -61,8 +62,59 @@ public class Carrier extends MobileRobot {
     }
     forcedNextTask = null;
   }
+
+  private void checkAssignedTask() throws GameActionException {
+//    Printer.print("Checking assigned task");
+    if (Cache.PerTurn.ROUND_NUM % 2 == 0) {
+      for (int i = 0; i < HqMetaInfo.hqCount; ++i) {
+        if (CommsHandler.readOurHqEvenSpawnExists(i)) {
+          MapLocation hqLocation = CommsHandler.readOurHqEvenSpawnLocation(i);
+//          Printer.print("hq location: " + hqLocation, "my location: " + Cache.PerTurn.CURRENT_LOCATION);
+          if (Cache.PerTurn.CURRENT_LOCATION.equals(hqLocation)) {
+            int instruction = CommsHandler.readOurHqEvenSpawnInstruction(i);
+            switch (instruction) {
+              case 1:
+                HQAssignedTask = CarrierTask.FETCH_MANA;
+//                Printer.print("HQ assigned me to fetch mana");
+                return;
+              case 2:
+                HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
+//                Printer.print("HQ assigned me to fetch adamantium");
+                return;
+            }
+          }
+        }
+      }
+    } else {
+      for (int i = 0; i < HqMetaInfo.hqCount; ++i) {
+        if (CommsHandler.readOurHqOddSpawnExists(i)) {
+          MapLocation hqLocation = CommsHandler.readOurHqOddSpawnLocation(i);
+          if (Cache.PerTurn.CURRENT_LOCATION.equals(hqLocation)) {
+            int instruction = CommsHandler.readOurHqOddSpawnInstruction(i);
+            switch (instruction) {
+              case 1:
+                HQAssignedTask = CarrierTask.FETCH_MANA;
+//                Printer.print("HQ assigned me to fetch mana");
+                return;
+              case 2:
+                HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
+//                Printer.print("HQ assigned me to fetch adamantium");
+                return;
+            }
+          }
+        }
+      }
+    }
+  }
   
   private CarrierTask determineNewTask() throws GameActionException {
+    if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
+      // todo: read from comms
+      checkAssignedTask();
+//      Printer.print("checked assign " + HQAssignedTask);
+      if (HQAssignedTask != null) return HQAssignedTask;
+    }
+
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) {
       return CarrierTask.DELIVER_RSS_HOME;
     }
@@ -72,6 +124,7 @@ public class Carrier extends MobileRobot {
       return CarrierTask.ANCHOR_ISLAND;
     }
     // TODO: figure out which resource we should be collecting
+    if (HQAssignedTask != null) return HQAssignedTask;
     int totalAdamantiumAroundMe = 0;
     int totalManaAroundMe = 0;
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
@@ -110,7 +163,8 @@ public class Carrier extends MobileRobot {
     //    if (Cache.PerTurn.ROUND_NUM == 400) {
 //      rc.resign();
 //    }
-//    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
+
     if (enemyExists()) {
       RobotInfo enemyToAttack = enemyToAttackIfWorth();
       if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();

@@ -6,10 +6,7 @@ import basicbot.communications.HqMetaInfo;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerMovementMicro;
 import basicbot.utils.Cache;
-import battlecode.common.GameActionException;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
+import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 9;
@@ -31,7 +28,17 @@ public class Launcher extends MobileRobot {
       didAnyMicro = true;
     }
     if (!didAnyMicro) {
-      if (Cache.PerTurn.ROUND_NUM >= MIN_TURN_TO_MOVE) {
+      boolean canMove = Cache.PerTurn.ROUND_NUM >= MIN_TURN_TO_MOVE;
+      if (Cache.PerTurn.ROUND_NUM < MIN_TURN_TO_MOVE) {
+        int numFriendlyLaunchers = 0;
+        for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+          if (robot.type == RobotType.LAUNCHER) {
+            numFriendlyLaunchers++;
+          }
+        }
+        if (numFriendlyLaunchers >= 2) canMove = true;
+      }
+      if (canMove) {
         MapLocation target;
         do {
           target = getTarget();

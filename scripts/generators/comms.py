@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pathlib import Path
 import re
 import sys
@@ -69,6 +70,10 @@ SCHEMA = {
     'slots': 4,
     'bits': {
       'loc': LOCATION_BITS,
+      'odd_spawn_loc': LOCATION_BITS,
+      'even_spawn_loc': LOCATION_BITS,
+      'odd_spawn_instruction': 2,
+      'even_spawn_instruction': 2,
     }
   },
   'adamantium_well': {
@@ -90,7 +95,7 @@ SCHEMA = {
     }
   },
   'enemy': {
-    'slots': 30,
+    'slots': 29,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,
