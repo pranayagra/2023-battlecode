@@ -117,7 +117,7 @@ def run_match(bot, map):
                 return 'Error'
         outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
         outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
-        return outStr1 + '\n' + outStr2
+        return outStr1 + '<br>' + outStr2
 
 
 results = {}
@@ -146,9 +146,7 @@ with open('matches-summary.txt', 'w') as f:
     table = [[''] + bots, [':---:' for i in range(len(bots) + 1)]] + [[map] + row for map, row in zip(maps, table)]
     for line in table:
         f.write('| ')
-        actual_lines = itertools.zip_longest(*[part.split('\n') for part in line], fillvalue="")
-        for act_l in actual_lines:
-            f.write(' | '.join(act_l))
+        f.write(' | '.join(line))
         f.write('\n')
     f.write('\n')
     for error in errors:
