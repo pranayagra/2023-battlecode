@@ -14,12 +14,14 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
+bots = ['spawnorder', 'ptest']
 # bots = ['spawnorderg']
 botsSet = set(bots)
-maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
-# maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
+customMaps = ['TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
+ogMaps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
 # maps = ['SmallElements']
+sprint1Maps = ["ArtistRendition", "BatSignal", "BowAndArrow", "Cat", "Clown", "Diagonal", "Eyelands", "Frog", "Grievance", "Hah", "Jail", "KingdomRush", "Minefield", "Movepls", "Orbit", "Pathfind", "Pit", "Pizza", "Quiet", "Rectangle", "Scatter", "Sun", "Tacocat"]
+maps = ogMaps + sprint1Maps + customMaps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -151,3 +153,5 @@ with open('matches-summary.txt', 'w') as f:
     f.write('\n')
     for error in errors:
         f.write(error)
+
+

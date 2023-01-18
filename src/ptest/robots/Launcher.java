@@ -1,19 +1,16 @@
-package basicbot.robots;
+package ptest.robots;
 
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.robots.micro.MicroConstants;
-import basicbot.utils.Cache;
-import basicbot.utils.Utils;
+import ptest.communications.Communicator;
+import ptest.communications.HqMetaInfo;
+import ptest.robots.micro.AttackMicro;
+import ptest.robots.micro.AttackerFightingMicro;
+import ptest.robots.micro.MicroConstants;
+import ptest.utils.Cache;
+import ptest.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 9;
-  private boolean launcherInVision;
-  private boolean carrierInVision;
-  private boolean carrierInAttackRange;
 
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
@@ -22,34 +19,6 @@ public class Launcher extends MobileRobot {
   @Override
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
-
-    updateEnemyStateInformation();
-
-    if (!launcherInVision) {
-      if (carrierInAttackRange) {
-        // attack carrier in action radius and disable moving
-        MapLocation locationToAttack = bestCarrierInAction();
-        if (rc.canAttack(locationToAttack)) {
-          rc.attack(locationToAttack);
-        }
-        return;
-      } else if (carrierInVision) {
-        // move towards
-        Direction direction = bestCarrierInVision();
-        if (direction != null) {
-          if (pathing.move(direction)) {
-            updateEnemyStateInformation();
-            if (!launcherInVision && carrierInAttackRange) {
-              MapLocation locationToAttack = bestCarrierInAction();
-              if (rc.canAttack(locationToAttack)) {
-                rc.attack(locationToAttack);
-              }
-              return;
-            }
-          }
-        }
-      }
-    }
 
     tryAttack(true);
 
@@ -80,77 +49,6 @@ public class Launcher extends MobileRobot {
     }
 
     tryAttack(false);
-  }
-
-  private Direction bestCarrierInVision() {
-    MapLocation bestCarrierLocationToAttack = null;
-    Direction bestDirection = null;
-    int bestScore = Integer.MIN_VALUE;
-    int myDamage = rc.getType().damage;
-    for (Direction dir : Utils.directions) {
-      if (!rc.canMove(dir)) continue;
-      MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
-      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-        if (robot.type != RobotType.CARRIER) continue;
-        if (!robot.location.isWithinDistanceSquared(newLoc, Cache.Permanent.ACTION_RADIUS_SQUARED)) continue;
-        int score = 0;
-        if (robot.health <= myDamage) {
-          score += 100;
-          score += robot.health;
-        } else {
-          score -= robot.health;
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          bestCarrierLocationToAttack = robot.location;
-          bestDirection = dir;
-        } else if (score == bestScore && dir.getDirectionOrderNum() % 2 == 1) {
-            bestCarrierLocationToAttack = robot.location;
-            bestDirection = dir;
-          }
-        }
-    }
-    return bestDirection;
-  }
-
-  private MapLocation bestCarrierInAction() {
-    MapLocation bestCarrierLocationToAttack = null;
-    int bestScore = Integer.MIN_VALUE;
-    int myDamage = rc.getType().damage;
-    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (robot.type == RobotType.CARRIER) {
-        if (robot.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
-          int score = 0;
-          if (robot.health <= myDamage) {
-            score += 100;
-            score += robot.health;
-          } else {
-            score -= robot.health;
-          }
-          if (score > bestScore) {
-            bestScore = score;
-            bestCarrierLocationToAttack = robot.location;
-          }
-        }
-      }
-    }
-    return bestCarrierLocationToAttack;
-  }
-
-  private void updateEnemyStateInformation() {
-    launcherInVision = false;
-    carrierInVision = false;
-    carrierInAttackRange = false;
-    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (robot.type == RobotType.LAUNCHER) {
-        launcherInVision = true;
-      } else if (robot.type == RobotType.CARRIER) {
-        carrierInVision = true;
-        if (robot.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
-          carrierInAttackRange = true;
-        }
-      }
-    }
   }
 
   private MapLocation getPatrolTarget() throws GameActionException {

@@ -1,10 +1,10 @@
-package basicbot.robots;
+package ptest.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import ptest.communications.CommsHandler;
+import ptest.communications.Communicator;
+import ptest.utils.Cache;
+import ptest.utils.Printer;
+import ptest.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
