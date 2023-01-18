@@ -28,7 +28,22 @@ public abstract class MobileRobot extends Robot {
 //    Printer.print("RUNNING randomizeExplorationTarget(): ");
     switch (Cache.Permanent.ROBOT_TYPE) {
       case CARRIER:
-        if (Utils.rng.nextInt(5)<2) {
+        int roundNumX2 = Cache.PerTurn.ROUND_NUM * 2;
+        if (roundNumX2 <= 300) {
+          int tries = 50;
+          MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+          MapLocation loc;
+          do {
+            loc = Utils.randomMapLocation();
+          } while ((loc.distanceSquaredTo(closestHQ) < roundNumX2) && --tries > 0);
+          if (tries == 0) {
+            loc = HqMetaInfo.getFurthestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+          }
+//          Printer.print("Carrier early game exploration: " + loc);
+          explorationTarget = loc;
+          break;
+        }
+        if (MapMetaInfo.knownSymmetry == null && Utils.rng.nextInt(5)<2) {
 //          MapLocation oldTarget = explorationTarget;
 //          int tries = 10;
 //          do {
@@ -39,9 +54,9 @@ public abstract class MobileRobot extends Robot {
               1 + (yRand == 3 ? 1 : yRand)*(Cache.Permanent.MAP_HEIGHT/2-1)
           );
 //          } while (--tries > 0 && explorationTarget.equals(oldTarget));
-        } else {
-          explorationTarget = Utils.randomMapLocation();
+          break;
         }
+        explorationTarget = Utils.randomMapLocation();
         break;
       case LAUNCHER:
       case AMPLIFIER:
@@ -50,7 +65,7 @@ public abstract class MobileRobot extends Robot {
         if (rc.canSenseLocation(explorationTarget)) {
           RobotInfo robot = rc.senseRobotAtLocation(explorationTarget);
           if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-//            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
+            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
             if (rc.canWriteSharedArray(0,0)) {
               MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
             }

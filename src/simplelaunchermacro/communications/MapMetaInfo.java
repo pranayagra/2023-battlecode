@@ -69,6 +69,6 @@ public class MapMetaInfo {
     notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
     guessedSymmetry = knownSymmetry != null ? knownSymmetry : SYMMETRY_GUESS_MAP[symmetryInfo];
     HqMetaInfo.recomputeEnemyHqLocations();
-    Printer.print("AYO I updated the symmetry!");
+    // Printer.print("AYO I updated the symmetry!");
   }
 }

@@ -66,12 +66,14 @@ public class MapMetaInfo {
         symmetryInfo |= NOT_VERT_MASK;
     }
     CommsHandler.writeMapSymmetry(symmetryInfo);
-    knownSymmetry = SYMMETRY_KNOWN_MAP[symmetryInfo];
     notHorizontal = (symmetryInfo & NOT_HORIZ_MASK) > 0;
     notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
     notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
+    knownSymmetry = SYMMETRY_KNOWN_MAP[symmetryInfo];
     guessedSymmetry = knownSymmetry != null ? knownSymmetry : SYMMETRY_GUESS_MAP[symmetryInfo];
     HqMetaInfo.recomputeEnemyHqLocations();
-    Printer.print("AYO I updated the symmetry!");
+//    if (knownSymmetry != null) {
+//       Printer.print("AYO symmetry updated! (not " + symmetryToEliminate + ") -- known=" + knownSymmetry + " guessed=" + guessedSymmetry);
+//    }
   }
 }

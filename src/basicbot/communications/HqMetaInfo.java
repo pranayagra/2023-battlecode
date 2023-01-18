@@ -1,6 +1,7 @@
 package basicbot.communications;
 
 import basicbot.utils.Cache;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -98,6 +99,31 @@ public class HqMetaInfo {
     }
     throw new RuntimeException("hqCount is not 1, 2, 3, or 4. Got=" + hqCount);
   }
+  public static MapLocation getFurthestHqLocation(MapLocation fromHere) {
+    int furthest = 0;
+    // optimized switch statement to use as little jvm/java bytecode as possible
+    switch (hqCount) {
+      case 4:
+        if (fromHere.distanceSquaredTo(hqLocations[3]) >
+            fromHere.distanceSquaredTo(hqLocations[furthest])) {
+          furthest = 3;
+        }
+      case 3:
+        if (fromHere.distanceSquaredTo(hqLocations[2]) >
+            fromHere.distanceSquaredTo(hqLocations[furthest])) {
+          furthest = 2;
+        }
+      case 2:
+        if (fromHere.distanceSquaredTo(hqLocations[1]) >
+            fromHere.distanceSquaredTo(hqLocations[furthest])) {
+          furthest = 1;
+        }
+        return hqLocations[furthest];
+      case 1:
+        return hqLocations[0];
+    }
+    throw new RuntimeException("hqCount is not 1, 2, 3, or 4. Got=" + hqCount);
+  }
 
   public static MapLocation getClosestEnemyHqLocation(MapLocation location) {
     int closest = 0;
@@ -127,6 +153,9 @@ public class HqMetaInfo {
 
   public static void recomputeEnemyHqLocations() {
     Utils.MapSymmetry symmetry = MapMetaInfo.guessedSymmetry;
+//    if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS && hqCount != hqLocations.length) {
+//      Printer.print("recompute enemy locations: hqCount=" + hqCount + " - numHq=" + hqLocations.length + " - numEnemy=" + enemyHqLocations.length);
+//    }
     switch (hqCount) {
       case 4:
         enemyHqLocations[3] = Utils.applySymmetry(hqLocations[3], symmetry);

@@ -1,6 +1,7 @@
 package basicbot;
 
 import basicbot.robots.Robot;
+import basicbot.utils.Printer;
 import battlecode.common.*;
 
 import java.util.Arrays;
@@ -34,6 +35,8 @@ public strictfp class RobotPlayer {
                 robot.runLoop();
             } catch (Exception e) {
                 System.out.println("FATAL ERROR - " + rc.getLocation());
+                System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " FATAL ERROR");
+                Printer.submitPrint();
                 e.printStackTrace();
                 if (RESIGN_ON_FATAL_ERROR) rc.resign();
             }

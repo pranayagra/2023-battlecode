@@ -24,6 +24,7 @@ public class Carrier extends MobileRobot {
   private static final int TURNS_TO_FLEE = 4;
   private static final int MAX_SCOUT_TURNS = 50;
   private static final int MAX_TURNS_TO_LOOK_FOR_WELL = 10;
+  private static final int MIN_TURN_TO_EXPLORE = 30;
 
   CarrierTask currentTask;
   CarrierTask forcedNextTask;
@@ -322,6 +323,7 @@ public class Carrier extends MobileRobot {
     if (rc.getWeight() == 0) {
       return true;
     }
+    rc.setIndicatorString("Deliver rss home: " + currentTask.targetHQLoc);
     if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(currentTask.targetHQLoc)) {
       pathing.moveTowards(currentTask.targetHQLoc);
     }
@@ -413,6 +415,10 @@ public class Carrier extends MobileRobot {
    */
   private boolean executeScout() throws GameActionException {
     if (MapMetaInfo.knownSymmetry != null) return true;
+    if (Cache.PerTurn.ROUND_NUM <= MIN_TURN_TO_EXPLORE) {
+//      Printer.print("Scout: too early to explore");
+      return true;
+    }
     if (currentTask.turnsRunning >= MAX_SCOUT_TURNS) {
       return true;
     }
@@ -789,7 +795,7 @@ public class Carrier extends MobileRobot {
    */
   private MapLocation findIslandLocationToClaim() throws GameActionException {
     // go to unclaimed island
-    while (tryExplorationMove()) {
+    while (doIslandFindingMove()) {
       int[] nearbyIslands = rc.senseNearbyIslands();
       if (nearbyIslands.length > 0) {
         MapLocation closestUnclaimedIsland = null;
@@ -808,6 +814,35 @@ public class Carrier extends MobileRobot {
       }
     }
     return null;
+  }
+
+  private boolean doIslandFindingMove() throws GameActionException {
+    if (!rc.isMovementReady()) return false;
+    int avgX = 0;
+    int avgY = 0;
+    int numFriends = 0;
+    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      if (robot.type == RobotType.CARRIER) {
+        avgX += robot.location.x;
+        avgY += robot.location.y;
+        numFriends++;
+      }
+    }
+    if (numFriends <= 15) { // not too many nearby friends
+      return tryExplorationMove();
+    }
+    MapLocation avgLocation = new MapLocation(avgX / numFriends, avgY / numFriends);
+    Direction toAvg = Cache.PerTurn.CURRENT_LOCATION.directionTo(avgLocation);
+    int tries = 10;
+    while (tries-- > 0 && Cache.PerTurn.CURRENT_LOCATION.directionTo(explorationTarget).equals(toAvg)) {
+      randomizeExplorationTarget(true);
+    }
+    if (tries == 0) {
+      explorationTarget = new MapLocation(
+          Cache.Permanent.MAP_WIDTH*Utils.rng.nextInt(2),
+          Cache.Permanent.MAP_HEIGHT*Utils.rng.nextInt(2));
+    }
+    return pathing.moveAwayFrom(avgLocation);
   }
 
   /**

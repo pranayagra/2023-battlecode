@@ -20,6 +20,16 @@ public class Communicator {
       int hqID = HqMetaInfo.hqCount;
 //      Printer.print("Registering HQ " + hqID);
       HqMetaInfo.hqCount++;
+      MapLocation[] newHQlocs = new MapLocation[HqMetaInfo.hqCount];
+      MapLocation[] newEnemyHQlocs = new MapLocation[HqMetaInfo.hqCount];
+      for (int i = 0; i < hqID; i++) {
+        newHQlocs[i] = HqMetaInfo.hqLocations[i];
+        newEnemyHQlocs[i] = HqMetaInfo.hqLocations[i];
+      }
+      newHQlocs[hqID] = Cache.PerTurn.CURRENT_LOCATION;
+      newEnemyHQlocs[hqID] = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, MapMetaInfo.guessedSymmetry);
+      HqMetaInfo.hqLocations = newHQlocs;
+      HqMetaInfo.enemyHqLocations = newEnemyHQlocs;
       CommsHandler.writeHqCount(HqMetaInfo.hqCount);
       CommsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
       if (closestAdamantium != null) {
@@ -96,6 +106,133 @@ public class Communicator {
       }
     }
     return closest;
+  }
+
+  public static MapLocation getClosestEnemyWellLocation(MapLocation fromHere, ResourceType resourceType) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    MapLocation closest = null;
+    int closestDist = Integer.MAX_VALUE;
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (writer.readWellExists(i)) {
+        MapLocation wellLocation = writer.readWellLocation(i);
+        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+          wellLocation = Utils.applySymmetry(wellLocation, MapMetaInfo.guessedSymmetry);
+        }
+        int dist = fromHere.distanceSquaredTo(wellLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = wellLocation;
+        }
+      }
+    }
+    return closest;
+  }
+
+  /**
+   * looks for the pair of wells (one ours, one enemy) with the shortest distance between them
+   * @return the pair of wells with the shortest distance between them [ours, enemy]
+   * @throws GameActionException any issues reading from comms
+   */
+  public static MapLocation[] closestAllyEnemyWellPair() throws GameActionException {
+    MapLocation closestEnemyWell = null;
+    int closestEnemyWellDist = Integer.MAX_VALUE;
+    MapLocation mostEndangeredWell = null;
+    MapLocation mostEndangeredEnemyWell = null;
+    int mostEndangeredDist = Integer.MAX_VALUE;
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!CommsHandler.readAdamantiumWellExists(i)) break;
+      MapLocation wellLoc = CommsHandler.readAdamantiumWellLocation(i);
+      MapLocation enemyWell;
+      if (HqMetaInfo.isEnemyTerritory(wellLoc)) {
+        enemyWell = wellLoc;
+        wellLoc = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+      } else {
+        enemyWell = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+      }
+      if (closestEnemyWell == null) {
+        closestEnemyWell = enemyWell;
+      } else {
+        int distToClosest = closestEnemyWell.distanceSquaredTo(wellLoc);
+        if (distToClosest < closestEnemyWellDist) {
+          closestEnemyWell = enemyWell;
+          closestEnemyWellDist = distToClosest;
+        }
+        if (distToClosest < mostEndangeredDist) {
+          mostEndangeredWell = wellLoc;
+          mostEndangeredEnemyWell = closestEnemyWell;
+          mostEndangeredDist = distToClosest;
+        }
+      }
+      int distBetween = enemyWell.distanceSquaredTo(wellLoc);
+      if (distBetween < mostEndangeredDist) {
+        mostEndangeredWell = wellLoc;
+        mostEndangeredEnemyWell = enemyWell;
+        mostEndangeredDist = distBetween;
+      }
+    }
+    for (int i = 0; i < CommsHandler.MANA_WELL_SLOTS; i++) {
+      if (!CommsHandler.readManaWellExists(i)) break;
+      MapLocation wellLoc = CommsHandler.readManaWellLocation(i);
+      MapLocation enemyWell;
+      if (HqMetaInfo.isEnemyTerritory(wellLoc)) {
+        enemyWell = wellLoc;
+        wellLoc = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+      } else {
+        enemyWell = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+      }
+      if (closestEnemyWell == null) {
+        closestEnemyWell = enemyWell;
+      } else {
+        int distToClosest = closestEnemyWell.distanceSquaredTo(wellLoc);
+        if (distToClosest < closestEnemyWellDist) {
+          closestEnemyWell = enemyWell;
+          closestEnemyWellDist = distToClosest;
+        }
+        if (distToClosest < mostEndangeredDist) {
+          mostEndangeredWell = wellLoc;
+          mostEndangeredEnemyWell = closestEnemyWell;
+          mostEndangeredDist = distToClosest;
+        }
+      }
+      int distBetween = enemyWell.distanceSquaredTo(wellLoc);
+      if (distBetween < mostEndangeredDist) {
+        mostEndangeredWell = wellLoc;
+        mostEndangeredEnemyWell = enemyWell;
+        mostEndangeredDist = distBetween;
+      }
+    }
+    for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
+      if (!CommsHandler.readElixirWellExists(i)) break;
+      MapLocation wellLoc = CommsHandler.readElixirWellLocation(i);
+      MapLocation enemyWell;
+      if (HqMetaInfo.isEnemyTerritory(wellLoc)) {
+        enemyWell = wellLoc;
+        wellLoc = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+      } else {
+        enemyWell = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+      }
+      if (closestEnemyWell == null) {
+        closestEnemyWell = enemyWell;
+      } else {
+        int distToClosest = closestEnemyWell.distanceSquaredTo(wellLoc);
+        if (distToClosest < closestEnemyWellDist) {
+          closestEnemyWell = enemyWell;
+          closestEnemyWellDist = distToClosest;
+        }
+        if (distToClosest < mostEndangeredDist) {
+          mostEndangeredWell = wellLoc;
+          mostEndangeredEnemyWell = closestEnemyWell;
+          mostEndangeredDist = distToClosest;
+        }
+      }
+      int distBetween = enemyWell.distanceSquaredTo(wellLoc);
+      if (distBetween < mostEndangeredDist) {
+        mostEndangeredWell = wellLoc;
+        mostEndangeredEnemyWell = enemyWell;
+        mostEndangeredDist = distBetween;
+      }
+    }
+    return new MapLocation[] {mostEndangeredWell, mostEndangeredEnemyWell};
   }
 
   /**

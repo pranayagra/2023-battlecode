@@ -104,7 +104,7 @@ public class Communicator {
       notVertical = (symmetryInfo & NOT_VERT_MASK) > 0;
       notRotational = (symmetryInfo & NOT_ROT_MASK) > 0;
       guessedSymmetry = knownSymmetry != null ? knownSymmetry : symmetryGuessMap[symmetryInfo];
-      Printer.print("AYO I updated the symmetry!");
+      // Printer.print("AYO I updated the symmetry!");
     }
   }
 

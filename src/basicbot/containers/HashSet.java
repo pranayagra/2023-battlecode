@@ -64,4 +64,15 @@ public class HashSet<T> {
         }
 
     }
+
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i < table.length; i++) {
+            if (table[i].size == 0) continue;
+            s.append(table[i].toString()).append("\n");
+        }
+        return s.toString();
+    }
+
 }

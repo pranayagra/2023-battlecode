@@ -72,7 +72,7 @@ public class Communicator {
       }
       commsHandler.writeMapSymmetry(this.symmetryInfo);
       this.updateSymmetry(this.symmetryInfo);
-      Printer.print("AYO I updated the symmetry!");
+      // Printer.print("AYO I updated the symmetry!");
     }
   }
 

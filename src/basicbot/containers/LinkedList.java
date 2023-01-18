@@ -75,4 +75,15 @@ public class LinkedList<T> {
         end = null;
         size = 0;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        Node<T> node = head;
+        while (node != null) {
+            str.append(node.val).append(" ");
+            node = node.next;
+        }
+        return str.toString();
+    }
 }

@@ -16,7 +16,7 @@ public abstract class Robot {
   private static final boolean RESIGN_ON_GAME_EXCEPTION = false;
   private static final boolean RESIGN_ON_RUNTIME_EXCEPTION = false;
 
-  private static final int MAX_TURNS_FIGURE_SYMMETRY = 200;
+  private static final int MAX_TURNS_FIGURE_SYMMETRY = 500;
 
   protected final RobotController rc;
   
@@ -144,6 +144,11 @@ public abstract class Robot {
 //    Utils.finishByteCodeCounting("updating-comm-metainfo");
 
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
+
+    if (Cache.PerTurn.ROUND_NUM < 20 && Cache.PerTurn.ROUNDS_ALIVE == 0) {
+      initialWellExploration();
+    }
+
     runTurnTypeWrapper();
 
     // if the bot moved on its turn
@@ -152,7 +157,6 @@ public abstract class Robot {
     }
 
     commNearbyEnemies();
-
 
     if (++turnCount != rc.getRoundNum() - Cache.Permanent.ROUND_SPAWNED) { // took too much bytecode
       rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,0,255); // MAGENTA IF RAN OUT OF BYTECODE
@@ -202,9 +206,11 @@ public abstract class Robot {
     if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
 
     // TODO: actually do the computation
+    int visionRadiusSq = Cache.Permanent.VISION_RADIUS_SQUARED;
     int midlineThreshold = Cache.Permanent.VISION_RADIUS_FLOOR / 2;
-    int myX = Cache.PerTurn.CURRENT_LOCATION.x;
-    int myY = Cache.PerTurn.CURRENT_LOCATION.y;
+    MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
+    int myX = myLoc.x;
+    int myY = myLoc.y;
     int mapWidth = Cache.Permanent.MAP_WIDTH;
     int mapHeight = Cache.Permanent.MAP_HEIGHT;
     // if Vertical not ruled out (flipY, horizontal midline)
@@ -215,27 +221,21 @@ public abstract class Robot {
           && myY * 2 >= mapHeight - midlineThreshold) {
         MapLocation test1 = new MapLocation(myX, mapHeight / 2 - 1);
         MapLocation test2 = new MapLocation(myX, mapHeight - mapHeight / 2);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
-        if (rc.canSenseLocation(test1)) {
-          if (rc.canSenseLocation(test2)) {
-            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
-              break nearHorizMidline;
-            }
-          }
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+          break nearHorizMidline;
         }
         test1 = new MapLocation(myX - 2, mapHeight / 2 - 1);
         test2 = new MapLocation(myX - 2, mapHeight - mapHeight / 2);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
-        if (rc.canSenseLocation(test1)) {
-          if (rc.canSenseLocation(test2)) {
-            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
-              break nearHorizMidline;
-            }
-          }
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+          break nearHorizMidline;
+        }
+        test1 = new MapLocation(myX + 2, mapHeight / 2 - 1);
+        test2 = new MapLocation(myX + 2, mapHeight - mapHeight / 2);
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+          break nearHorizMidline;
         }
       }
     }
@@ -247,30 +247,108 @@ public abstract class Robot {
           && myX * 2 >= mapWidth - midlineThreshold) {
         MapLocation test1 = new MapLocation(mapWidth / 2 - 1, myY);
         MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, myY);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
-        if (rc.canSenseLocation(test1)) {
-          if (rc.canSenseLocation(test2)) {
-            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
-              break nearVertMidline;
-            }
-          }
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
+          break nearVertMidline;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, myY - 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, myY - 2);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
-        if (rc.canSenseLocation(test1)) {
-          if (rc.canSenseLocation(test2)) {
-            if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
-              MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
-              break nearVertMidline;
-            }
-          }
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
+          break nearVertMidline;
+        }
+        test1 = new MapLocation(mapWidth / 2 - 1, myY + 2);
+        test2 = new MapLocation(mapWidth - mapWidth / 2, myY + 2);
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
+          break nearVertMidline;
         }
       }
     }
+    // if Rotational not ruled out (rotXY, near center)
+    if (!MapMetaInfo.notRotational) { // could be rotational
+      // check if near the center
+      nearCenter:
+      if (myX * 2 <= mapWidth + midlineThreshold
+          && myX * 2 >= mapWidth - midlineThreshold
+          && myY * 2 <= mapHeight + midlineThreshold
+          && myY * 2 >= mapHeight - midlineThreshold) {
+        MapLocation test1 = new MapLocation(mapWidth / 2 - 1, mapHeight / 2 - 1);
+        MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, mapHeight - mapHeight / 2);
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
+          break nearCenter;
+        }
+        test1 = new MapLocation(mapWidth / 2 - 1, mapHeight - mapHeight / 2);
+        test2 = new MapLocation(mapWidth - mapWidth / 2, mapHeight / 2 - 1);
+        if (checkFailsSymmetry(test1, test2)) {
+          MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
+          break nearCenter;
+        }
+      }
+    }
+  }
+  private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2) throws GameActionException {
+    rc.setIndicatorDot(test1, 211, 211, 211);
+    rc.setIndicatorDot(test2, 211, 211, 211);
+    if (rc.onTheMap(test1)
+        && rc.onTheMap(test2)
+        && test1.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)
+        && test2.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)) {
+      if (rc.senseCloud(test1) != rc.senseCloud(test2)) {
+        return true;
+      }
+      if (rc.canSenseLocation(test1)) {
+        if (rc.sensePassability(test1) != rc.sensePassability(test2) || rc.senseMapInfo(test1).getCurrentDirection() != rc.senseMapInfo(test2).getCurrentDirection()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * does some early game well checking right when spawned
+   * publish wells if none of that type exist so far
+   * @throws GameActionException any exception with sensing or writing to shared array
+   */
+  private void initialWellExploration() throws GameActionException {
+    MapLocation knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ADAMANTIUM);
+    boolean needAd = knownWellLoc == null;
+    knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.MANA);
+    boolean needMana = knownWellLoc == null;
+    knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ELIXIR);
+    boolean needElixir = knownWellLoc == null;
+    if (!needAd && !needMana && !needElixir) return;
+//    if (needAd || needMana) {
+//      Printer.print("Early game checking for wells: needAd=" + needAd + ", needMana=" + needMana);
+//    }
+    for (WellInfo wellInfo : rc.senseNearbyWells()) {
+      switch (wellInfo.getResourceType()) {
+        case ADAMANTIUM:
+          if (needAd) {
+            needAd = false;
+            RunningMemory.publishWell(wellInfo);
+//            Printer.print("Early game well publishing: Ad @ " + wellInfo.getMapLocation());
+          }
+          break;
+        case MANA:
+          if (needMana) {
+            needMana = false;
+            RunningMemory.publishWell(wellInfo);
+//            Printer.print("Early game well publishing: Mana @ " + wellInfo.getMapLocation());
+          }
+          break;
+        case ELIXIR:
+          if (needElixir) {
+            needElixir = false;
+            RunningMemory.publishWell(wellInfo);
+//            Printer.print("Early game well publishing: Elixir @ " + wellInfo.getMapLocation());
+          }
+          break;
+      }
+    }
+    RunningMemory.broadcastMemorizedWells();
   }
 
   /**
@@ -337,15 +415,19 @@ public abstract class Robot {
 ////        communicator.enqueueMessage(new EnemyFoundMessage(enemy));
 //      }
       if (!rc.canWriteSharedArray(0,0)) return;
-      int maxComm = Math.min(Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length, 5);
-      for (int i = 0; i < maxComm; ++i) {
-        RobotInfo enemy = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[i];
+      RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
+      int commedEnemies = 0;
+      for (int i = allNearbyEnemyRobots.length; --i >= 0;) {
+        RobotInfo enemy = allNearbyEnemyRobots[i];
         switch (enemy.type) {
           case CARRIER:
           case HEADQUARTERS:
             break;
           default:
             Communicator.writeEnemy(enemy);
+            if (++commedEnemies >= 5) {
+              return;
+            }
         }
       }
     }
