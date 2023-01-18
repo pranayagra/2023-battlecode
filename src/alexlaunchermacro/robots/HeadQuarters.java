@@ -3,6 +3,7 @@ package alexlaunchermacro.robots;
 import alexlaunchermacro.communications.CommsHandler;
 import alexlaunchermacro.communications.Communicator;
 import alexlaunchermacro.utils.Cache;
+import alexlaunchermacro.utils.Printer;
 import alexlaunchermacro.utils.Utils;
 import battlecode.common.*;
 
@@ -21,6 +22,7 @@ public class HeadQuarters extends Robot {
 
   private HQRole role;
 
+  private int totalSpawns = 0;
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
@@ -40,6 +42,10 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM == 200) rc.resign();
 
     Communicator.clearEnemyComms();
+
+    if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+    }
 
     if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
       this.role = HQRole.BUILD_ANCHORS;
@@ -222,6 +228,7 @@ public class HeadQuarters extends Robot {
   protected boolean buildRobot(RobotType type, MapLocation location) throws GameActionException {
     if (rc.canBuildRobot(type, location)) {
       rc.buildRobot(type, location);
+      totalSpawns++;
       return true;
     }
     return false;

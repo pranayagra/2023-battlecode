@@ -1,6 +1,7 @@
 from itertools import product
 import subprocess
 import time
+import itertools
 
 emojiMode = True
 emojiMap = {
@@ -13,10 +14,12 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'bugfixessprint', 'launchercomms', 'betterlaunchermacro', 'alexlaunchermacro']
+bots = ['spawnorder', 'bugfixessprint', 'alexlaunchermacro', 'launchermicroxsquare']
+# bots = ['spawnorderg']
 botsSet = set(bots)
 maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements', 'TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 # maps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
+# maps = ['SmallElements']
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -26,6 +29,27 @@ numWinsMapping = {
     1: 'Tied',
     2: 'Won',
 }
+
+
+def retrieveTotalUnitsSpawned(numRounds, output, team):
+    totalValueA = 0
+    last249Round = ((numRounds // 250) * 250) - 1
+    print('numRounds: ', numRounds, 'last249Round: ', last249Round, 'team: ', team)
+    for i in range(4):
+        startString = f'HQ{last249Round}{team}{i} ('
+        startIndex = output.find(startString)
+        if startIndex == -1:
+            continue
+        endIndex = output.find(')', startIndex)
+        if endIndex == -1:
+            continue
+        value = output[startIndex + len(startString):endIndex]
+        print('count: ', value)
+        totalValueA += int(value)
+    print(totalValueA)
+
+    return totalValueA
+
 
 
 def retrieveGameLength(output):
@@ -56,10 +80,31 @@ def run_match(bot, map):
         # print("outputaA type: {}, {}".format(type(outputA), outputA))
         
         numWins = 0
+
+        # print('outputA: ', outputA)
+        # print('outputB: ', outputB)
         
         gameLengthA = retrieveGameLength(outputA)
         gameLengthB = retrieveGameLength(outputB)
-        
+
+        AMoreUnits = 0
+        BMoreUnits = 0
+        numUnitWins = 0
+        if int(gameLengthA) >= 250:
+            totalUnitSpawnedT1A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA, 'A')
+            totalUnitSpawnedT2A = retrieveTotalUnitsSpawned(int(gameLengthA), outputA, 'B')
+            AMoreUnits = totalUnitSpawnedT1A - totalUnitSpawnedT2A
+            if AMoreUnits >= 50:
+                numUnitWins += 1
+            print('totalUnitSpawnedT1A: ', totalUnitSpawnedT1A, 'totalUnitSpawnedT2A: ', totalUnitSpawnedT2A, 'AMoreUnits: ', AMoreUnits)
+        if int(gameLengthB) >= 250:
+            totalUnitSpawnedT1B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB, 'A')
+            totalUnitSpawnedT2B = retrieveTotalUnitsSpawned(int(gameLengthB), outputB, 'B')
+            BMoreUnits = totalUnitSpawnedT2B - totalUnitSpawnedT1B
+            if BMoreUnits >= 50:
+                numUnitWins += 1
+            print('totalUnitSpawnedT1B: ', totalUnitSpawnedT1B, 'totalUnitSpawnedT2B: ', totalUnitSpawnedT2B, 'BMoreUnits: ', BMoreUnits)
+
         if winAString in outputA:
             numWins += 1
         else:
@@ -70,7 +115,9 @@ def run_match(bot, map):
         else:
             if not loseBString in outputB:
                 return 'Error'
-        return numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
+        outStr1 = numWinsMapping[numWins] + ' (' + ', '.join([gameLengthA, gameLengthB]) + ')'
+        outStr2 = numWinsMapping[numUnitWins] + ' (' + ', '.join([str(AMoreUnits), str(BMoreUnits)]) + ')'
+        return outStr1 + '<br>' + outStr2
 
 
 results = {}
@@ -100,7 +147,6 @@ with open('matches-summary.txt', 'w') as f:
     for line in table:
         f.write('| ')
         f.write(' | '.join(line))
-        f.write(' |')
         f.write('\n')
     f.write('\n')
     for error in errors:

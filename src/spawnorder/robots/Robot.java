@@ -337,7 +337,9 @@ public abstract class Robot {
 ////        communicator.enqueueMessage(new EnemyFoundMessage(enemy));
 //      }
       if (!rc.canWriteSharedArray(0,0)) return;
-      for (RobotInfo enemy : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      int maxComm = Math.min(Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length, 5);
+      for (int i = 0; i < maxComm; ++i) {
+        RobotInfo enemy = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[i];
         switch (enemy.type) {
           case CARRIER:
           case HEADQUARTERS:
