@@ -1,13 +1,10 @@
-package basicbot.robots;
+package ptest.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
-import basicbot.utils.Cache;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import ptest.communications.CommsHandler;
+import ptest.communications.Communicator;
+import ptest.utils.Cache;
+import ptest.utils.Printer;
+import ptest.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
@@ -38,7 +35,6 @@ public class HeadQuarters extends Robot {
   private static final SpawnType[] spawnOrder20x20 = new SpawnType[] {SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.CARRIER_ADAMANTIUM};
   private static final SpawnType[] spawnOrder40x40 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
   private static final SpawnType[] spawnOrder60x60 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
-  private static final SpawnType[] spawnOrderEndangeredWells = spawnOrder20x20;
 
   private int spawnIdx = 0;
   private SpawnType[] spawnOrder;
@@ -46,9 +42,6 @@ public class HeadQuarters extends Robot {
   MapLocation[] spawnLocations;
 
   private int totalSpawns = 0;
-
-  private boolean foundEndangeredWells;
-  private int checkedEndangeredWellsCounter;
 
   private static final boolean printNumUnitsSpawned = true;
 
@@ -65,69 +58,19 @@ public class HeadQuarters extends Robot {
     else if (Cache.Permanent.MAP_AREA <= 40*40) spawnOrder = spawnOrder40x40;
     else spawnOrder = spawnOrder60x60;
 
-    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) { // turn 0: only possible enemies is the enemy HQ
+    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
       spawnOrder = spawnOrderEnemyHQHere;
     }
 
     spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);;
-
-    checkedEndangeredWellsCounter = 2;
-//    if (Cache.Permanent.MAP_AREA <= 20*20) {
-//      foundEndangeredWells = true;
-//    }
-    foundEndangeredWells = true;
 
     determineRole();
   }
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
-    if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
-      Communicator.MetaInfo.reinitForHQ();
-      updateWellExploration();
-      unknown_symmetry: if (MapMetaInfo.knownSymmetry == null) {
-//      do {
-//        prev = MapMetaInfo.knownSymmetry;
-        for (MapLocation myHQ : HqMetaInfo.hqLocations) {
-          MapLocation enemyHQ;
-          if (!MapMetaInfo.notRotational) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL);
-              }
-            }
-          }
-          if (!MapMetaInfo.notHorizontal) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL);
-              }
-            }
-          }
-          if (!MapMetaInfo.notVertical) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL);
-              }
-            }
-          }
-        }
-//      } while (prev != MapMetaInfo.knownSymmetry);
-        if (MapMetaInfo.knownSymmetry == null) {
-          updateSymmetryComms();
-        }
-      }
-    }
+    if (Cache.PerTurn.ROUNDS_ALIVE == 1) Communicator.MetaInfo.reinitForHQ();
+//    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
 
@@ -144,29 +87,6 @@ public class HeadQuarters extends Robot {
     // then control ratio AD:M = 1:4
 
     // give each HQ just spawned location + 4 bits, and then look at all and check 4 bits
-
-    // TODO: switch to more launchers if we detect endangered wells
-    if (!foundEndangeredWells) {
-      if (--checkedEndangeredWellsCounter <= 0) {
-        Printer.print("HQ Checking for endangered wells");
-        MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
-        MapLocation mostEndangeredWell = endangeredWellPair[0];
-        MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
-        if (mostEndangeredWell == null) {
-          return;
-        }
-        int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
-        if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
-          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
-//          Printer.print("HQ found endangered wells -- switching to more launchers");
-          foundEndangeredWells = true;
-//          spawnOrder = spawnOrderEndangeredWells;
-//          spawnIdx = 0;
-        } else {
-          checkedEndangeredWellsCounter = 1;
-        }
-      }
-    }
 
     if (spawnIdx < spawnOrder.length) {
       forceSpawnOrder();
