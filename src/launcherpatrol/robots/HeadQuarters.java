@@ -80,7 +80,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
@@ -129,9 +129,9 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
 
-    if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
-      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
-    }
+//    if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+//      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+//    }
 
 //    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
 
@@ -146,7 +146,7 @@ public class HeadQuarters extends Robot {
     // TODO: switch to more launchers if we detect endangered wells
     if (!foundEndangeredWells) {
       if (--checkedEndangeredWellsCounter <= 0) {
-        Printer.print("HQ Checking for endangered wells");
+//        Printer.print("HQ Checking for endangered wells");
         MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
         MapLocation mostEndangeredWell = endangeredWellPair[0];
         MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
@@ -155,7 +155,7 @@ public class HeadQuarters extends Robot {
         }
         int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
         if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
-          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
+//          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
 //          Printer.print("HQ found endangered wells -- switching to more launchers");
           foundEndangeredWells = true;
 //          spawnOrder = spawnOrderEndangeredWells;

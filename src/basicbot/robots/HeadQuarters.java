@@ -12,6 +12,7 @@ import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
+  private static final boolean printNumUnitsSpawned = false;
   private int hqID;
   public final WellInfo closestAdamantium;
   public final WellInfo closestMana;
@@ -50,7 +51,6 @@ public class HeadQuarters extends Robot {
   private boolean foundEndangeredWells;
   private int checkedEndangeredWellsCounter;
 
-  private static final boolean printNumUnitsSpawned = true;
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
@@ -82,7 +82,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
@@ -148,7 +148,7 @@ public class HeadQuarters extends Robot {
     // TODO: switch to more launchers if we detect endangered wells
     if (!foundEndangeredWells) {
       if (--checkedEndangeredWellsCounter <= 0) {
-        Printer.print("HQ Checking for endangered wells");
+//        Printer.print("HQ Checking for endangered wells");
         MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
         MapLocation mostEndangeredWell = endangeredWellPair[0];
         MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
@@ -157,7 +157,7 @@ public class HeadQuarters extends Robot {
         }
         int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
         if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
-          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
+//          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
 //          Printer.print("HQ found endangered wells -- switching to more launchers");
           foundEndangeredWells = true;
 //          spawnOrder = spawnOrderEndangeredWells;
