@@ -81,7 +81,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+    if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
 //    if (Cache.PerTurn.ROUND_NUM == 2) rc.resign();
 
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
