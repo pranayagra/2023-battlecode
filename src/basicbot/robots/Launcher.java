@@ -233,7 +233,7 @@ public class Launcher extends MobileRobot {
 //    }
 
     // do actual patrolling -> cycle between different enemy hotspots (wells / HQs)
-    destination = getPatrolTarget();
+    destination = getPatrolTarget(); //shouldn't return null
     if (destination != null) return destination;
 
     destination = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);

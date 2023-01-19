@@ -49,7 +49,7 @@ public class AttackerFightingMicro {
 
 
   /**
-   * will do micro movements to optimally fight enemies
+   * will do micro movements to optimally fight enemies (doesn't micro against lone enemy HQ)
    * @return true if micro was done, false if the robot can do whatever it wants
    * @throws GameActionException any issues with sensing/moving/attacking
    */
@@ -58,7 +58,7 @@ public class AttackerFightingMicro {
     boolean shouldMicro = false;
     severelyHurt = ishurt(Cache.PerTurn.HEALTH, Cache.Permanent.MAX_HEALTH);
     RobotInfo[] enemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
-    if (enemyRobots.length == 0) return false; // TODO:filter for Hq
+    if (enemyRobots.length == 0) return false;
     canAttack = rc.isActionReady();
 
     int uIndex = enemyRobots.length;
