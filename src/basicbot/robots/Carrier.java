@@ -5,6 +5,7 @@ import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashMap;
+import basicbot.containers.HashSet;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
 import basicbot.utils.Printer;
@@ -34,6 +35,7 @@ public class Carrier extends MobileRobot {
 
   private int turnsStuckApproachingWell;
   private HashMap<MapLocation, Direction> wellApproachDirection;
+  private HashSet<MapLocation> blackListWells;
   private MapLocation[] wellQueueOrder;
   private MapLocation wellEntryPoint;
   int wellQueueTargetIndex;
@@ -49,6 +51,7 @@ public class Carrier extends MobileRobot {
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
     wellApproachDirection = new HashMap<>(3);
+    blackListWells = new HashSet<>(8);
     wellQueueOrder = null;
     resetTask();
   }
@@ -411,7 +414,17 @@ public class Carrier extends MobileRobot {
     if (doWellCollection(currentTask.targetWell)) {
       return true; // we are full
     }
-    approachWell(currentTask.targetWell);
+    if(!approachWell(currentTask.targetWell)) {
+      blackListWells.add(currentTask.targetWell);
+      switch(currentTask) {
+        case FETCH_ADAMANTIUM:
+          forcedNextTask = CarrierTask.FETCH_MANA;
+        default: // TODO: check if elixir well exists and cycle to that
+        case FETCH_MANA:
+          forcedNextTask = CarrierTask.FETCH_ADAMANTIUM;
+      }
+      return true;
+    }
     return currentTask.targetWell != null && doWellCollection(currentTask.targetWell);
   }
 
@@ -475,14 +488,15 @@ public class Carrier extends MobileRobot {
   }
 
   /**
-   * will appreach the given well and keep track of the entry direction and well queue etc
+   * will approach the given well and keep track of the entry direction and well queue etc
    * MAY OVERWRITE target well to null
    * @param wellLocation the well to go to
+   * @returns True if was able to approach well, False if it got stuck and waited.
    * @throws GameActionException any issues with sensing/moving
    */
-  private void approachWell(MapLocation wellLocation) throws GameActionException {
+  private boolean approachWell(MapLocation wellLocation) throws GameActionException {
     if (wellQueueOrder == null) {
-      rc.setIndicatorString("no well path -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
+      rc.setIndicatorString("no well queue cycle -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
       while (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         if (pathing.moveTowards(wellLocation)) {
 //          Printer.print("moved towards well: " + targetWell + " now=" + Cache.PerTurn.CURRENT_LOCATION);//, "new dir back: " + wellApproachDirection.get(targetWell));
@@ -493,11 +507,7 @@ public class Carrier extends MobileRobot {
             rc.setIndicatorString("could not path towards well:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
             turnsStuckApproachingWell++;
             if (turnsStuckApproachingWell >= MAX_TURNS_STUCK) {
-              findNewWell(currentTask.collectionType, currentTask.targetWell);
-              if (currentTask.targetWell != null) {
-                approachWell(currentTask.targetWell);
-                return;
-              }
+              return false;
             }
           }
           break;
@@ -526,6 +536,7 @@ public class Carrier extends MobileRobot {
 //      } else {
 //        Printer.print("Cannot get to well! -- canMove=" + rc.isMovementReady());
     }
+    return true;
   }
 
   /**
@@ -795,7 +806,7 @@ public class Carrier extends MobileRobot {
   }
 
   /**
-   * will figure out the next best well to go to
+   * will figure out the next best well to go to (respects blackListWells)
    * @param resourceType the well type to look for
    * @param toAvoid a map location to exclude from the search
    * @throws GameActionException any issues duirng search (comms, sensing)
@@ -807,7 +818,7 @@ public class Carrier extends MobileRobot {
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (!writer.readWellExists(i)) break;
       MapLocation wellLocation = writer.readWellLocation(i);
-      if (!wellLocation.equals(toAvoid)) {
+      if (!wellLocation.equals(toAvoid) || blackListWells.contains(wellLocation)) {
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (dist < closestDist) {
           closestDist = dist;
