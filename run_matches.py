@@ -2,6 +2,7 @@ from itertools import product
 import subprocess
 import time
 import itertools
+from pathlib import Path
 
 emojiMode = True
 emojiMap = {
@@ -32,6 +33,21 @@ numWinsMapping = {
     2: 'Won',
 }
 
+
+for bot in set(bots + [currentBot]):
+    bot_src = Path('./src/') / bot# / 'robots' / 'HeadQuarters.java'
+    print(f"Modifying {bot_src} to remove `/*WORKFLOW_ONLY*///`")
+    # recursively iterate over all files in bot_src
+    for file in bot_src.rglob('*'):
+        if file.is_file():
+            with open(file, 'r') as f:
+                contents = f.read()
+            if '/*WORKFLOW_ONLY*///' in contents:
+                print(f"Removing `/*WORKFLOW_ONLY*///` from {file}")
+                contents = contents.replace('/*WORKFLOW_ONLY*///', '')
+                with open(file, 'w') as f:
+                    f.write(contents)
+# exit(1)
 
 def retrieveTotalUnitsSpawned(numRounds, output, team):
     totalValueA = 0
