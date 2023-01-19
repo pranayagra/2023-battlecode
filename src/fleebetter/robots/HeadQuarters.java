@@ -11,8 +11,9 @@ import fleebetter.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
+  /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
-  private static final boolean printNumUnitsSpawned = true;
+
   private int hqID;
   public final WellInfo closestAdamantium;
   public final WellInfo closestMana;
@@ -46,7 +47,7 @@ public class HeadQuarters extends Robot {
 
   MapLocation[] spawnLocations;
 
-  private int totalSpawns = 0;
+
 
   private boolean foundEndangeredWells;
   private int checkedEndangeredWellsCounter;
@@ -82,6 +83,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
 //    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
@@ -131,9 +133,9 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
 
-    if (printNumUnitsSpawned && Cache.PerTurn.ROUND_NUM % 250 == 249) {
-      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
-    }
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+    /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+    /*WORKFLOW_ONLY*///}
 
 //    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
 
@@ -431,7 +433,7 @@ public class HeadQuarters extends Robot {
     if (rc.canBuildRobot(type, location)) {
       rc.buildRobot(type, location);
       lastSpawnLoc = location;
-      totalSpawns++;
+      /*WORKFLOW_ONLY*///totalSpawns++;
       return true;
     }
     return false;

@@ -8,6 +8,7 @@ import spawnorder.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
+  /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
   private int hqID;
   public final WellInfo closestAdamantium;
@@ -41,7 +42,7 @@ public class HeadQuarters extends Robot {
 
   MapLocation[] spawnLocations;
 
-  private int totalSpawns = 0;
+
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
@@ -67,14 +68,15 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) Communicator.MetaInfo.reinitForHQ();
 //    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
 
-    if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
-      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
-    }
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+    /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+    /*WORKFLOW_ONLY*///}
 
     // spawn order
     // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)
@@ -347,7 +349,7 @@ public class HeadQuarters extends Robot {
     if (rc.canBuildRobot(type, location)) {
       rc.buildRobot(type, location);
       lastSpawnLoc = location;
-      totalSpawns++;
+      /*WORKFLOW_ONLY*///totalSpawns++;
       return true;
     }
     return false;

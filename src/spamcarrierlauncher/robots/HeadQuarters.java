@@ -9,6 +9,7 @@ import battlecode.common.*;
 import static battlecode.common.GameActionExceptionType.NOT_ENOUGH_RESOURCE;
 
 public class HeadQuarters extends Robot {
+  /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   public final int hqID;
   public final WellInfo closestAdamantium;
   public final WellInfo closestMana;
@@ -35,6 +36,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
     if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
       if (this.closestWell != null) {
         rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
@@ -51,6 +53,9 @@ public class HeadQuarters extends Robot {
       rc.setIndicatorString("Spawn towards enemy");
       spawnLauncherTowardsEnemyHQ();
     }
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+    /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+    /*WORKFLOW_ONLY*///}
   }
 
   private void determineRole() throws GameActionException {
@@ -150,6 +155,7 @@ public class HeadQuarters extends Robot {
   protected boolean buildRobot(RobotType type, MapLocation location) throws GameActionException {
     if (rc.canBuildRobot(type, location)) {
       rc.buildRobot(type, location);
+      /*WORKFLOW_ONLY*///totalSpawns++;
       return true;
     }
     return false;
