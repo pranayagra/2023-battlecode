@@ -82,7 +82,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM >= 5) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
