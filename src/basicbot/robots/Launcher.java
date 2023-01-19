@@ -57,6 +57,7 @@ public class Launcher extends MobileRobot {
     if (!launcherInVision) {
       if (carrierInAttackRange) {
         // attack carrier in action radius and disable moving
+        // TODO: let's consider moving forwards?
         MapLocation locationToAttack = bestCarrierInAction();
         if (rc.canAttack(locationToAttack)) {
           rc.attack(locationToAttack);
@@ -150,30 +151,39 @@ public class Launcher extends MobileRobot {
     return bestDirection;
   }
 
+  /**
+   * Should pre-check that there exists a carrier to attack in action range.
+   * @return the best carrier in action range to attack
+   */
   private MapLocation bestCarrierInAction() {
     MapLocation bestCarrierLocationToAttack = null;
     int bestScore = Integer.MIN_VALUE;
     int myDamage = rc.getType().damage;
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (robot.type == RobotType.CARRIER) {
-        if (robot.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
-          int score = 0;
-          if (robot.health <= myDamage) {
-            score += 100;
-            score += robot.health;
-          } else {
-            score -= robot.health;
-          }
-          if (score > bestScore) {
-            bestScore = score;
-            bestCarrierLocationToAttack = robot.location;
-          }
-        }
+      if (robot.type != RobotType.CARRIER) continue;
+      if (!robot.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) continue;
+
+      int score = 0;
+      if (robot.health <= myDamage) {
+        score += 100;
+        score += robot.health;
+      } else {
+        score -= robot.health;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestCarrierLocationToAttack = robot.location;
       }
     }
     return bestCarrierLocationToAttack;
   }
 
+  /**
+   * Updates relevant state variables about the enemies. Currently this is:
+   * - launcherInVision
+   * - carrierInVision
+   * - carrierInAttackRange
+   */
   private void updateEnemyStateInformation() {
     launcherInVision = false;
     carrierInVision = false;
@@ -510,6 +520,7 @@ public class Launcher extends MobileRobot {
           if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS)) {
             randomizeExplorationTarget(true);
           }
+          resetVisited();
           rc.setIndicatorString("patrolling default: " + explorationTarget);
           patrolTarget = explorationTarget;
           break;

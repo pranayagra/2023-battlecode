@@ -12,7 +12,6 @@ public class AttackerFightingMicro {
 
 
   static boolean attacker = false;
-  static boolean shouldPlaySafe = false;
   static boolean shouldStayInRange = false;
   static boolean hurt = false; //TODO: if hurt we want to go back to archon
   static int myRange;
@@ -56,10 +55,10 @@ public class AttackerFightingMicro {
    */
   public static boolean doMicro() throws GameActionException {
     if (!rc.isMovementReady()) return false;
-    shouldPlaySafe = false;
+    boolean shouldMicro = false;
     severelyHurt = ishurt(Cache.PerTurn.HEALTH, Cache.Permanent.MAX_HEALTH);
     RobotInfo[] enemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
-    if (enemyRobots.length == 0) return false;
+    if (enemyRobots.length == 0) return false; // TODO:filter for Hq
     canAttack = rc.isActionReady();
 
     int uIndex = enemyRobots.length;
@@ -68,20 +67,20 @@ public class AttackerFightingMicro {
       switch(r.type) {
         case LAUNCHER:
         case DESTABILIZER:
-          shouldPlaySafe = true;
+          shouldMicro = true;
           break;
         default:
           break;
       }
     }
-    if (!shouldPlaySafe) return false;
+    if (!shouldMicro) return false;
 
     shouldStayInRange = false;
     if (!rc.isActionReady()) shouldStayInRange = true;
     if (severelyHurt) shouldStayInRange = true;
 
     MicroInfo[] microInfo = new MicroInfo[9];
-    for (int i = 0; i < 9; ++i) microInfo[i] = new MicroInfo(Utils.directionsNine[i]);
+    for (int i = 9; --i >= 0;) microInfo[i] = new MicroInfo(Utils.directionsNine[i]);
 
     double minCooldown = microInfo[8].cooldownMultiplier;
     if (microInfo[7].canMove && minCooldown > microInfo[7].cooldownMultiplier) minCooldown = microInfo[7].cooldownMultiplier;
@@ -170,7 +169,7 @@ public class AttackerFightingMicro {
     MapLocation location;
     int minDistanceToEnemy;
     MapLocation closestEnemyLocation = null;
-    double DPSreceived = 0;
+    double netDPS = 0; // +is good, - is bad
     double enemiesTargeting = 0;
     double alliesTargeting = 0;
     boolean canMove = true;
@@ -185,7 +184,7 @@ public class AttackerFightingMicro {
         cooldownMultiplier = rc.canSenseLocation(this.location) ? rc.senseMapInfo(this.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) : 1;
         actionCooldown = (int) (Cache.Permanent.ROBOT_TYPE.actionCooldown * cooldownMultiplier);
         if (!hurt) {
-          this.DPSreceived -= myDPS / actionCooldown;
+          this.netDPS -= myDPS / actionCooldown;
           this.alliesTargeting += myDPS / actionCooldown;
           minDistanceToEnemy = rangeExtended[RobotType.LAUNCHER.ordinal()];
         } else {
@@ -201,7 +200,7 @@ public class AttackerFightingMicro {
         minDistanceToEnemy = dist;
         closestEnemyLocation = enemy.location;
       }
-      if (dist <= currentActionRadius) DPSreceived += currentDPS;
+      if (dist <= currentActionRadius) netDPS += currentDPS;
       if (dist <= currentRangeExtended) enemiesTargeting += currentDPS;
     }
 
@@ -210,14 +209,15 @@ public class AttackerFightingMicro {
 //      alliesTargeting += currentDPS;
       if (closestEnemyLocation == null) return;
       int dist = ally.location.distanceSquaredTo(closestEnemyLocation);
-//      if (dist <= currentActionRadius) DPSreceived += currentDPS;
+      if (dist <= currentActionRadius) netDPS += currentDPS;
       if (dist <= currentRangeExtended) alliesTargeting += currentDPS;
     }
 
 
     int safe() {
       if (!canMove) return -1;
-      if (DPSreceived > 0) return 0;
+//      if (alliesTargeting > enemiesTargeting) // you want to go in
+      if (netDPS > 0) return 0;
       if (enemiesTargeting > alliesTargeting) return 1;
       return 2;
     }
