@@ -2,25 +2,26 @@ package basicbot.robots.pathfinding;
 
 import basicbot.robots.pathfinding.unitpathing.*;
 import basicbot.utils.Cache;
-import basicbot.utils.Global;
 import basicbot.utils.Printer;
-import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public class SmitePathing {
 
   RobotController rc;
+  Pathing pathing;
   UnitPathing up;
   MapLocation destination;
 
-  int[] tracker = new int[113];
-  int[] fuzzyTracker = new int[113];
+  int[] tracker;// = new int[113];
+//  int[] fuzzyTracker = new int[113];
 
-  int fuzzyMovesLeft = 0;
-  int MAX_FUZZY_MOVES = 3;
+//  int fuzzyMovesLeft = 0;
+//  int MAX_FUZZY_MOVES = 3;
+  int doBuggingTurns = 0;
 
-  public SmitePathing(RobotController rc) {
+  public SmitePathing(RobotController rc, Pathing pathing) {
     this.rc = rc;
+    this.pathing = pathing;
     switch (Cache.Permanent.ROBOT_TYPE) { // cases for carrier, launcher, amplifier, destabilizer, booster
       case CARRIER:
         up = new CarrierPathing(rc);
@@ -69,8 +70,20 @@ public class SmitePathing {
   private boolean pathTo(MapLocation target) throws GameActionException {
     if (!rc.isMovementReady()) return false;
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
-    if (fuzzyMovesLeft > 0) {
-      return fuzzyMove(target);
+    if (doBuggingTurns > 0) {
+      if (!BugNav.checkDoneBugging()) {
+        doBuggingTurns--;
+        if (BugNav.tryBugging()) {
+          if (BugNav.checkDoneBugging()) {
+            doBuggingTurns = 0;
+          }
+          return true;
+        }
+        return false;
+      } else {
+        doBuggingTurns = 0;
+      }
+//      return fuzzyMove(target);
       // rc.setIndicatorDot(rc.getLocation(), 0, 0, 0);
 //      return;
     }
@@ -89,7 +102,7 @@ public class SmitePathing {
     Direction dir = up.bestDir(target); // ~5000 bytecode (4700 avg&median)
 //    Utils.finishByteCodeCounting("unit-bfs");
 
-//    if (Cache.PerTurn.ROUND_NUM >= 129 && Cache.Permanent.ID == 10961) {
+//    if (Cache.PerTurn.ROUND_NUM >= 50 && Cache.Permanent.ID == 11944) {
 //      Printer.print("nav towards: " + destination, "best dir: " + dir);
 //    }
 
@@ -99,8 +112,11 @@ public class SmitePathing {
     // don't know where to go / gonna revisit
     if (dir == null || isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir))) {
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try fuzzy movement for " + MAX_FUZZY_MOVES + " turns");
-      fuzzyMovesLeft = MAX_FUZZY_MOVES;
-      return fuzzyMove(target);
+//      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try bugging");
+//      Printer.print("current location: " + Cache.PerTurn.CURRENT_LOCATION);
+      doBuggingTurns = 2;
+      BugNav.setTarget(target);
+      return BugNav.tryBugging();
     } else {
       return smiteMove(dir);
       // rc.setIndicatorDot(rc.getLocation(), 255, 255, 255);
@@ -111,12 +127,13 @@ public class SmitePathing {
    * Use this function instead of rc.move(). Still need to verify canMove before calling this.
    */
   public boolean smiteMove(Direction dir) throws GameActionException {
-    if (Pathing.globalPathing.move(dir)) {
-      Cache.PerTurn.whenMoved();
-      if (fuzzyMovesLeft > 0) {
-        addFuzzyVisited(Cache.PerTurn.CURRENT_LOCATION);
-        fuzzyMovesLeft--;
-      }
+//    MapLocation expectedNewLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
+    if (pathing.move(dir)) {
+//      Cache.PerTurn.whenMoved();
+//      if (fuzzyMovesLeft > 0) {
+//        addFuzzyVisited(Cache.PerTurn.CURRENT_LOCATION);
+//        fuzzyMovesLeft--;
+//      }
 //    Cache.PerTurn.CURRENT_LOCATION = Cache.PerTurn.CURRENT_LOCATION.add(dir);)
       addVisited(Cache.PerTurn.CURRENT_LOCATION);
 //    robot.nearbyEnemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, robot.enemyTeam);
@@ -125,49 +142,49 @@ public class SmitePathing {
     return false;
   }
 
-  public boolean fuzzyMove(MapLocation target) throws GameActionException {
-    if (!rc.isMovementReady()) return false;
-
-    // Don't move if adjacent to destination and something is blocking it
-    if (Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(target) <= 2 && !rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target))) {
-      return false;
-    }
-    // TODO: This is not optimal! Sometimes taking a slower move is better if its diagonal.
-    MapLocation myLocation = rc.getLocation();
-    Direction toDest = myLocation.directionTo(target);
-    Direction[] dirs = {toDest, toDest.rotateLeft(), toDest.rotateRight(), toDest.rotateLeft().rotateLeft(), toDest.rotateRight().rotateRight(), toDest.opposite().rotateLeft(), toDest.opposite().rotateRight(), toDest.opposite()};
-    int cooldownCost = (int) (Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER
-        ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
-        : Cache.Permanent.ROBOT_TYPE.movementCooldown);
-    int cost = 99999;
-    Direction optimalDir = null;
-    for (int i = 0; i < dirs.length; i++) {
-      // Prefer forward moving steps over horizontal shifts
-      if (i > 2 && optimalDir != null) {
-        break;
-      }
-      Direction dir = dirs[i];
-      MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
-      if (rc.canMove(dir) && !isFuzzyVisited(newLoc)) {//!newLoc.isWithinDistanceSquared(Cache.PerTurn.PREVIOUS_LOCATION, 0)) {
-        int newCost = (int) ((rc.canSenseLocation(newLoc) ? rc.senseMapInfo(newLoc).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) : 1)
-            * cooldownCost);//rc.senseRubble(myLocation.add(dir));
-        // add epsilon boost to forward direction
-        if (dir == toDest) {
-          newCost -= 1;
-        }
-        if (newCost < cost) {
-          cost = newCost;
-          optimalDir = dir;
-        }
-      }
-    }
-
-
-    if (optimalDir != null) {
-      return smiteMove(optimalDir);
-    }
-    return false;
-  }
+//  public boolean fuzzyMove(MapLocation target) throws GameActionException {
+//    if (!rc.isMovementReady()) return false;
+//
+//    // Don't move if adjacent to destination and something is blocking it
+//    if (Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(target) <= 2 && !rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target))) {
+//      return false;
+//    }
+//    // TODO: This is not optimal! Sometimes taking a slower move is better if its diagonal.
+//    MapLocation myLocation = rc.getLocation();
+//    Direction toDest = myLocation.directionTo(target);
+//    Direction[] dirs = {toDest, toDest.rotateLeft(), toDest.rotateRight(), toDest.rotateLeft().rotateLeft(), toDest.rotateRight().rotateRight(), toDest.opposite().rotateLeft(), toDest.opposite().rotateRight(), toDest.opposite()};
+//    int cooldownCost = (int) (Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER
+//        ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
+//        : Cache.Permanent.ROBOT_TYPE.movementCooldown);
+//    int cost = 99999;
+//    Direction optimalDir = null;
+//    for (int i = 0; i < dirs.length; i++) {
+//      // Prefer forward moving steps over horizontal shifts
+//      if (i > 2 && optimalDir != null) {
+//        break;
+//      }
+//      Direction dir = dirs[i];
+//      MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
+//      if (rc.canMove(dir) && !isFuzzyVisited(newLoc)) {//!newLoc.isWithinDistanceSquared(Cache.PerTurn.PREVIOUS_LOCATION, 0)) {
+//        int newCost = (int) ((rc.canSenseLocation(newLoc) ? rc.senseMapInfo(newLoc).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) : 1)
+//            * cooldownCost);//rc.senseRubble(myLocation.add(dir));
+//        // add epsilon boost to forward direction
+//        if (dir == toDest) {
+//          newCost -= 1;
+//        }
+//        if (newCost < cost) {
+//          cost = newCost;
+//          optimalDir = dir;
+//        }
+//      }
+//    }
+//
+//
+//    if (optimalDir != null) {
+//      return smiteMove(optimalDir);
+//    }
+//    return false;
+//  }
 
   /**
    * Move in the directon to the target, either directly or 45 degrees left or right, if there
@@ -222,23 +239,23 @@ public class SmitePathing {
     tracker[bit >>> 5] |= 1 << (31 - bit & 31);
   }
 
-  private void addFuzzyVisited(MapLocation loc) {
-    int bit = loc.x + 60 * loc.y;
-    fuzzyTracker[bit >>> 5] |= 1 << (31 - bit & 31);
-  }
+//  private void addFuzzyVisited(MapLocation loc) {
+//    int bit = loc.x + 60 * loc.y;
+//    fuzzyTracker[bit >>> 5] |= 1 << (31 - bit & 31);
+//  }
 
   private boolean isVisited(MapLocation loc) {
     int bit = loc.x + 60*loc.y;
     return (tracker[bit >>> 5] & (1 << (31 - bit & 31))) != 0;
   }
 
-  private boolean isFuzzyVisited(MapLocation loc) {
-    int bit = loc.x + 60*loc.y;
-    return (fuzzyTracker[bit >>> 5] & (1 << (31 - bit & 31))) != 0;
-  }
+//  private boolean isFuzzyVisited(MapLocation loc) {
+//    int bit = loc.x + 60*loc.y;
+//    return (fuzzyTracker[bit >>> 5] & (1 << (31 - bit & 31))) != 0;
+//  }
 
   private void resetVisited() {
     tracker = new int[113];
-    fuzzyTracker = new int[113];
+//    fuzzyTracker = new int[113];
   }
 }

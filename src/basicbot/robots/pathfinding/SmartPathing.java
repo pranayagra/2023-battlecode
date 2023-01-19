@@ -11,7 +11,7 @@ public class SmartPathing extends Pathing {
   public SmartPathing(RobotController rc) {
     super(rc);
     if (Cache.Permanent.ROBOT_TYPE != RobotType.HEADQUARTERS) {
-      this.sp = new SmitePathing(rc);
+      this.sp = new SmitePathing(rc, this);
     }
   }
 

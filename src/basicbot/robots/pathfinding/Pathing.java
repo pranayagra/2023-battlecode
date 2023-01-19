@@ -17,6 +17,7 @@ public abstract class Pathing {
 
   public static Pathing create(RobotController rc) {
     globalPathing = new SmartPathing(rc);
+    BugNav.init(rc, globalPathing);
     return globalPathing;
   }
 

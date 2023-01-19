@@ -102,18 +102,19 @@ public class Launcher extends MobileRobot {
           numFriendlyLaunchers++;
         }
       }
-      if (numFriendlyLaunchers >= MIN_GROUP_SIZE_TO_MOVE) canMove = true;
+      if (numFriendlyLaunchers >= MIN_GROUP_SIZE_TO_MOVE - 1) canMove = true;
 //      if (numFriendlyLaunchers == 0) {
 //        numTurnsWaiting++;
 //      } else {
 //        numTurnsWaiting = 0;
 //      }
       if (canMove) {
-        MapLocation target;
-        do {
-          target = getDestination();
+        MapLocation target = getDestination();
+        if (target != null) {
+          attemptMoveTowards(target);
+        }
 //          rc.setIndicatorString("patrol target: " + target);
-        } while (target != null && attemptMoveTowards(target)); // moves every other turn
+//        } while (target != null && attemptMoveTowards(target)); // moves every other turn
       }
     }
 
