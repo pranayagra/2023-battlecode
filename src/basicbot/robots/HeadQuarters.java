@@ -12,7 +12,7 @@ import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
-  private static final boolean printNumUnitsSpawned = false;
+  private static final boolean printNumUnitsSpawned = true;
   private int hqID;
   public final WellInfo closestAdamantium;
   public final WellInfo closestMana;
