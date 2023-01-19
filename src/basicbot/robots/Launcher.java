@@ -288,16 +288,18 @@ public class Launcher extends MobileRobot {
       if (numTurnsWaiting > TURNS_TO_WAIT) {
         // go back to nearest HQ
 //        Printer.print("waiting -- save last target -- " + patrolTargetType + ": " + patrolTarget);
-        savedLastTargetType = patrolTargetType;
-        savedLastTarget = patrolTarget;
-        patrolTargetType = PatrolTargetType.OUR_HQ;
+//        savedLastTargetType = patrolTargetType;
+//        savedLastTarget = patrolTarget;
+//        patrolTargetType = PatrolTargetType.OUR_HQ;
+//        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         numTurnsNearTarget = 0;
         numTurnsAtHotSpot = 0;
-        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-        rc.setIndicatorString("retreating towards HQ: " + patrolTarget);
-        return patrolTarget;
+        rc.setIndicatorString("retreating towards HQ: " + closestHq);
+        return closestHq;
       } else {
-        return explorationTarget;//Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
+//        return explorationTarget; // explore? still while waiting
+        return Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
       }
     } else {
       // ayy we got friends, now we can go!
