@@ -16,7 +16,7 @@ import battlecode.common.*;
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
   private static final int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out
-  private static final int TURNS_TO_WAIT = 5; // turns to wait (without friends) until going back to nearest HQ
+  private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
   private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
   private static final int TURNS_AT_HOT_SPOT = 10;
@@ -272,11 +272,16 @@ public class Launcher extends MobileRobot {
 
     // make sure we have friends
     if (nearbyAllyLaunchers < MIN_GROUP_SIZE_TO_MOVE - 1) { // 1 for self
-      if (totalAllyLaunchers > 0 && !closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
-        // move towards friend closest to current target
-        rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "target: " + patrolTarget);
-        return closestFriendToTargetLoc;
+      if (totalAllyLaunchers > 0) {
+        if (!closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
+          // move towards friend closest to current target
+          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "target: " + patrolTarget);
+          return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
+        } else if (closestFriendToTargetLoc.equals(Cache.PerTurn.CURRENT_LOCATION)) {
+          rc.setIndicatorString("I'm the closest, staying still");
+          return closestFriendToTargetLoc;
+        }
       }
       // stay still, not enough friends
       numTurnsWaiting++;

@@ -166,7 +166,7 @@ public class AttackMicro {
       }
       this.loc = rc.adjacentLocation(dir);
       dist = loc.distanceSquaredTo(target);
-      cooldownMultiplier = rc.canSenseLocation(loc) ? rc.senseCooldownMultiplier(loc) : 1;
+      cooldownMultiplier = rc.canSenseLocation(loc) ? rc.senseMapInfo(loc).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) : 1;
     }
 
     boolean isBetterThan(AimingPosition at) throws GameActionException {

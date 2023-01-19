@@ -125,7 +125,7 @@ public class AttackerMovementMicro {
     for (RobotInfo enemy : enemyRobots) {
       if (Clock.getBytecodesLeft() < MAX_MICRO_BYTECODE_REMAINING) break;
       int t = enemy.type.ordinal();
-      currentDPS = DPS[t] / ((int) (rc.senseCooldownMultiplier(enemy.location) * enemy.type.actionCooldown));
+      currentDPS = DPS[t] / ((int) (rc.senseMapInfo(enemy.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * enemy.type.actionCooldown));
       if (currentDPS <= 0) continue;
       //if (danger && Robot.comm.isEnemyTerritory(unit.getLocation())) currentDPS*=1.5;
       currentRangeExtended = rangeExtended[t];
@@ -144,7 +144,7 @@ public class AttackerMovementMicro {
     RobotInfo[] friendlyRobots = Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS;
     for (RobotInfo friendly : friendlyRobots) {
       if (Clock.getBytecodesLeft() < MAX_MICRO_BYTECODE_REMAINING) break;
-      currentDPS = DPS[friendly.type.ordinal()] / ((int) (rc.senseCooldownMultiplier(friendly.location) * friendly.type.actionCooldown));
+      currentDPS = DPS[friendly.type.ordinal()] / ((int) (rc.senseMapInfo(friendly.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * friendly.type.actionCooldown));
       if (currentDPS <= 0) continue;
       microInfo[0].updateAlly(friendly);
       microInfo[1].updateAlly(friendly);
@@ -190,7 +190,7 @@ public class AttackerMovementMicro {
       this.location = rc.getLocation().add(dir);
       if (dir != Direction.CENTER && !rc.canMove(dir)) canMove = false;
       else {
-        cooldownMultiplier = rc.canSenseLocation(this.location) ? rc.senseCooldownMultiplier(this.location) : 1;
+        cooldownMultiplier = rc.canSenseLocation(this.location) ? rc.senseMapInfo(this.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) : 1;
         actionCooldown = (int) (Cache.Permanent.ROBOT_TYPE.actionCooldown * cooldownMultiplier);
         if (!hurt){
           this.DPSreceived -= myDPS / actionCooldown;
