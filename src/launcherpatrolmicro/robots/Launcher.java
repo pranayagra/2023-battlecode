@@ -272,25 +272,31 @@ public class Launcher extends MobileRobot {
 
     // make sure we have friends
     if (nearbyAllyLaunchers < MIN_GROUP_SIZE_TO_MOVE - 1) { // 1 for self
-      if (totalAllyLaunchers > 0 && !closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
-        // move towards friend closest to current target
-        rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "target: " + patrolTarget);
-        return closestFriendToTargetLoc;
+      if (totalAllyLaunchers > 0) {
+        if (!closestFriendToTargetLoc.isAdjacentTo(basicbot.utils.Cache.PerTurn.CURRENT_LOCATION)) {
+          // move towards friend closest to current target
+          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget);
+          return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
+        } else if (closestFriendToTargetLoc.equals(basicbot.utils.Cache.PerTurn.CURRENT_LOCATION)) {
+          rc.setIndicatorString("I'm the closest, staying still");
+          return closestFriendToTargetLoc;
+        }
       }
       // stay still, not enough friends
       numTurnsWaiting++;
       if (numTurnsWaiting > TURNS_TO_WAIT) {
         // go back to nearest HQ
 //        Printer.print("waiting -- save last target -- " + patrolTargetType + ": " + patrolTarget);
-        savedLastTargetType = patrolTargetType;
-        savedLastTarget = patrolTarget;
-        patrolTargetType = PatrolTargetType.OUR_HQ;
-        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+//        savedLastTargetType = patrolTargetType;
+//        savedLastTarget = patrolTarget;
+//        patrolTargetType = PatrolTargetType.OUR_HQ;
+//        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        MapLocation closestHq = basicbot.communications.HqMetaInfo.getClosestHqLocation(basicbot.utils.Cache.PerTurn.CURRENT_LOCATION);
         numTurnsNearTarget = 0;
         numTurnsAtHotSpot = 0;
-        rc.setIndicatorString("retreating towards HQ: " + patrolTarget);
-        return patrolTarget;
+        rc.setIndicatorString("retreating towards HQ: " + closestHq);
+        return closestHq;
       } else {
 //        return explorationTarget; // explore? still while waiting
         return Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
@@ -521,9 +527,9 @@ public class Launcher extends MobileRobot {
       if (patrolTarget == null) {
         Printer.print("Failed to select patrol target for type: " + patrolTargetType);
       }
-      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
+//      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
     }
-    rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
+//    rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
   }
 
   public enum PatrolTargetType {
