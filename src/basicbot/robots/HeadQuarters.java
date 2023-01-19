@@ -70,7 +70,6 @@ public class HeadQuarters extends Robot {
     }
 
     spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);;
-
     checkedEndangeredWellsCounter = 2;
 //    if (Cache.Permanent.MAP_AREA <= 20*20) {
 //      foundEndangeredWells = true;
@@ -82,7 +81,9 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
-//    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
+    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM == 2) rc.resign();
+
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
