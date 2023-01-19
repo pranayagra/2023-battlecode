@@ -250,13 +250,6 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any issues with
    */
   private MapLocation getPatrolTarget() throws GameActionException {
-    if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(patrolTarget, Utils.DSQ_2by2)) {
-      numTurnsNearTarget++;
-    }
-
-    if (patrolTargetType == PatrolTargetType.OUR_HQ) {
-      return patrolTarget;
-    }
 
 //    RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     RobotInfo[] alliedRobots = Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS;
@@ -280,12 +273,54 @@ public class Launcher extends MobileRobot {
       }
     }
 
+
+    int distToTarget = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(patrolTarget);
+    switch (distToTarget) {
+      case 25:
+      case 24:
+      case 23:
+      case 22:
+      case 21:
+      case 20:
+      case 19:
+      case 18: // 3by3 plus
+      case 17:
+        if (nearbyAllyLaunchers < 3) {
+          break;
+        }
+      case 16: // launcher action
+      case 15:
+      case 14:
+      case 13:
+      case 12:
+      case 11:
+      case 10:
+      case 9:
+      case 8: // 2by2
+      case 7:
+      case 6:
+      case 5:
+      case 4:
+      case 3:
+      case 2: // 1by1 (adjacent)
+      case 1:
+      case 0:
+        numTurnsNearTarget++;
+      default:
+        break;
+    }
+
+    if (patrolTargetType.isOurSide) {
+      return patrolTarget;
+    }
+
+
     // make sure we have friends
     if (nearbyAllyLaunchers < MIN_GROUP_SIZE_TO_MOVE - 1) { // 1 for self
       if (totalAllyLaunchers > 0) {
         if (!closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
           // move towards friend closest to current target
-          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "target: " + patrolTarget);
+          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget);
           return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
         } else if (closestFriendToTargetLoc.equals(Cache.PerTurn.CURRENT_LOCATION)) {
@@ -303,8 +338,11 @@ public class Launcher extends MobileRobot {
 //        patrolTargetType = PatrolTargetType.OUR_HQ;
 //        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-        numTurnsNearTarget = 0;
-        numTurnsAtHotSpot = 0;
+        if (numTurnsNearTarget > 0) {
+          numTurnsNearTarget -= (MIN_GROUP_SIZE_TO_MOVE - totalAllyLaunchers);
+          if (numTurnsNearTarget < 0) numTurnsNearTarget = 0;
+          numTurnsAtHotSpot = 0;
+        }
         rc.setIndicatorString("retreating towards HQ: " + closestHq);
         return closestHq;
       } else {
@@ -495,6 +533,9 @@ public class Launcher extends MobileRobot {
             break; // fall through to enemy HQ if no enemy well known
           }
         case ENEMY_HQ:
+          if (patrolTargetType == PatrolTargetType.ENEMY_HQ && patrolTarget != null) {
+            break;
+          }
           patrolTargetType = PatrolTargetType.ENEMY_HQ;
 //          patrolTarget = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           MapLocation[] enemyHQs = HqMetaInfo.enemyHqLocations;
@@ -544,15 +585,20 @@ public class Launcher extends MobileRobot {
   }
 
   public enum PatrolTargetType {
-    OUR_HQ,
-    OUR_WELL,
-    ENEMY_WELL,
-    ENEMY_HQ,
-    HOT_SPOT;
+    OUR_HQ(true),
+    OUR_WELL(true),
+    ENEMY_WELL(false),
+    ENEMY_HQ(false),
+    HOT_SPOT(false);
 
-    public static final PatrolTargetType DEFAULT_FIRST_TARGET = ENEMY_HQ;
-    public static final PatrolTargetType TARGET_ON_CYCLE = ENEMY_WELL;
+    public static final PatrolTargetType DEFAULT_FIRST_TARGET = OUR_WELL;
+    public static final PatrolTargetType TARGET_ON_CYCLE = OUR_WELL;
 
+    public final boolean isOurSide;
+
+    PatrolTargetType(boolean isOurSide) {
+      this.isOurSide = isOurSide;
+    }
   }
 
 
@@ -564,7 +610,7 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any issues with moving
    */
   private boolean attemptMoveTowards(MapLocation target) throws GameActionException {
-    return Cache.PerTurn.ROUND_NUM % 2 == 0
+    return (Cache.PerTurn.ROUND_NUM % 3 != 0)
         && pathing.moveTowards(target);
   }
 

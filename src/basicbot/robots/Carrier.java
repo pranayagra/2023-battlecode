@@ -15,11 +15,11 @@ import java.util.Arrays;
 public class Carrier extends MobileRobot {
 
   private static final int MAX_CARRYING_CAPACITY = GameConstants.CARRIER_CAPACITY;
-  private static final int FAR_FROM_FULL_CAPACITY = MAX_CARRYING_CAPACITY * 4 / 5;
+  private static final int FAR_FROM_FULL_CAPACITY = MAX_CARRYING_CAPACITY * 9 / 10;
   private static final int MAX_RSS_TO_ENABLE_SCOUT = 1000;
   private static final int SET_WELL_PATH_DISTANCE = RobotType.CARRIER.actionRadiusSquared;
   private static final int MAX_TURNS_STUCK = 3;
-  private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 3;
+  private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 2;
   private static final int MAX_CARRIERS_FILLING_IN_FRONT = 8;
   private static final int TURNS_TO_FLEE = 4;
   private static final int MAX_SCOUT_TURNS = 50;
@@ -107,7 +107,7 @@ public class Carrier extends MobileRobot {
       }
     }
   }
-  
+
   private CarrierTask determineNewTask() throws GameActionException {
     if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
       // todo: read from comms
@@ -345,8 +345,9 @@ public class Carrier extends MobileRobot {
    */
   private boolean executeFetchResource(ResourceType resourceType) throws GameActionException {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
-    no_well: if (currentTask.targetWell == null) {
-      findNewWell(currentTask.collectionType, currentTask.targetWell);
+    no_well: if (currentTask.targetWell == null
+        || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))) {
+      findNewWell(currentTask.collectionType, null);
       if (currentTask.targetWell != null) break no_well;
       WellInfo[] nearby = rc.senseNearbyWells(resourceType);
       if (nearby.length == 0) {
