@@ -2,7 +2,7 @@
 package basicbot.robots.pathfinding.unitpathing;
 
 import battlecode.common.*;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Utils;
 
 public class LauncherPathing implements UnitPathing {

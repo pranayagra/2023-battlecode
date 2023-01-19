@@ -1,7 +1,6 @@
 package basicbot.communications;
 
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;

@@ -1,7 +1,9 @@
 package basicbot.utils;
 
+import basicbot.knowledge.Cache;
+
 public class Printer {
-    public static StringBuilder print;
+    public static StringBuilder print = new StringBuilder();
 
     public static void print(String s) {
       print.append(s).append("\n");

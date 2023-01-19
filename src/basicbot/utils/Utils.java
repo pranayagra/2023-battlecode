@@ -1,8 +1,8 @@
 package basicbot.utils;
 
+import basicbot.knowledge.Cache;
 import battlecode.common.Clock;
 import battlecode.common.Direction;
-import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 
 import java.util.HashMap;
@@ -317,7 +317,7 @@ public class Utils {
 
   /*
 
-  * / // ================================== TOGGLE THIS OFF/ON
+  */ // ================================== TOGGLE THIS OFF/ON
 
   private static Map<String, Integer> byteCodeMap = new HashMap<>();
   public static void startByteCodeCounting(String reason) {
@@ -342,7 +342,7 @@ public class Utils {
 
   /*
 
-  */ // ------------------------------ TOGGLE THIS ON/OFF
+  * / // ------------------------------ TOGGLE THIS ON/OFF
 
   public static void startByteCodeCounting(String reason) {}
   public static void finishByteCodeCounting(String reason) {}

@@ -1,5 +1,6 @@
-package basicbot.communications;
+package basicbot.knowledge;
 
+import basicbot.communications.Communicator;
 import basicbot.utils.Global;
 import basicbot.utils.Printer;
 import battlecode.common.Clock;

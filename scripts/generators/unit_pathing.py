@@ -229,7 +229,7 @@ def gen_full(bot, unit):
 package {bot}.robots.pathfinding.unitpathing;
 
 import battlecode.common.*;
-import {bot}.utils.Cache;
+import {bot}.knowledge.Cache;
 import {bot}.utils.Utils;
 
 public class {unit}Pathing implements UnitPathing {{

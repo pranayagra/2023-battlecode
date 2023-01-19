@@ -1,8 +1,7 @@
 package basicbot.robots.pathfinding;
 
 import basicbot.containers.CharSet;
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
+import basicbot.knowledge.Cache;
 import battlecode.common.*;
 
 public class BugNav{

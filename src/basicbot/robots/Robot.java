@@ -2,11 +2,12 @@ package basicbot.robots;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.MapMetaInfo;
-import basicbot.communications.RunningMemory;
+import basicbot.knowledge.Memory;
+import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
 import basicbot.robots.pathfinding.Pathing;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Global;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
@@ -42,7 +43,7 @@ public abstract class Robot {
 
     Global.setupGlobals(rc, this);
     Utils.setUpStatics();
-    Cache.setup();
+    Memory.init();
     Printer.cleanPrint();
     Communicator.init(rc);
 
@@ -127,7 +128,7 @@ public abstract class Robot {
   private void runTurnWrapper() throws GameActionException {
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
 
-    Cache.updateOnTurn();
+    Memory.updateOnTurn();
     if (!dontYield) {
       rc.setIndicatorString("ac: " + rc.getActionCooldownTurns() + " mc: " + rc.getMovementCooldownTurns());
     }

@@ -1,13 +1,12 @@
 package basicbot.robots.pathfinding;
 
 import basicbot.robots.pathfinding.unitpathing.*;
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
+import basicbot.knowledge.Cache;
 import battlecode.common.*;
 
 public class SmitePathing {
 
-  private static final int MIN_BYTECODE_TO_BFS = 3000;
+  private static final int MIN_BYTECODE_TO_BFS = 30000;
   RobotController rc;
   Pathing pathing;
   UnitPathing up;

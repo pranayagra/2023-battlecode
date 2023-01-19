@@ -7,7 +7,7 @@ import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashSet;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Constants;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;

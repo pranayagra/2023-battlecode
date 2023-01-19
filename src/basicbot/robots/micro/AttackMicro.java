@@ -2,7 +2,7 @@ package basicbot.robots.micro;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 

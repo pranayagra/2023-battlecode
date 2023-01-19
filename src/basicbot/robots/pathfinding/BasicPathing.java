@@ -1,6 +1,6 @@
 package basicbot.robots.pathfinding;
 
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;

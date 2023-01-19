@@ -1,7 +1,6 @@
 package basicbot.robots.pathfinding;
 
-import basicbot.utils.Cache;
-import basicbot.utils.Utils;
+import basicbot.knowledge.Cache;
 import battlecode.common.*;
 
 public class SmartPathing extends Pathing {

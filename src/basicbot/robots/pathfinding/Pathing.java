@@ -1,7 +1,7 @@
 package basicbot.robots.pathfinding;
 
-import basicbot.utils.Cache;
-import basicbot.utils.Printer;
+import basicbot.knowledge.Cache;
+import basicbot.knowledge.Memory;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -38,7 +38,7 @@ public abstract class Pathing {
     if (Clock.getBytecodesLeft() < 25) Clock.yield(); // todo: this should be larger? whenMoved takes a bit longer...
     if (rc.canMove(dir)) {
       rc.move(dir);
-      Cache.PerTurn.whenMoved();
+      Memory.whenMoved();
       return true;
     }
     return false;

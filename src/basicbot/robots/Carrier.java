@@ -6,7 +6,7 @@ import basicbot.communications.HqMetaInfo;
 import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.robots.micro.CarrierWellPathing;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;

@@ -1,7 +1,7 @@
 package basicbot.robots.micro;
 
 import basicbot.robots.pathfinding.Pathing;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 

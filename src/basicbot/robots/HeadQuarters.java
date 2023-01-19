@@ -4,7 +4,7 @@ import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.communications.MapMetaInfo;
-import basicbot.utils.Cache;
+import basicbot.knowledge.Cache;
 import basicbot.utils.Constants;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
@@ -82,7 +82,7 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
-//    if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
+    if (Cache.PerTurn.ROUND_NUM >= 5) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
