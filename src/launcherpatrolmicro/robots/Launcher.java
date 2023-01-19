@@ -273,12 +273,12 @@ public class Launcher extends MobileRobot {
     // make sure we have friends
     if (nearbyAllyLaunchers < MIN_GROUP_SIZE_TO_MOVE - 1) { // 1 for self
       if (totalAllyLaunchers > 0) {
-        if (!closestFriendToTargetLoc.isAdjacentTo(basicbot.utils.Cache.PerTurn.CURRENT_LOCATION)) {
+        if (!closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
           // move towards friend closest to current target
           rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget);
           return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
-        } else if (closestFriendToTargetLoc.equals(basicbot.utils.Cache.PerTurn.CURRENT_LOCATION)) {
+        } else if (closestFriendToTargetLoc.equals(Cache.PerTurn.CURRENT_LOCATION)) {
           rc.setIndicatorString("I'm the closest, staying still");
           return closestFriendToTargetLoc;
         }
@@ -292,7 +292,7 @@ public class Launcher extends MobileRobot {
 //        savedLastTarget = patrolTarget;
 //        patrolTargetType = PatrolTargetType.OUR_HQ;
 //        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-        MapLocation closestHq = basicbot.communications.HqMetaInfo.getClosestHqLocation(basicbot.utils.Cache.PerTurn.CURRENT_LOCATION);
+        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         numTurnsNearTarget = 0;
         numTurnsAtHotSpot = 0;
         rc.setIndicatorString("retreating towards HQ: " + closestHq);
