@@ -417,9 +417,9 @@ public class Launcher extends MobileRobot {
       if (patrolTarget == null) {
         Printer.print("Failed to select patrol target for type: " + patrolTargetType);
       }
-      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
+//       rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
     }
-    rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
+//     rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
   }
 
   public enum PatrolTargetType {

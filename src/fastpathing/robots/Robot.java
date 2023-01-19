@@ -209,8 +209,8 @@ public abstract class Robot {
           && myY * 2 >= mapHeight - midlineThreshold) {
         MapLocation test1 = new MapLocation(myX, mapHeight / 2 - 1);
         MapLocation test2 = new MapLocation(myX, mapHeight - mapHeight / 2);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
+//         rc.setIndicatorDot(test1, 211, 211, 211);
+//         rc.setIndicatorDot(test2, 211, 211, 211);
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
@@ -221,8 +221,8 @@ public abstract class Robot {
         }
         test1 = new MapLocation(myX - 2, mapHeight / 2 - 1);
         test2 = new MapLocation(myX - 2, mapHeight - mapHeight / 2);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
+//         rc.setIndicatorDot(test1, 211, 211, 211);
+//         rc.setIndicatorDot(test2, 211, 211, 211);
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
@@ -241,8 +241,8 @@ public abstract class Robot {
           && myX * 2 >= mapWidth - midlineThreshold) {
         MapLocation test1 = new MapLocation(mapWidth / 2 - 1, myY);
         MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, myY);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
+//         rc.setIndicatorDot(test1, 211, 211, 211);
+//         rc.setIndicatorDot(test2, 211, 211, 211);
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
@@ -253,8 +253,8 @@ public abstract class Robot {
         }
         test1 = new MapLocation(mapWidth / 2 - 1, myY - 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, myY - 2);
-        rc.setIndicatorDot(test1, 211, 211, 211);
-        rc.setIndicatorDot(test2, 211, 211, 211);
+//         rc.setIndicatorDot(test1, 211, 211, 211);
+//         rc.setIndicatorDot(test2, 211, 211, 211);
         if (rc.canSenseLocation(test1)) {
           if (rc.canSenseLocation(test2)) {
             if (rc.sensePassability(test1) != rc.sensePassability(test2)) {
