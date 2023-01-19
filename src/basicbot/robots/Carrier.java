@@ -125,6 +125,7 @@ public class Carrier extends MobileRobot {
       return CarrierTask.DELIVER_RSS_HOME;
     }
     MapLocation closestHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    int closestHQID = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
     RobotInfo closestHQ = rc.canSenseRobotAtLocation(closestHQLoc) ? rc.senseRobotAtLocation(closestHQLoc) : null;
     if (closestHQ != null && closestHQ.getTotalAnchors() > 0) {
       return CarrierTask.ANCHOR_ISLAND;
@@ -144,18 +145,34 @@ public class Carrier extends MobileRobot {
     if (totalAdamantiumAroundMe >= MAX_RSS_TO_ENABLE_SCOUT && totalManaAroundMe >= MAX_RSS_TO_ENABLE_SCOUT) {
       return CarrierTask.SCOUT;
     }
+    // RSS AROUND ME APPROACH ========
 //    Printer.print("totalAdamantiumAroundMe: " + totalAdamantiumAroundMe);
 //    Printer.print("totalManaAroundMe: " + totalManaAroundMe);
-    if (totalManaAroundMe <= 1.75 * totalAdamantiumAroundMe) { // ad < 0.666 * mana
-//      Printer.print("Collecting mana");
+//    if (totalManaAroundMe <= 1.75 * totalAdamantiumAroundMe) { // ad < 0.666 * mana
+////      Printer.print("Collecting mana");
+//      return CarrierTask.FETCH_MANA;
+//    }
+//    if (totalAdamantiumAroundMe < 0.5 * totalManaAroundMe) {
+////      Printer.print("Collecting adamantium");
+//      return CarrierTask.FETCH_ADAMANTIUM;
+//    }
+//    Printer.print("Collecting mana");
+//    return CarrierTask.FETCH_MANA;
+//     END RSS AROUND ME APPROACH ====
+
+    int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
+    int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
+    int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
+    // TODO: check for existence of Elixir wells
+    if ((40 * adamantiumIncome) / 100 > 9) {
       return CarrierTask.FETCH_MANA;
     }
-    if (totalAdamantiumAroundMe < 0.5 * totalManaAroundMe) {
-//      Printer.print("Collecting adamantium");
+    if (2 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
       return CarrierTask.FETCH_ADAMANTIUM;
     }
-//    Printer.print("Collecting mana");
     return CarrierTask.FETCH_MANA;
+
+
 //    return Utils.rng.nextBoolean() ? CarrierTask.FETCH_ADAMANTIUM : CarrierTask.FETCH_MANA;
 //    if (totalManaAroundMe > totalAdamantiumAroundMe) {
 //      return CarrierTask.FETCH_ADAMANTIUM;
@@ -532,7 +549,7 @@ public class Carrier extends MobileRobot {
     }
     if (wellQueueOrder != null) {
       rc.setIndicatorString("follow well path: " + wellLocation);
-      followWellQueue(wellLocation);
+      if (!followWellQueue(wellLocation)) return false;
 //      } else {
 //        Printer.print("Cannot get to well! -- canMove=" + rc.isMovementReady());
     }
@@ -543,8 +560,9 @@ public class Carrier extends MobileRobot {
    * will follow the collection quuee of the well (circle around the well)
    * will move along path depending on robots seen
    * ASSUMES - within 2x2 of well
+   * @return boolean. false is failed and should try other well. true if good :)
    */
-  private void followWellQueue(MapLocation wellLocation) throws GameActionException {
+  private boolean followWellQueue(MapLocation wellLocation) throws GameActionException {
     updateRobotsSeenInQueue(wellLocation);
     updateWellQueueTarget();
 
@@ -575,13 +593,15 @@ public class Carrier extends MobileRobot {
         }
 
         if (numCarriersFarFromFull > MAX_CARRIERS_FILLING_IN_FRONT) {
-          rc.setIndicatorString("there's people in the way so ima dip");
-          findNewWell(currentTask.collectionType, currentTask.targetWell);
+          rc.setIndicatorString("there's " + numCarriersFarFromFull + " far from full so ima dip");
+          return false;
+//          findNewWell(currentTask.collectionType, currentTask.targetWell);
         } else {
           roundsWaitingForQueueSpot++;
           if (roundsWaitingForQueueSpot > MAX_ROUNDS_WAIT_FOR_WELL_PATH) {
             rc.setIndicatorString("there's people in the way so ima dip");
-            findNewWell(currentTask.collectionType, currentTask.targetWell);
+//            findNewWell(currentTask.collectionType, currentTask.targetWell);
+            return false;
           } else {
             do {
               if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellEntryPoint)) {
@@ -621,7 +641,7 @@ public class Carrier extends MobileRobot {
               findNewWell(currentTask.collectionType, currentTask.targetWell);
               if (currentTask.targetWell != null) {
                 approachWell(currentTask.targetWell);
-                return;
+                return true;
               }
             }
           }
@@ -671,6 +691,7 @@ public class Carrier extends MobileRobot {
         pathing.forceMoveTo(wellQueueOrder[moveTrial]);
       }
     }
+    return true;
   }
 
   /**
@@ -818,7 +839,7 @@ public class Carrier extends MobileRobot {
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (!writer.readWellExists(i)) break;
       MapLocation wellLocation = writer.readWellLocation(i);
-      if (!wellLocation.equals(toAvoid) || blackListWells.contains(wellLocation)) {
+      if (!wellLocation.equals(toAvoid) && !blackListWells.contains(wellLocation)) {
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (dist < closestDist) {
           closestDist = dist;
