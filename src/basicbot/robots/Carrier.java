@@ -313,13 +313,13 @@ public class Carrier extends MobileRobot {
     // set fleeing to 6
     // todo: consider whether or not to run away from enemy carriers
     RobotInfo nearestCombatEnemy = null;
-    int distanceToEnemy = Integer.MAX_VALUE;
+    int myDistanceToNearestEnemy = Integer.MAX_VALUE;
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
       if (enemyRobot.type == RobotType.LAUNCHER) {
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(enemyRobot.location);
-        if (dist < distanceToEnemy) {
+        if (dist < myDistanceToNearestEnemy) {
           nearestCombatEnemy = enemyRobot;
-          distanceToEnemy = dist;
+          myDistanceToNearestEnemy = dist;
         }
       }
     }
@@ -330,11 +330,21 @@ public class Carrier extends MobileRobot {
       // check if we need to cache the enemy for broadcasting (only if no friendly launchers nearby)
       cachedLastEnemyForBroadcast = nearestCombatEnemy;
       for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(nearestCombatEnemy.location, friendlyRobot.type.actionRadiusSquared)) {
-          cachedLastEnemyForBroadcast = null;
-          fleeingCounter /= 2;
-          break;
+        if (friendlyRobot.type == RobotType.LAUNCHER) {
+          int distToEnemy = friendlyRobot.location.distanceSquaredTo(lastEnemyLocation);
+          if (distToEnemy <= myDistanceToNearestEnemy) {
+            cachedLastEnemyForBroadcast = null;
+            fleeingCounter--;
+//            break;
+          } else if (distToEnemy <= friendlyRobot.type.actionRadiusSquared) {
+            cachedLastEnemyForBroadcast = null;
+//            fleeingCounter--;
+          }
+//          break;
         }
+      }
+      if (cachedLastEnemyForBroadcast == null) { // we found friends nearby
+        fleeingCounter /= 2;
       }
     } else {
       fleeingCounter = 0;
