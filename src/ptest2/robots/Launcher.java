@@ -1,17 +1,16 @@
-package basicbot.robots;
+package ptest2.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
-import basicbot.containers.HashMap;
-import basicbot.containers.HashSet;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.utils.Cache;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import ptest2.communications.CommsHandler;
+import ptest2.communications.Communicator;
+import ptest2.communications.HqMetaInfo;
+import ptest2.communications.MapMetaInfo;
+import ptest2.containers.HashSet;
+import ptest2.robots.micro.AttackMicro;
+import ptest2.robots.micro.AttackerFightingMicro;
+import ptest2.utils.Cache;
+import ptest2.utils.Constants;
+import ptest2.utils.Printer;
+import ptest2.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
@@ -38,10 +37,6 @@ public class Launcher extends MobileRobot {
   private boolean carrierInVision;
   private boolean carrierInAttackRange;
 
-  HashMap <Integer, Integer> lastRoundFriendsHealth;
-  private int moveTowardsFriendCounter;
-  private MapLocation moveTowardsFriendTarget;
-
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
     patrolTargetType = PatrolTargetType.DEFAULT_FIRST_TARGET;
@@ -51,7 +46,6 @@ public class Launcher extends MobileRobot {
 
   private void resetVisited() {
     visitedLocations = new HashSet<>(HqMetaInfo.hqCount + CommsHandler.ADAMANTIUM_WELL_SLOTS + CommsHandler.MANA_WELL_SLOTS + CommsHandler.ELIXIR_WELL_SLOTS);
-    lastRoundFriendsHealth = new HashMap<>(9*9);
   }
 
   @Override
@@ -59,8 +53,6 @@ public class Launcher extends MobileRobot {
     rc.setIndicatorString("Ooga booga im a launcher");
 
     updateEnemyStateInformation();
-
-    boolean setMovingTowardsFriendTookDmg = false;
 
     if (!launcherInVision) {
       if (carrierInAttackRange) {
@@ -86,75 +78,6 @@ public class Launcher extends MobileRobot {
           }
         }
       }
-    }
-
-//    if (Cache.PerTurn.ROUND_NUM >= 100) rc.resign();
-
-    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 && Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length > 0 && moveTowardsFriendCounter == 0) {
-      // if no enemies in vision, consider moving to location where friend took damage
-      int closestDist = Integer.MAX_VALUE;
-      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        Integer id = robot.ID;
-        if (lastRoundFriendsHealth.contains(id)) {
-          int lastRoundHealth = lastRoundFriendsHealth.get(id);
-          if (lastRoundHealth > robot.health) {
-            // friend took damage
-            if ((lastRoundHealth - robot.health) - RobotType.LAUNCHER.damage == 0) {
-              // took damage from launcher (most likely unless carrier had 24kg resources)
-            }
-            Direction bestDir = Cache.PerTurn.CURRENT_LOCATION.directionTo(robot.location);
-            Direction leftDir = bestDir.rotateLeft();
-            Direction rightDir = bestDir.rotateRight();
-             {
-              int dist = Cache.PerTurn.CURRENT_LOCATION.add(bestDir).distanceSquaredTo(robot.location);
-              if (dist < closestDist) {
-                  closestDist = dist;
-                  moveTowardsFriendCounter = 3;
-                  moveTowardsFriendTarget = robot.location;
-              }
-            }
-            {
-              int dist = Cache.PerTurn.CURRENT_LOCATION.add(leftDir).distanceSquaredTo(robot.location);
-              if (dist < closestDist) {
-                  closestDist = dist;
-                  moveTowardsFriendCounter = 3;
-                  moveTowardsFriendTarget = robot.location;
-              }
-            }
-            {
-              int dist = Cache.PerTurn.CURRENT_LOCATION.add(rightDir).distanceSquaredTo(robot.location);
-              if (dist < closestDist) {
-                  closestDist = dist;
-                  moveTowardsFriendCounter = 3;
-                  moveTowardsFriendTarget = robot.location;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (moveTowardsFriendCounter > 0) {
-//      Printer.print("friend " + moveTowardsFriendTarget + " with counter " + moveTowardsFriendCounter);
-      --moveTowardsFriendCounter;
-    }
-    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0) {
-      if (moveTowardsFriendCounter > 0) {
-        // move towards friend
-//        Printer.print("move to friend that took damage " + moveTowardsFriendTarget);
-        rc.setIndicatorDot(moveTowardsFriendTarget, 0, 0, 255);
-        Direction dir = Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget);
-        pathing.moveInDirLoose(dir);
-      }
-    } else {
-      moveTowardsFriendCounter = 0;
-    }
-
-
-
-    lastRoundFriendsHealth.clear();
-    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-      lastRoundFriendsHealth.put(robot.ID, robot.health);
     }
 
     tryAttack(true);

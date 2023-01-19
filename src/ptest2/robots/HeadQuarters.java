@@ -1,13 +1,13 @@
-package basicbot.robots;
+package ptest2.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
-import basicbot.utils.Cache;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import ptest2.communications.CommsHandler;
+import ptest2.communications.Communicator;
+import ptest2.communications.HqMetaInfo;
+import ptest2.communications.MapMetaInfo;
+import ptest2.utils.Cache;
+import ptest2.utils.Constants;
+import ptest2.utils.Printer;
+import ptest2.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {

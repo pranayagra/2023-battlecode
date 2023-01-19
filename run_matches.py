@@ -14,14 +14,14 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['spawnorder', 'ptest']
+bots = ['ptest2']
 # bots = ['spawnorderg']
 botsSet = set(bots)
 customMaps = ['TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 ogMaps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
 # maps = ['SmallElements']
 sprint1Maps = ["ArtistRendition", "BatSignal", "BowAndArrow", "Cat", "Clown", "Diagonal", "Eyelands", "Frog", "Grievance", "Hah", "Jail", "KingdomRush", "Minefield", "Movepls", "Orbit", "Pathfind", "Pit", "Pizza", "Quiet", "Rectangle", "Scatter", "Sun", "Tacocat"]
-maps = ogMaps + sprint1Maps + customMaps
+maps = ogMaps + sprint1Maps[:10]
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
