@@ -473,7 +473,9 @@ public class Launcher extends MobileRobot {
           patrolTargetType = PatrolTargetType.OUR_WELL;
           ResourceType rt = ResourceType.ADAMANTIUM;
           if (Utils.rng.nextBoolean()) rt = ResourceType.MANA;
-          patrolTarget = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, rt); // TODO: make pick mana vs ad
+          MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, rt); // TODO: make pick mana vs ad
+          Direction awayFromBase = HqMetaInfo.getClosestHqLocation(closestWellLocation).directionTo(closestWellLocation);
+          patrolTarget = closestWellLocation.add(awayFromBase).add(awayFromBase);
           if (!visitedLocations.contains(patrolTarget)) {
             rc.setIndicatorString("patrolling our well: " + patrolTarget);
             break; // switch to enemy well if all our wells are visited
@@ -528,7 +530,8 @@ public class Launcher extends MobileRobot {
             }
           }
 
-          patrolTarget = closestEnemyWell;
+          Direction towardsEnemyBase = closestEnemyWell.directionTo(HqMetaInfo.getClosestEnemyHqLocation(closestEnemyWell));
+          patrolTarget = closestEnemyWell.add(towardsEnemyBase).add(towardsEnemyBase);
           if (patrolTarget != null) {
             rc.setIndicatorString("patrolling enemy well: " + patrolTarget);
             break; // fall through to enemy HQ if no enemy well known

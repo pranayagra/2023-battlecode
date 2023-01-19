@@ -1,6 +1,7 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
+import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashMap;
@@ -43,6 +44,7 @@ public class Carrier extends MobileRobot {
 
   int fleeingCounter;
   MapLocation lastEnemyLocation;
+  private RobotInfo cachedLastEnemyForBroadcast;
 
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
@@ -188,15 +190,31 @@ public class Carrier extends MobileRobot {
     }
     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
-      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
-      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      pathing.moveTowards(fleeDirection);
-      fleeingCounter--;
+//      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
+//      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
+      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveAwayFrom(lastEnemyLocation)) {}
+//      if (cachedLastEnemyForBroadcast != null) { // we need to broadcast this enemy
+//        forcedNextTask = CarrierTask.DELIVER_RSS_HOME;
+//        resetTask();
+//      }
     }
 
     // run the current task until we fail to complete it (incomplete -> finish on next turn/later)
     while (currentTask != null && currentTask.execute(this)) {
       resetTask();
+    }
+
+    do_broadcast: if (cachedLastEnemyForBroadcast != null) {
+      for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(cachedLastEnemyForBroadcast.location, friendlyRobot.type.actionRadiusSquared)) {
+          cachedLastEnemyForBroadcast = null;
+          break do_broadcast;
+        }
+      }
+      if (rc.canWriteSharedArray(0,0)) {
+        Communicator.writeEnemy(cachedLastEnemyForBroadcast);
+        cachedLastEnemyForBroadcast = null;
+      }
     }
   }
 
@@ -294,21 +312,30 @@ public class Carrier extends MobileRobot {
     // get nearest enemy
     // set fleeing to 6
     // todo: consider whether or not to run away from enemy carriers
-    MapLocation nearestCombatEnemy = null;
+    RobotInfo nearestCombatEnemy = null;
     int distanceToEnemy = Integer.MAX_VALUE;
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
       if (enemyRobot.type == RobotType.LAUNCHER) {
-        int dist = rc.getLocation().distanceSquaredTo(enemyRobot.location);
+        int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(enemyRobot.location);
         if (dist < distanceToEnemy) {
-          nearestCombatEnemy = enemyRobot.location;
+          nearestCombatEnemy = enemyRobot;
           distanceToEnemy = dist;
         }
       }
     }
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
-      lastEnemyLocation = nearestCombatEnemy;
+      lastEnemyLocation = nearestCombatEnemy.location;
       fleeingCounter = TURNS_TO_FLEE;
+      // check if we need to cache the enemy for broadcasting (only if no friendly launchers nearby)
+      cachedLastEnemyForBroadcast = nearestCombatEnemy;
+      for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(nearestCombatEnemy.location, friendlyRobot.type.actionRadiusSquared)) {
+          cachedLastEnemyForBroadcast = null;
+          fleeingCounter /= 2;
+          break;
+        }
+      }
     } else {
       fleeingCounter = 0;
     }
@@ -819,31 +846,34 @@ public class Carrier extends MobileRobot {
 
   private boolean doIslandFindingMove() throws GameActionException {
     if (!rc.isMovementReady()) return false;
-    int avgX = 0;
-    int avgY = 0;
-    int numFriends = 0;
-    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-      if (robot.type == RobotType.CARRIER) {
-        avgX += robot.location.x;
-        avgY += robot.location.y;
-        numFriends++;
-      }
-    }
-    if (numFriends <= 15) { // not too many nearby friends
-      return tryExplorationMove();
-    }
-    MapLocation avgLocation = new MapLocation(avgX / numFriends, avgY / numFriends);
-    Direction toAvg = Cache.PerTurn.CURRENT_LOCATION.directionTo(avgLocation);
-    int tries = 10;
-    while (tries-- > 0 && Cache.PerTurn.CURRENT_LOCATION.directionTo(explorationTarget).equals(toAvg)) {
+//    int avgX = 0;
+//    int avgY = 0;
+//    int numFriends = 0;
+//    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+//      if (robot.type == RobotType.CARRIER) {
+//        avgX += robot.location.x;
+//        avgY += robot.location.y;
+//        numFriends++;
+//      }
+//    }
+    if (currentTask.turnsRunning % 100 == 0) {
       randomizeExplorationTarget(true);
     }
-    if (tries == 0) {
-      explorationTarget = new MapLocation(
-          Cache.Permanent.MAP_WIDTH*Utils.rng.nextInt(2),
-          Cache.Permanent.MAP_HEIGHT*Utils.rng.nextInt(2));
-    }
-    return pathing.moveAwayFrom(avgLocation);
+//    if (numFriends <= 15) { // not too many nearby friends
+    return tryExplorationMove();
+//    }
+//    MapLocation avgLocation = new MapLocation(avgX / numFriends, avgY / numFriends);
+//    Direction toAvg = Cache.PerTurn.CURRENT_LOCATION.directionTo(avgLocation);
+//    int tries = 10;
+//    while (tries-- > 0 && Cache.PerTurn.CURRENT_LOCATION.directionTo(explorationTarget).equals(toAvg)) {
+//      randomizeExplorationTarget(true);
+//    }
+//    if (tries == 0) {
+//      explorationTarget = new MapLocation(
+//          Cache.Permanent.MAP_WIDTH*Utils.rng.nextInt(2),
+//          Cache.Permanent.MAP_HEIGHT*Utils.rng.nextInt(2));
+//    }
+//    return pathing.moveAwayFrom(avgLocation);
   }
 
   /**

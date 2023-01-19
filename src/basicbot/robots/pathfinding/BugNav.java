@@ -52,7 +52,7 @@ public class BugNav{
     return false;
   }
 
-  private static boolean canMoveInDirection(Direction dir) throws GameActionException {
+  static boolean canMoveInDirection(Direction dir) throws GameActionException {
 //    Printer.print("BUGNAV: Checking if can move in direction " + dir);
     if (!rc.canMove(dir)) return false;
     MapLocation nextLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);

@@ -7,6 +7,7 @@ import battlecode.common.*;
 
 public class SmitePathing {
 
+  private static final int MIN_BYTECODE_TO_BFS = 3000;
   RobotController rc;
   Pathing pathing;
   UnitPathing up;
@@ -46,6 +47,7 @@ public class SmitePathing {
   public void updateDestination(MapLocation newDest) {
     if (destination == null || destination.distanceSquaredTo(newDest) != 0) {
       destination = newDest;
+      BugNav.setTarget(newDest);
       resetVisited();
       addVisited(Cache.PerTurn.CURRENT_LOCATION);
     }
@@ -69,6 +71,7 @@ public class SmitePathing {
 
   private boolean pathTo(MapLocation target) throws GameActionException {
     if (!rc.isMovementReady()) return false;
+    if (Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS) return BugNav.tryBugging();
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
     if (doBuggingTurns > 0) {
       if (!BugNav.checkDoneBugging()) {
@@ -107,7 +110,7 @@ public class SmitePathing {
 //    }
 
 //    if (dir == null || !rc.canMove(dir)) return false; // TODO: this checks null but if null should do something else
-    if (dir != null && !rc.canMove(dir)) return false;
+    if (dir != null && !BugNav.canMoveInDirection(dir)) return false;
 
     // don't know where to go / gonna revisit
     if (dir == null || isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir))) {
@@ -115,7 +118,7 @@ public class SmitePathing {
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try bugging");
 //      Printer.print("current location: " + Cache.PerTurn.CURRENT_LOCATION);
       doBuggingTurns = 2;
-      BugNav.setTarget(target);
+//      BugNav.setTarget(target);
       return BugNav.tryBugging();
     } else {
       return smiteMove(dir);
