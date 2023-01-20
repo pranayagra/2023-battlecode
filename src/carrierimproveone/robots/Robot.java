@@ -1,15 +1,16 @@
-package fleebetter.robots;
+package carrierimproveone.robots;
 
-import fleebetter.communications.Communicator;
-import fleebetter.communications.MapMetaInfo;
-import fleebetter.communications.RunningMemory;
-import fleebetter.robots.micro.AttackMicro;
-import fleebetter.robots.micro.AttackerFightingMicro;
-import fleebetter.robots.pathfinding.Pathing;
-import fleebetter.utils.Cache;
-import fleebetter.utils.Global;
-import fleebetter.utils.Printer;
-import fleebetter.utils.Utils;
+import carrierimproveone.communications.Communicator;
+import carrierimproveone.communications.MapMetaInfo;
+import carrierimproveone.knowledge.Memory;
+import carrierimproveone.knowledge.RunningMemory;
+import carrierimproveone.robots.micro.AttackMicro;
+import carrierimproveone.robots.micro.AttackerFightingMicro;
+import carrierimproveone.robots.pathfinding.Pathing;
+import carrierimproveone.knowledge.Cache;
+import carrierimproveone.utils.Global;
+import carrierimproveone.utils.Printer;
+import carrierimproveone.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Robot {
@@ -42,7 +43,7 @@ public abstract class Robot {
 
     Global.setupGlobals(rc, this);
     Utils.setUpStatics();
-    Cache.setup();
+    Memory.init();
     Printer.cleanPrint();
     Communicator.init(rc);
 
@@ -127,7 +128,7 @@ public abstract class Robot {
   private void runTurnWrapper() throws GameActionException {
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
 
-    Cache.updateOnTurn();
+    Memory.updateOnTurn();
     if (!dontYield) {
       rc.setIndicatorString("ac: " + rc.getActionCooldownTurns() + " mc: " + rc.getMovementCooldownTurns());
     }
@@ -289,8 +290,8 @@ public abstract class Robot {
     }
   }
   private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2) throws GameActionException {
-//    rc.setIndicatorDot(test1, 211, 211, 211);
-//    rc.setIndicatorDot(test2, 211, 211, 211);
+    rc.setIndicatorDot(test1, 211, 211, 211);
+    rc.setIndicatorDot(test2, 211, 211, 211);
     if (rc.onTheMap(test1)
         && rc.onTheMap(test2)
         && test1.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)

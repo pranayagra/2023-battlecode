@@ -1,13 +1,13 @@
-package basicbot.robots;
+package carrierimproveone.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import carrierimproveone.communications.CommsHandler;
+import carrierimproveone.communications.Communicator;
+import carrierimproveone.communications.HqMetaInfo;
+import carrierimproveone.communications.MapMetaInfo;
+import carrierimproveone.knowledge.Cache;
+import carrierimproveone.utils.Constants;
+import carrierimproveone.utils.Printer;
+import carrierimproveone.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {

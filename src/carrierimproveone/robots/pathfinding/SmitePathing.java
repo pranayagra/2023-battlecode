@@ -1,8 +1,8 @@
-package basicbot.robots.pathfinding;
+package carrierimproveone.robots.pathfinding;
 
-import basicbot.robots.pathfinding.unitpathing.*;
-import basicbot.knowledge.Cache;
-import basicbot.utils.Printer;
+import carrierimproveone.robots.pathfinding.unitpathing.*;
+import carrierimproveone.knowledge.Cache;
+import carrierimproveone.utils.Printer;
 import battlecode.common.*;
 
 public class SmitePathing {
