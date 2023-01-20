@@ -163,13 +163,17 @@ public class Carrier extends MobileRobot {
     int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
     int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
     int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
+    int MAX_INCOME = 31;
     // TODO: check for existence of Elixir wells
     if ((40 * adamantiumIncome) / 100 > 9) {
+      CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
       return CarrierTask.FETCH_MANA;
     }
     if (2 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+      CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       return CarrierTask.FETCH_ADAMANTIUM;
     }
+    CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
     return CarrierTask.FETCH_MANA;
 
 
