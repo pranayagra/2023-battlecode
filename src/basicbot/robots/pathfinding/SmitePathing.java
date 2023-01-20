@@ -5,7 +5,6 @@ import basicbot.knowledge.Cache;
 import battlecode.common.*;
 
 public class SmitePathing {
-
   private static final int MIN_BYTECODE_TO_BFS = 3000;
   RobotController rc;
   Pathing pathing;
