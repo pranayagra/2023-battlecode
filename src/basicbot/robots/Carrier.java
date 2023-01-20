@@ -116,7 +116,7 @@ public class Carrier extends MobileRobot {
   private CarrierTask determineNewTask() throws GameActionException {
     if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
       // todo: read from comms
-      checkAssignedTask();
+//      checkAssignedTask();
 //      Printer.print("checked assign " + HQAssignedTask);
       if (HQAssignedTask != null) return HQAssignedTask;
     }
