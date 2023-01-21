@@ -34,8 +34,8 @@ public class Carrier extends MobileRobot {
 
 
   private int turnsStuckApproachingWell;
-  private HashMap<MapLocation, Direction> wellApproachDirection;
-  private HashSet<MapLocation> blackListWells;
+  private final HashMap<MapLocation, Direction> wellApproachDirection;
+  private final HashSet<MapLocation> blackListWells;
   private MapLocation[] wellQueueOrder;
   private MapLocation wellEntryPoint;
   int wellQueueTargetIndex;
