@@ -11,6 +11,7 @@ import java.util.Random;
 
 public class Utils {
 
+
   public enum MapSymmetry {
     ROTATIONAL,
     HORIZONTAL,
@@ -273,6 +274,19 @@ public class Utils {
         return rotateLocation180(location);
       default:
         throw new RuntimeException("Cannot apply unknown symmetry to map location: " + symmetry);
+    }
+  }
+
+  public static Direction applySymmetry(Direction direction, MapSymmetry symmetry) {
+    switch (symmetry) {
+      case HORIZONTAL:
+        return flipDirX(direction);
+      case VERTICAL:
+        return flipDirY(direction);
+      case ROTATIONAL:
+        return direction.opposite();
+      default:
+        throw new RuntimeException("Cannot apply unknown symmetry to direction: " + symmetry);
     }
   }
 

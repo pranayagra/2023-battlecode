@@ -27,11 +27,14 @@ public class Launcher extends MobileRobot {
   private HashSet<MapLocation> visitedLocations;
   private PatrolTargetType patrolTargetType;
   private MapLocation patrolTarget;
+  private MapLocation patrolTargetVisitedMarker;
   private PatrolTargetType savedLastTargetType;
   private MapLocation savedLastTarget;
+  private MapLocation savedLastTargetVisitedMarker;
 
   private PatrolTargetType preHotSpotSavedTargetType;
   private MapLocation preHotSpotSavedLastTarget;
+  private MapLocation preHotSpotSavedLastTargetVisitedMarker;
 
   private boolean launcherInVision;
   private boolean carrierInVision;
@@ -348,6 +351,7 @@ public class Launcher extends MobileRobot {
         return closestHq;
       } else {
 //        return explorationTarget; // explore? still while waiting
+        rc.setIndicatorString("waiting for friends");
         return Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
       }
     } else {
@@ -385,8 +389,10 @@ public class Launcher extends MobileRobot {
 //      Printer.print("need to guard hotspot - save last target -- " + patrolTargetType + ": " + patrolTarget);
       preHotSpotSavedTargetType = patrolTargetType;
       preHotSpotSavedLastTarget = patrolTarget;
+      preHotSpotSavedLastTargetVisitedMarker = patrolTargetVisitedMarker;
       patrolTargetType = PatrolTargetType.HOT_SPOT;
       patrolTarget = toGuard;
+      patrolTargetVisitedMarker = mostEndangeredWell;
     }
   }
 
@@ -438,9 +444,10 @@ public class Launcher extends MobileRobot {
       numTurnsAtHotSpot = 0;
       // mark the current target as visited
       if (patrolTarget != null) {
-        visitedLocations.add(patrolTarget);
+        visitedLocations.add(patrolTargetVisitedMarker != null ? patrolTargetVisitedMarker : patrolTarget);
 //        currentTargetType = currentTargetType.next();
         patrolTarget = null;
+        patrolTargetVisitedMarker = null;
       }
 
       // restore old target
@@ -449,15 +456,19 @@ public class Launcher extends MobileRobot {
         if (preHotSpotSavedLastTarget != null || preHotSpotSavedTargetType != null) {
           patrolTargetType = preHotSpotSavedTargetType;
           patrolTarget = preHotSpotSavedLastTarget;
+          patrolTargetVisitedMarker = preHotSpotSavedLastTargetVisitedMarker;
           preHotSpotSavedTargetType = null;
           preHotSpotSavedLastTarget = null;
+          preHotSpotSavedLastTargetVisitedMarker = null;
         }
       } else {
         if (savedLastTarget != null || savedLastTargetType != null) {
           patrolTargetType = savedLastTargetType;
           patrolTarget = savedLastTarget;
+          patrolTargetVisitedMarker = savedLastTargetVisitedMarker;
           savedLastTargetType = null;
           savedLastTarget = null;
+          savedLastTargetVisitedMarker = null;
         }
       }
     }
@@ -467,6 +478,7 @@ public class Launcher extends MobileRobot {
       switch (patrolTargetType) {
         case OUR_HQ:
           patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+          patrolTargetVisitedMarker = patrolTarget;
           break;
         case OUR_WELL: our_well: {
           if (true) break our_well;
@@ -476,7 +488,8 @@ public class Launcher extends MobileRobot {
           MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, rt); // TODO: make pick mana vs ad
           Direction awayFromBase = HqMetaInfo.getClosestHqLocation(closestWellLocation).directionTo(closestWellLocation);
           patrolTarget = closestWellLocation.add(awayFromBase).add(awayFromBase);
-          if (!visitedLocations.contains(patrolTarget)) {
+          patrolTargetVisitedMarker = closestWellLocation;
+          if (!visitedLocations.contains(patrolTargetVisitedMarker)) {
             rc.setIndicatorString("patrolling our well: " + patrolTarget);
             break; // switch to enemy well if all our wells are visited
           }
@@ -530,9 +543,10 @@ public class Launcher extends MobileRobot {
             }
           }
 
-          Direction towardsEnemyBase = closestEnemyWell.directionTo(HqMetaInfo.getClosestEnemyHqLocation(closestEnemyWell));
-          patrolTarget = closestEnemyWell.add(towardsEnemyBase).add(towardsEnemyBase);
-          if (patrolTarget != null) {
+          if (closestEnemyWell != null) {
+            Direction towardsEnemyBase = closestEnemyWell.directionTo(HqMetaInfo.getClosestEnemyHqLocation(closestEnemyWell));
+            patrolTarget = closestEnemyWell.add(towardsEnemyBase).add(towardsEnemyBase);
+            patrolTargetVisitedMarker = closestEnemyWell;
             rc.setIndicatorString("patrolling enemy well: " + patrolTarget);
             break; // fall through to enemy HQ if no enemy well known
           }
@@ -554,8 +568,9 @@ public class Launcher extends MobileRobot {
               closestHQ = enemyHQ;
             }
           }
-          patrolTarget = closestHQ;
-          if (patrolTarget != null) {
+          if (closestHQ != null) {
+            patrolTarget = closestHQ;
+            patrolTargetVisitedMarker = closestHQ;
             rc.setIndicatorString("patrolling enemy HQ: " + patrolTarget);
             break;
           }
@@ -568,12 +583,14 @@ public class Launcher extends MobileRobot {
           resetVisited();
           rc.setIndicatorString("patrolling default: " + explorationTarget);
           patrolTarget = explorationTarget;
+          patrolTargetVisitedMarker = explorationTarget;
           break;
         case HOT_SPOT:
           if (patrolTarget == null) { // done patrolling the hot spot
             Printer.print("done patrolling -- revert to " + savedLastTargetType + ": " + savedLastTarget);
             patrolTargetType = savedLastTargetType;
             patrolTarget = savedLastTarget;
+            patrolTargetVisitedMarker = savedLastTargetVisitedMarker;
           }
           if (patrolTarget != null) {
             rc.setIndicatorString("patrolling hot spot: " + patrolTarget);

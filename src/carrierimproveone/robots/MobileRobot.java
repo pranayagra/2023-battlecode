@@ -107,11 +107,11 @@ public abstract class MobileRobot extends Robot {
    * @throws GameActionException if movement or line indication fails
    */
   private boolean goToExplorationTarget() throws GameActionException {
-    if (!rc.isMovementReady()) {
-      if (explorationTarget != null) {
-        rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
-      }
-    }
+//    if (!rc.isMovementReady()) {
+//      if (explorationTarget != null) {
+//        rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
+//      }
+//    }
     turnsExploring++;
     pathing.moveTowards(explorationTarget);
     return Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS);

@@ -222,19 +222,19 @@ public abstract class Robot {
           && myY * 2 >= mapHeight - midlineThreshold) {
         MapLocation test1 = new MapLocation(myX, mapHeight / 2 - 1);
         MapLocation test2 = new MapLocation(myX, mapHeight - mapHeight / 2);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.VERTICAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
           break nearHorizMidline;
         }
         test1 = new MapLocation(myX - 2, mapHeight / 2 - 1);
         test2 = new MapLocation(myX - 2, mapHeight - mapHeight / 2);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.VERTICAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
           break nearHorizMidline;
         }
         test1 = new MapLocation(myX + 2, mapHeight / 2 - 1);
         test2 = new MapLocation(myX + 2, mapHeight - mapHeight / 2);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.VERTICAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
           break nearHorizMidline;
         }
@@ -248,19 +248,19 @@ public abstract class Robot {
           && myX * 2 >= mapWidth - midlineThreshold) {
         MapLocation test1 = new MapLocation(mapWidth / 2 - 1, myY);
         MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, myY);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.HORIZONTAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
           break nearVertMidline;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, myY - 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, myY - 2);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.HORIZONTAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
           break nearVertMidline;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, myY + 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, myY + 2);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.HORIZONTAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
           break nearVertMidline;
         }
@@ -276,20 +276,20 @@ public abstract class Robot {
           && myY * 2 >= mapHeight - midlineThreshold) {
         MapLocation test1 = new MapLocation(mapWidth / 2 - 1, mapHeight / 2 - 1);
         MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, mapHeight - mapHeight / 2);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.ROTATIONAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
           break nearCenter;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, mapHeight - mapHeight / 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, mapHeight / 2 - 1);
-        if (checkFailsSymmetry(test1, test2)) {
+        if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.ROTATIONAL)) {
           MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
           break nearCenter;
         }
       }
     }
   }
-  private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2) throws GameActionException {
+  private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2, Utils.MapSymmetry symmetryToCheck) throws GameActionException {
     rc.setIndicatorDot(test1, 211, 211, 211);
     rc.setIndicatorDot(test2, 211, 211, 211);
     if (rc.onTheMap(test1)
@@ -299,8 +299,8 @@ public abstract class Robot {
       if (rc.senseCloud(test1) != rc.senseCloud(test2)) {
         return true;
       }
-      if (rc.canSenseLocation(test1)) {
-        if (rc.sensePassability(test1) != rc.sensePassability(test2) || rc.senseMapInfo(test1).getCurrentDirection() != rc.senseMapInfo(test2).getCurrentDirection()) {
+      if (rc.canSenseLocation(test1) && rc.canSenseLocation(test2)) {
+        if (rc.sensePassability(test1) != rc.sensePassability(test2) || rc.senseMapInfo(test1).getCurrentDirection() != Utils.applySymmetry(rc.senseMapInfo(test2).getCurrentDirection(), symmetryToCheck)) {
           return true;
         }
       }
