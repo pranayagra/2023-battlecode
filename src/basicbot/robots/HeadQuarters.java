@@ -146,9 +146,9 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
     handleIncome();
-    if (printNumUnitsSpawned && Cache.PerTurn.ROUND_NUM % 250 == 249) {
-      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
-    }
+//    if (printNumUnitsSpawned && Cache.PerTurn.ROUND_NUM % 250 == 249) {
+//      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+//    }
 
 //    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
 
