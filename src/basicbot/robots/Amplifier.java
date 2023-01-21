@@ -58,6 +58,8 @@ public class Amplifier extends MobileRobot {
         MapLocation candidateLocation = Cache.PerTurn.CURRENT_LOCATION.add(d);
         int candidateDistance = candidateLocation.distanceSquaredTo(closestEnemyLocation);
 
+//        int score = Math.min(candidateDistance, 27) - Math.max(candidateDistance - 27, 0);
+
         // always better to move out of danger
         if (bestDistance <= 26 && candidateDistance >= 27) {
           bestLocation = candidateLocation;
