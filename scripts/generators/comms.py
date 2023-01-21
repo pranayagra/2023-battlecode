@@ -74,6 +74,9 @@ SCHEMA = {
       'even_spawn_loc': LOCATION_BITS,
       'odd_spawn_instruction': 2,
       'even_spawn_instruction': 2,
+      'adamantium_income': 5, # changing any of these income bit#'s require changing the max value checking done manually in HQ and Carrier.
+      'mana_income': 5,
+      'elixir_income': 5,
     }
   },
   'adamantium_well': {
@@ -95,7 +98,7 @@ SCHEMA = {
     }
   },
   'enemy': {
-    'slots': 29,
+    'slots': 26,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,

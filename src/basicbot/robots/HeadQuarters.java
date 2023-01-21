@@ -13,6 +13,7 @@ import battlecode.common.*;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
+  private static final int INCOME_MOVING_AVERAGE_WINDOW_SIZE = 100;
 
   private int hqID;
   public final WellInfo closestAdamantium;
@@ -41,6 +42,18 @@ public class HeadQuarters extends Robot {
   private static final SpawnType[] spawnOrder40x40 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
   private static final SpawnType[] spawnOrder60x60 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
   private static final SpawnType[] spawnOrderEndangeredWells = spawnOrder20x20;
+
+  private static final int[] adamantiumIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
+  private static final int[] manaIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
+  private static final int[] elixirIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
+  // these are all over the last 3 rounds
+  private static int adamantiumIncome = 0;
+  private static int manaIncome = 0;
+  private static int elixirIncome = 0;
+  // the resources on the previous round to keep track of income
+  private static int prevAdamantium = 0;
+  private static int prevMana = 0;
+  private static int prevElixir = 0;
 
   private int spawnIdx = 0;
   private SpawnType[] spawnOrder;
@@ -132,6 +145,10 @@ public class HeadQuarters extends Robot {
     }
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
+    handleIncome();
+//    if (printNumUnitsSpawned && Cache.PerTurn.ROUND_NUM % 250 == 249) {
+//      Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+//    }
 
 //    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
 
@@ -171,6 +188,41 @@ public class HeadQuarters extends Robot {
     } else {
       normalSpawnOrder();
     }
+    // store the resources at the end of the turn
+    prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
+    prevMana = rc.getResourceAmount(ResourceType.MANA);
+    prevElixir = rc.getResourceAmount(ResourceType.ELIXIR);
+
+  }
+
+  /**
+   * Handles the resource income information. Does the following actions:
+   * - Calculates income based on prevAdamantium, prevElixir, prevMana
+   * - Updates the income histories
+   * - Publishes the new income to comms
+   * @throws GameActionException
+   */
+  private void handleIncome() throws GameActionException {
+    int newAd = rc.getResourceAmount(ResourceType.ADAMANTIUM) - prevAdamantium;
+    int newMana = rc.getResourceAmount(ResourceType.MANA) - prevMana;
+    int newElixir = rc.getResourceAmount(ResourceType.ELIXIR) - prevElixir;
+
+    // add current income & subtract off the income from WINDOW_SIZE rounds ago
+    int ind = Cache.PerTurn.ROUND_NUM % INCOME_MOVING_AVERAGE_WINDOW_SIZE;
+    adamantiumIncome += newAd - adamantiumIncomeHistory[ind];
+    manaIncome += newMana - manaIncomeHistory[ind];
+    elixirIncome += newElixir - elixirIncomeHistory[ind];
+    rc.setIndicatorString("Income: A:"+adamantiumIncome+" M:" + manaIncome + " E:" + elixirIncome);
+    // update the history
+    adamantiumIncomeHistory[ind] = newAd;
+    manaIncomeHistory[ind] = newMana;
+    elixirIncomeHistory[ind] = newElixir;
+
+    // comm the results / 40
+    int max = 31; // based on 5 bits for comms
+    CommsHandler.writeOurHqAdamantiumIncome(this.hqID, Math.min((adamantiumIncome / 40), max));
+    CommsHandler.writeOurHqManaIncome(this.hqID, Math.min((manaIncome / 40), max));
+    CommsHandler.writeOurHqElixirIncome(this.hqID, Math.min((elixirIncome / 40), max));
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
     /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
     /*WORKFLOW_ONLY*///}

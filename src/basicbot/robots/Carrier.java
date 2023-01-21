@@ -5,6 +5,7 @@ import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashMap;
+import basicbot.containers.HashSet;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
 import basicbot.utils.Printer;
@@ -34,6 +35,7 @@ public class Carrier extends MobileRobot {
 
   private int turnsStuckApproachingWell;
   private HashMap<MapLocation, Direction> wellApproachDirection;
+  private HashSet<MapLocation> blackListWells;
   private MapLocation[] wellQueueOrder;
   private MapLocation wellEntryPoint;
   int wellQueueTargetIndex;
@@ -49,6 +51,7 @@ public class Carrier extends MobileRobot {
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
     wellApproachDirection = new HashMap<>(3);
+    blackListWells = new HashSet<>(8);
     wellQueueOrder = null;
     resetTask();
   }
@@ -113,7 +116,7 @@ public class Carrier extends MobileRobot {
   private CarrierTask determineNewTask() throws GameActionException {
     if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
       // todo: read from comms
-      checkAssignedTask();
+//      checkAssignedTask();
 //      Printer.print("checked assign " + HQAssignedTask);
       if (HQAssignedTask != null) return HQAssignedTask;
     }
@@ -122,6 +125,7 @@ public class Carrier extends MobileRobot {
       return CarrierTask.DELIVER_RSS_HOME;
     }
     MapLocation closestHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    int closestHQID = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
     RobotInfo closestHQ = rc.canSenseRobotAtLocation(closestHQLoc) ? rc.senseRobotAtLocation(closestHQLoc) : null;
     if (closestHQ != null && closestHQ.getTotalAnchors() > 0) {
       return CarrierTask.ANCHOR_ISLAND;
@@ -141,18 +145,38 @@ public class Carrier extends MobileRobot {
     if (totalAdamantiumAroundMe >= MAX_RSS_TO_ENABLE_SCOUT && totalManaAroundMe >= MAX_RSS_TO_ENABLE_SCOUT) {
       return CarrierTask.SCOUT;
     }
+    // RSS AROUND ME APPROACH ========
 //    Printer.print("totalAdamantiumAroundMe: " + totalAdamantiumAroundMe);
 //    Printer.print("totalManaAroundMe: " + totalManaAroundMe);
-    if (totalManaAroundMe <= 1.75 * totalAdamantiumAroundMe) { // ad < 0.666 * mana
-//      Printer.print("Collecting mana");
+//    if (totalManaAroundMe <= 1.75 * totalAdamantiumAroundMe) { // ad < 0.666 * mana
+////      Printer.print("Collecting mana");
+//      return CarrierTask.FETCH_MANA;
+//    }
+//    if (totalAdamantiumAroundMe < 0.5 * totalManaAroundMe) {
+////      Printer.print("Collecting adamantium");
+//      return CarrierTask.FETCH_ADAMANTIUM;
+//    }
+//    Printer.print("Collecting mana");
+//    return CarrierTask.FETCH_MANA;
+//     END RSS AROUND ME APPROACH ====
+
+    int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
+    int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
+    int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
+    int MAX_INCOME = 31;
+    // TODO: check for existence of Elixir wells
+    if ((40 * adamantiumIncome) / 100 > 9) {
+      CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
       return CarrierTask.FETCH_MANA;
     }
-    if (totalAdamantiumAroundMe < 0.5 * totalManaAroundMe) {
-//      Printer.print("Collecting adamantium");
+    if (2 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+      CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       return CarrierTask.FETCH_ADAMANTIUM;
     }
-//    Printer.print("Collecting mana");
+    CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
     return CarrierTask.FETCH_MANA;
+
+
 //    return Utils.rng.nextBoolean() ? CarrierTask.FETCH_ADAMANTIUM : CarrierTask.FETCH_MANA;
 //    if (totalManaAroundMe > totalAdamantiumAroundMe) {
 //      return CarrierTask.FETCH_ADAMANTIUM;
@@ -411,7 +435,17 @@ public class Carrier extends MobileRobot {
     if (doWellCollection(currentTask.targetWell)) {
       return true; // we are full
     }
-    approachWell(currentTask.targetWell);
+    if(!approachWell(currentTask.targetWell)) {
+      blackListWells.add(currentTask.targetWell);
+      switch(currentTask) {
+        case FETCH_ADAMANTIUM:
+          forcedNextTask = CarrierTask.FETCH_MANA;
+        default: // TODO: check if elixir well exists and cycle to that
+        case FETCH_MANA:
+          forcedNextTask = CarrierTask.FETCH_ADAMANTIUM;
+      }
+      return true;
+    }
     return currentTask.targetWell != null && doWellCollection(currentTask.targetWell);
   }
 
@@ -475,14 +509,15 @@ public class Carrier extends MobileRobot {
   }
 
   /**
-   * will appreach the given well and keep track of the entry direction and well queue etc
+   * will approach the given well and keep track of the entry direction and well queue etc
    * MAY OVERWRITE target well to null
    * @param wellLocation the well to go to
+   * @returns True if was able to approach well, False if it got stuck and waited.
    * @throws GameActionException any issues with sensing/moving
    */
-  private void approachWell(MapLocation wellLocation) throws GameActionException {
+  private boolean approachWell(MapLocation wellLocation) throws GameActionException {
     if (wellQueueOrder == null) {
-      rc.setIndicatorString("no well path -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
+      rc.setIndicatorString("no well queue cycle -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
       while (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         if (pathing.moveTowards(wellLocation)) {
 //          Printer.print("moved towards well: " + targetWell + " now=" + Cache.PerTurn.CURRENT_LOCATION);//, "new dir back: " + wellApproachDirection.get(targetWell));
@@ -493,11 +528,7 @@ public class Carrier extends MobileRobot {
             rc.setIndicatorString("could not path towards well:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
             turnsStuckApproachingWell++;
             if (turnsStuckApproachingWell >= MAX_TURNS_STUCK) {
-              findNewWell(currentTask.collectionType, currentTask.targetWell);
-              if (currentTask.targetWell != null) {
-                approachWell(currentTask.targetWell);
-                return;
-              }
+              return false;
             }
           }
           break;
@@ -522,18 +553,20 @@ public class Carrier extends MobileRobot {
     }
     if (wellQueueOrder != null) {
       rc.setIndicatorString("follow well path: " + wellLocation);
-      followWellQueue(wellLocation);
+      if (!followWellQueue(wellLocation)) return false;
 //      } else {
 //        Printer.print("Cannot get to well! -- canMove=" + rc.isMovementReady());
     }
+    return true;
   }
 
   /**
    * will follow the collection quuee of the well (circle around the well)
    * will move along path depending on robots seen
    * ASSUMES - within 2x2 of well
+   * @return boolean. false is failed and should try other well. true if good :)
    */
-  private void followWellQueue(MapLocation wellLocation) throws GameActionException {
+  private boolean followWellQueue(MapLocation wellLocation) throws GameActionException {
     updateRobotsSeenInQueue(wellLocation);
     updateWellQueueTarget();
 
@@ -564,13 +597,15 @@ public class Carrier extends MobileRobot {
         }
 
         if (numCarriersFarFromFull > MAX_CARRIERS_FILLING_IN_FRONT) {
-          rc.setIndicatorString("there's people in the way so ima dip");
-          findNewWell(currentTask.collectionType, currentTask.targetWell);
+          rc.setIndicatorString("there's " + numCarriersFarFromFull + " far from full so ima dip");
+          return false;
+//          findNewWell(currentTask.collectionType, currentTask.targetWell);
         } else {
           roundsWaitingForQueueSpot++;
           if (roundsWaitingForQueueSpot > MAX_ROUNDS_WAIT_FOR_WELL_PATH) {
             rc.setIndicatorString("there's people in the way so ima dip");
-            findNewWell(currentTask.collectionType, currentTask.targetWell);
+//            findNewWell(currentTask.collectionType, currentTask.targetWell);
+            return false;
           } else {
             do {
               if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellEntryPoint)) {
@@ -610,7 +645,7 @@ public class Carrier extends MobileRobot {
               findNewWell(currentTask.collectionType, currentTask.targetWell);
               if (currentTask.targetWell != null) {
                 approachWell(currentTask.targetWell);
-                return;
+                return true;
               }
             }
           }
@@ -660,6 +695,7 @@ public class Carrier extends MobileRobot {
         pathing.forceMoveTo(wellQueueOrder[moveTrial]);
       }
     }
+    return true;
   }
 
   /**
@@ -795,7 +831,7 @@ public class Carrier extends MobileRobot {
   }
 
   /**
-   * will figure out the next best well to go to
+   * will figure out the next best well to go to (respects blackListWells)
    * @param resourceType the well type to look for
    * @param toAvoid a map location to exclude from the search
    * @throws GameActionException any issues duirng search (comms, sensing)
@@ -807,7 +843,7 @@ public class Carrier extends MobileRobot {
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (!writer.readWellExists(i)) break;
       MapLocation wellLocation = writer.readWellLocation(i);
-      if (!wellLocation.equals(toAvoid)) {
+      if (!wellLocation.equals(toAvoid) && !blackListWells.contains(wellLocation)) {
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (dist < closestDist) {
           closestDist = dist;
