@@ -163,6 +163,10 @@ public class Carrier extends MobileRobot {
     int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
     int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
     int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
+    double adamantiumWeighting = 2;
+    if (Cache.Permanent.MAP_AREA > 900) {
+      adamantiumWeighting = 1.5;
+    }
     int MAX_INCOME = 31;
     // TODO: check for existence of Elixir wells
     if ((40 * adamantiumIncome) / 100 > 9) {
@@ -171,7 +175,7 @@ public class Carrier extends MobileRobot {
       }
       return CarrierTask.FETCH_MANA;
     }
-    if (1.5 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+    if (adamantiumWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       }
@@ -273,7 +277,8 @@ public class Carrier extends MobileRobot {
     int bestValue = 0;
 
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      RobotType type = enemyRobot.getType();
+      RobotType type = enemyRobot.type;
+      if (type == RobotType.HEADQUARTERS) continue;
       int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
       int carryingResourceValue = getInvWeight(enemyRobot);
       int enemyValue = costToBuild + carryingResourceValue;
@@ -316,6 +321,7 @@ public class Carrier extends MobileRobot {
     RobotInfo enemyToAttack = null;
 //    int numMoves = numMoves();
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (enemyRobot.type == RobotType.HEADQUARTERS) continue;
       if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, enemyRobot.type.actionRadiusSquared)) {
         enemyDamage += getInvWeight(enemyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR + enemyRobot.type.damage;
       }

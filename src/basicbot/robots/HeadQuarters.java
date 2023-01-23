@@ -42,9 +42,9 @@ public class HeadQuarters extends Robot {
   private static final SpawnType[] spawnOrder60x60 = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER};
   private static final SpawnType[] spawnOrderEndangeredWells = spawnOrder20x20;
 
-  private static final int[] adamantiumIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
-  private static final int[] manaIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
-  private static final int[] elixirIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
+  private final int[] adamantiumIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
+  private final int[] manaIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
+  private final int[] elixirIncomeHistory = new int[INCOME_MOVING_AVERAGE_WINDOW_SIZE];
   // these are all over the last 3 rounds
   private static int adamantiumIncome = 0;
   private static int manaIncome = 0;

@@ -5,6 +5,7 @@ import basicbot.knowledge.Memory;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
+import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.knowledge.Cache;
 import basicbot.utils.Global;
@@ -193,8 +194,26 @@ public abstract class Robot {
   protected void afterTurnWhenMoved() throws GameActionException {
     updateSymmetryComms();
     updateWellExploration();
+    updateEnemyHQAvoidance();
   }
 
+  /**
+   * Updates the pathing to avoid enemy HQs (since they do damage to us).
+   * @throws GameActionException
+   */
+  protected void updateEnemyHQAvoidance() throws GameActionException {
+    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (robot.type != RobotType.HEADQUARTERS) continue;
+      // TODO: optimize me lol that's alotta bytecode
+      if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(robot.location, RobotType.HEADQUARTERS.actionRadiusSquared)) {
+        BugNav.blockedLocations.clear();
+      }
+      int distToBlock = Math.min(RobotType.HEADQUARTERS.actionRadiusSquared, Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(robot.location) - 1);
+      for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(robot.location, distToBlock)) {
+        if (!BugNav.blockedLocations.contains(loc)) BugNav.blockedLocations.add(loc);
+      }
+    }
+  }
   /**
    * perform any universal code that robots should run to figure out map symmetry
    *    Currently - broadcast my location + the rubble there

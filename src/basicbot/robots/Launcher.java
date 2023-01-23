@@ -30,6 +30,7 @@ public class Launcher extends MobileRobot {
   private LauncherTask currentTask;
   private HashSet<MapLocation> visitedLocations;
 
+  // enemy state information
   private boolean launcherInVision;
   private boolean carrierInVision;
   private boolean carrierInAttackRange;
@@ -53,6 +54,7 @@ public class Launcher extends MobileRobot {
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
 
+    //TODO: refactor this out
     updateEnemyStateInformation();
 
     if (!launcherInVision) {
@@ -182,6 +184,9 @@ public class Launcher extends MobileRobot {
     carrierInVision = false;
     carrierInAttackRange = false;
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (robot.type == RobotType.HEADQUARTERS) {
+        continue;
+      }
       if (robot.type == RobotType.LAUNCHER) {
         launcherInVision = true;
       } else if (robot.type == RobotType.CARRIER) {
@@ -304,7 +309,7 @@ public class Launcher extends MobileRobot {
       }
       // stay still, not enough friends
       numTurnsWaitingForFriends++;
-      if (numTurnsWaitingForFriends > TURNS_TO_WAIT) {
+      if (numTurnsWaitingForFriends > turnsToWaitUntilRetreat()) {
         // go back to nearest HQ
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(myLocation);
         if (currentTask.numTurnsNearTarget > 0) {
@@ -371,6 +376,16 @@ public class Launcher extends MobileRobot {
       }
 //      return patrolTarget;
     }
+  }
+
+  /**
+   * Idea: the lower health we are, go back earlier to regroup
+   * @return the turns to wait based on current health.
+   */
+  private int turnsToWaitUntilRetreat() {
+    double healthPercentage = (Cache.PerTurn.HEALTH / Cache.Permanent.MAX_HEALTH);
+    if (healthPercentage < 0.5 /* immediately go home */) return 0;
+    return (int) (healthPercentage * TURNS_TO_WAIT);
   }
 
   /**
