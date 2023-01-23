@@ -294,7 +294,7 @@ public class Launcher extends MobileRobot {
       }
       // stay still, not enough friends
       numTurnsWaitingForFriends++;
-      if (numTurnsWaitingForFriends > TURNS_TO_WAIT) {
+      if (numTurnsWaitingForFriends > turnsToWaitUntilRetreat()) {
         // go back to nearest HQ
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         if (currentTask.numTurnsNearTarget > 0) {
@@ -321,6 +321,16 @@ public class Launcher extends MobileRobot {
       }
 //      return patrolTarget;
     }
+  }
+
+  /**
+   * Idea: the lower health we are, go back earlier to regroup
+   * @return the turns to wait based on current health.
+   */
+  private int turnsToWaitUntilRetreat() {
+    double healthPercentage = (Cache.PerTurn.HEALTH / Cache.Permanent.MAX_HEALTH);
+    if (healthPercentage < 0.5 /* immediately go home */) return 0;
+    return (int) (healthPercentage * TURNS_TO_WAIT);
   }
 
   /**
