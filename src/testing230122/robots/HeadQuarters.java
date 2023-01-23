@@ -1,12 +1,13 @@
-package basicbot.robots;
+package testing230122.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.utils.Constants;
-import basicbot.utils.Utils;
+import testing230122.communications.CommsHandler;
+import testing230122.communications.Communicator;
+import testing230122.communications.HqMetaInfo;
+import testing230122.communications.MapMetaInfo;
+import testing230122.knowledge.Cache;
+import testing230122.utils.Constants;
+import testing230122.utils.Printer;
+import testing230122.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
@@ -96,48 +97,48 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-    if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
-      unknown_symmetry: if (RunningMemory.knownSymmetry == null) {
+      unknown_symmetry: if (MapMetaInfo.knownSymmetry == null) {
 //      do {
-//        prev = RunningMemory.knownSymmetry;
+//        prev = MapMetaInfo.knownSymmetry;
         for (MapLocation myHQ : HqMetaInfo.hqLocations) {
           MapLocation enemyHQ;
-          if (!RunningMemory.notRotationalSymmetry) {
+          if (!MapMetaInfo.notRotational) {
             enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
             if (rc.canSenseLocation(enemyHQ)) {
 //            Printer.print("Checking for enemy HQ at " + enemyHQ);
               RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
               if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL);
+                MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL);
               }
             }
           }
-          if (!RunningMemory.notHorizontalSymmetry) {
+          if (!MapMetaInfo.notHorizontal) {
             enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
             if (rc.canSenseLocation(enemyHQ)) {
 //            Printer.print("Checking for enemy HQ at " + enemyHQ);
               RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
               if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL);
+                MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL);
               }
             }
           }
-          if (!RunningMemory.notVerticalSymmetry) {
+          if (!MapMetaInfo.notVertical) {
             enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
             if (rc.canSenseLocation(enemyHQ)) {
 //            Printer.print("Checking for enemy HQ at " + enemyHQ);
               RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
               if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL);
+                MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL);
               }
             }
           }
         }
-//      } while (prev != RunningMemory.knownSymmetry);
-        if (RunningMemory.knownSymmetry == null) {
+//      } while (prev != MapMetaInfo.knownSymmetry);
+        if (MapMetaInfo.knownSymmetry == null) {
           updateSymmetryComms();
         }
       }
@@ -261,7 +262,7 @@ public class HeadQuarters extends Robot {
 
   private void normalSpawnOrder() throws GameActionException {
     if (spawnAmplifierCooldown > 0) --spawnAmplifierCooldown;
-//    spawnAmplifier = false;
+
     if (spawnAmplifier) {
       if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0 && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0].type != RobotType.HEADQUARTERS) {
         spawnAmplifier = false;
