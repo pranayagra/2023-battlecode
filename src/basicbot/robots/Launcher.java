@@ -20,7 +20,7 @@ public class Launcher extends MobileRobot {
   private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
   private static final int TURNS_AT_HOT_SPOT = 10;
-  private static final int TURNS_AT_FIGHT = 5;
+  private static final int TURNS_AT_FIGHT = 3;
   private static final int MAX_LAUNCHER_TASKS = 10;
 
   private int numTurnsWaitingForFriends = 0;
@@ -214,8 +214,8 @@ public class Launcher extends MobileRobot {
       destination = Communicator.getClosestEnemy(HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION));
       if (destination != null) {
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(destination);
-        if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination, destination.distanceSquaredTo(closestHq))) {
-          addFightTask(destination);
+        if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination, destination.distanceSquaredTo(closestHq)*4)) {
+//          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
           return destination;
         }
@@ -284,11 +284,11 @@ public class Launcher extends MobileRobot {
       if (totalAllyLaunchers > 0) {
         if (!closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
           // move towards friend closest to current target
-          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget);
+          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
         } else if (closestFriendToTargetLoc.equals(Cache.PerTurn.CURRENT_LOCATION)) {
-          rc.setIndicatorString("I'm the closest, staying still");
+          rc.setIndicatorString("I'm the closest, staying still" + " -target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
         }
       }
@@ -311,7 +311,7 @@ public class Launcher extends MobileRobot {
     } else {
       // ayy we got friends, now we can go!
       numTurnsWaitingForFriends = 0;
-//      rc.setIndicatorString("got friends! lessgo! to " + patrolTarget + " - turns@target:" + numTurnsNearTarget);
+      rc.setIndicatorString("got friends! lessgo! to " + currentTask.type.name + "@" + patrolTarget + " - turns@target:" + currentTask.numTurnsNearTarget);
       // TODO if we're closest to the target, don't move
       if (closestFriendDistToTargetDist < Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(patrolTarget)) {
 //        return closestFriendToTargetLoc.add(closestFriendToTargetLoc.directionTo(patrolTarget));
@@ -383,7 +383,11 @@ public class Launcher extends MobileRobot {
 //      MapLocation enemyLocation = lastAttackedLocation != null ? lastAttackedLocation : Cache.PerTurn.CURRENT_LOCATION;
 //      // average of self and enemy
     Direction toSelf = fightLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-    MapLocation toPatrolFrom = fightLocation.translate(toSelf.dx * 2, toSelf.dy * 2);
+    int scalar = 3;
+    if (fightLocation.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < Cache.Permanent.VISION_RADIUS_SQUARED*2) {
+      scalar = 2;
+    }
+    MapLocation toPatrolFrom = fightLocation.translate(toSelf.dx * scalar, toSelf.dy * scalar);
     if (currentTask != null && currentTask.type == PatrolTargetType.HOT_SPOT_FIGHT && currentTask.targetLocation.isWithinDistanceSquared(toPatrolFrom, Cache.Permanent.ACTION_RADIUS_SQUARED)) return;
 //      addLauncherTask(new LauncherTask(PatrolTargetType.HOT_SPOT_FIGHT, enemyLocation, new MapLocation(toPatrolFrom.x / 2, toPatrolFrom.y / 2)));
     addLauncherTask(new LauncherTask(PatrolTargetType.HOT_SPOT_FIGHT, fightLocation, toPatrolFrom));
@@ -423,7 +427,7 @@ public class Launcher extends MobileRobot {
     MapLocation patrolLocation;
     MapLocation targetLocation;
 
-    int numTurnsNearTarget = 0;
+    int numTurnsNearTarget;
 
     private LauncherTask(PatrolTargetType type, MapLocation targetLocation, MapLocation patrolLocation) throws GameActionException {
       this.type = type;
@@ -442,31 +446,60 @@ public class Launcher extends MobileRobot {
      * @throws GameActionException any issues with sensing and updating
      */
     private boolean update() throws GameActionException {
-      update_symmetry: if (type == PatrolTargetType.ENEMY_HQ && targetLocation != null) {
-        if (rc.canSenseLocation(targetLocation) && HqMetaInfo.getClosestEnemyHqLocation(targetLocation).equals(targetLocation)) { // we still think there should be an enemy HQ here
-          RobotInfo robot = rc.senseRobotAtLocation(targetLocation);
-          if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+      update_symmetry: if (targetLocation != null && rc.canSenseLocation(targetLocation)) {
+        switch (type) {
+          case ENEMY_HQ:
+            if (!HqMetaInfo.getClosestEnemyHqLocation(targetLocation).equals(targetLocation)) {
+              break; // we no longer think there should be an enemy HQ here
+            }
+            RobotInfo robot = rc.senseRobotAtLocation(targetLocation);
+            if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
 //            Printer.print("ERROR: expected enemy HQ is not an HQ " + patrolTarget, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
 //            Printer.print("Closest enemy HQ to patrol: " + HqMetaInfo.getClosestEnemyHqLocation(targetLocation));
-            RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
-          }
+              RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
+              break;
+            }
+            break update_symmetry;
+          case ENEMY_WELL:
+            MapLocation closestEnemyWellLocation = Communicator.getClosestEnemyWellLocation(targetLocation, ResourceType.ADAMANTIUM);
+            if (closestEnemyWellLocation == null || !closestEnemyWellLocation.equals(targetLocation)) {
+              closestEnemyWellLocation = Communicator.getClosestEnemyWellLocation(targetLocation, ResourceType.MANA);
+              if (closestEnemyWellLocation == null || !closestEnemyWellLocation.equals(targetLocation)) {
+                closestEnemyWellLocation = Communicator.getClosestEnemyWellLocation(targetLocation, ResourceType.ELIXIR);
+                if (closestEnemyWellLocation == null || !closestEnemyWellLocation.equals(targetLocation)) {
+                  break; // we no longer think there should be an enemy well here
+                }
+              }
+            }
+            WellInfo well = rc.senseWell(targetLocation);
+            if (well == null) {
+              RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
+              break;
+            }
+            break update_symmetry;
+          default:
+            break update_symmetry;
         }
+        // if we're here, the target is messed up
+        targetLocation = null;
+        patrolLocation = null;
+        return update();
       }
 
-      at_target: if (numTurnsNearTarget > 0 && patrolLocation != null && numTurnsNearTarget < TURNS_AT_TARGET) {
+      at_target: if (numTurnsNearTarget > 0 && patrolLocation != null && numTurnsNearTarget < type.numTurnsToStayAtTarget) {
         rc.setIndicatorString("Completing patrol " + type.name + "@" + targetLocation + " (via: " + patrolLocation + ")" + " --turns=" + numTurnsNearTarget);
         return false; // exit early if we're near the patrol target -- finish patrolling
       }
-      patrol_complete: if (numTurnsNearTarget >= TURNS_AT_TARGET) {
-        if (type.isHotSpot) {
+      patrol_complete: if (numTurnsNearTarget >= type.numTurnsToStayAtTarget * 0.7) {
+        if (type.isHotSpot && type != PatrolTargetType.HOT_SPOT_FIGHT) {
           // need to be more careful with hotspots, wait for more friends
           if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length < MIN_HOT_SPOT_GROUP_SIZE) {
             numTurnsNearTarget /= 2;
             break patrol_complete;
           }
-          if (++numTurnsNearTarget < TURNS_AT_HOT_SPOT) {
-            break patrol_complete;
-          }
+        }
+        if (numTurnsNearTarget < type.numTurnsToStayAtTarget) {
+          break patrol_complete;
         }
 
         numTurnsNearTarget = 0;

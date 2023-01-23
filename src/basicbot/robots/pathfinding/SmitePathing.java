@@ -70,7 +70,15 @@ public class SmitePathing {
 
   private boolean pathTo(MapLocation target) throws GameActionException {
     if (!rc.isMovementReady()) return false;
-    if (Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS) return BugNav.tryBugging();
+//    int cooldownCost = (int) (Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER
+//        ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
+//        : Cache.Permanent.ROBOT_TYPE.movementCooldown);
+//    int numMoves = (int) Math.ceil((GameConstants.COOLDOWN_LIMIT - rc.getMovementCooldownTurns()) / cooldownCost);
+    if (Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
+        || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED) { // too many robots nearby, just bug
+      doBuggingTurns += 5;
+      return BugNav.tryBugging();
+    }
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
     if (doBuggingTurns > 0) {
       if (!BugNav.checkDoneBugging()) {
