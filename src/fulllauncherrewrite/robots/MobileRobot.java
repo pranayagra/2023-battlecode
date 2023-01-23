@@ -1,10 +1,10 @@
-package basicbot.robots;
+package fulllauncherrewrite.robots;
 
-import basicbot.communications.HqMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import fulllauncherrewrite.communications.HqMetaInfo;
+import fulllauncherrewrite.knowledge.Cache;
+import fulllauncherrewrite.knowledge.RunningMemory;
+import fulllauncherrewrite.utils.Printer;
+import fulllauncherrewrite.utils.Utils;
 import battlecode.common.*;
 
 public abstract class MobileRobot extends Robot {
