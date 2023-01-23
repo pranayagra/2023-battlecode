@@ -3,6 +3,7 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
+import basicbot.containers.CharCharMap;
 import basicbot.containers.HashSet;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
@@ -35,6 +36,7 @@ public class Launcher extends MobileRobot {
   private boolean carrierInVision;
   private boolean carrierInAttackRange;
   private MapLocation lastAttackedLocation;
+
 
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
@@ -88,7 +90,7 @@ public class Launcher extends MobileRobot {
 
     int maxTaskChanges = 5;
     while (currentTask.update() && maxTaskChanges-- > 0) {
-      completeLauncherTask();
+      popLauncherTask();
     }
     if (maxTaskChanges <= 0) {
       Printer.print("Launcher task stack looping too much");
@@ -208,8 +210,15 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any exception while calculating destination
    */
   private MapLocation getDestination() throws GameActionException {
+    // if one of our friends got hurt, go to him
+    MapLocation destination = AttackMicro.updateAndGetInjuredAllyTarget();
+    if (destination != null) {
+      rc.setIndicatorString("going to injured ally: " + destination);
+      return destination;
+    }
+
     // immediately adjacent location to consider -> will chase a valid enemy if necessary
-    MapLocation destination = AttackMicro.getBestMovementPosition();
+    destination = AttackMicro.getBestMovementPosition();
     if (destination != null) {
       rc.setIndicatorString("chasing enemy: " + destination);
       return destination;
@@ -428,7 +437,7 @@ public class Launcher extends MobileRobot {
     }
     currentTask = launcherTask;
   }
-  private void completeLauncherTask() throws GameActionException {
+  private void popLauncherTask() throws GameActionException {
     launcherTaskStack[launcherTaskStackPointer--] = null;
     while (launcherTaskStackPointer >= 0 && (launcherTaskStack[launcherTaskStackPointer] == null)) {// || launcherTaskStack[launcherTaskStackPointer].type == PatrolTargetType.HOT_SPOT_FIGHT)) {
       launcherTaskStack[launcherTaskStackPointer--] = null;

@@ -4,6 +4,8 @@ public class CharCharMap {
   private StringBuilder keys;
   private StringBuilder values;
 
+  public static final char DEFAULT_CHAR = (char) -1;
+
   public CharCharMap() {
     keys = new StringBuilder();
     values = new StringBuilder();
@@ -17,6 +19,13 @@ public class CharCharMap {
     int index = keys.indexOf(String.valueOf(key));
     if (index == -1) {
       throw new IllegalArgumentException("Key not found: " + ((int)key));
+    }
+    return values.charAt(index);
+  }
+  public char getOrDefault(char key) {
+    int index = keys.indexOf(String.valueOf(key));
+    if (index == -1) {
+      return DEFAULT_CHAR;
     }
     return values.charAt(index);
   }

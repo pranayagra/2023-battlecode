@@ -2,6 +2,7 @@ package basicbot.robots.micro;
 
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
+import basicbot.containers.CharCharMap;
 import basicbot.knowledge.Cache;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -88,6 +89,76 @@ public class AttackMicro {
 
   public static boolean isAttacker(RobotType type) {
     return type == RobotType.LAUNCHER || type == RobotType.DESTABILIZER;
+  }
+
+
+  private static int moveTowardsFriendCounter;
+  private static MapLocation moveTowardsFriendTarget;
+
+  private static CharCharMap lastRoundFriendsHealth = new CharCharMap();
+  private static int healthLastRound;
+  public static MapLocation updateAndGetInjuredAllyTarget() {
+    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 && Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length > 0 && moveTowardsFriendCounter == 0) {
+      // if no enemies in vision, consider moving to location where friend took damage
+      int closestDist = Integer.MAX_VALUE;
+      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+        if (robot.health == robot.type.health) continue;
+        char lastRoundHealth = lastRoundFriendsHealth.getOrDefault((char) robot.ID);
+        if (lastRoundHealth == CharCharMap.DEFAULT_CHAR) continue;
+        if (lastRoundHealth <= robot.health) continue;
+        // friend took damage
+        Direction bestDir = Cache.PerTurn.CURRENT_LOCATION.directionTo(robot.location);
+        {
+          int dist = Cache.PerTurn.CURRENT_LOCATION.add(bestDir).distanceSquaredTo(robot.location);
+          if (dist < closestDist) {
+            closestDist = dist;
+            moveTowardsFriendCounter = 1;
+            moveTowardsFriendTarget = robot.location;
+          }
+        }
+        {
+          int dist = Cache.PerTurn.CURRENT_LOCATION.add(bestDir.rotateLeft()).distanceSquaredTo(robot.location);
+          if (dist < closestDist) {
+            closestDist = dist;
+            moveTowardsFriendCounter = 1;
+            moveTowardsFriendTarget = robot.location;
+          }
+        }
+        {
+          int dist = Cache.PerTurn.CURRENT_LOCATION.add(bestDir.rotateRight()).distanceSquaredTo(robot.location);
+          if (dist < closestDist) {
+            closestDist = dist;
+            moveTowardsFriendCounter = 1;
+            moveTowardsFriendTarget = robot.location;
+          }
+        }
+      }
+    }
+
+    MapLocation target = null;
+    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 && healthLastRound == Cache.PerTurn.HEALTH) {
+      if (moveTowardsFriendCounter > 0) {
+        // move towards friend
+//        Printer.print("move to friend that took damage " + moveTowardsFriendTarget);
+        rc.setIndicatorDot(moveTowardsFriendTarget, 0, 255, 255);
+        target = moveTowardsFriendTarget.add(Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget));
+//        Direction dir = Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget);
+//        pathing.moveInDirLoose(dir);
+      }
+    } else {
+      moveTowardsFriendCounter = 0;
+    }
+
+    if (moveTowardsFriendCounter > 0) {
+      moveTowardsFriendCounter--;
+    }
+
+    lastRoundFriendsHealth.clear();
+    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      lastRoundFriendsHealth.put((char) robot.ID, (char) robot.health);
+    }
+    if (moveTowardsFriendCounter == 0) healthLastRound = Cache.PerTurn.HEALTH;
+    return target;
   }
 
   public static class AttackCandidate {
