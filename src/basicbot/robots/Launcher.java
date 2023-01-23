@@ -105,6 +105,7 @@ public class Launcher extends MobileRobot {
     } else {
       MapLocation target = getDestination();
       if (target != null) {
+        rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
       }
     }
@@ -235,15 +236,19 @@ public class Launcher extends MobileRobot {
    */
   private MapLocation getPatrolTarget() throws GameActionException {
     MapLocation patrolTarget = currentTask.patrolLocation;
+    final MapLocation myLocation = Cache.PerTurn.CURRENT_LOCATION;
+    final int myDistToTarget = myLocation.distanceSquaredTo(patrolTarget);
 
 //    RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     RobotInfo[] alliedRobots = Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS;
-    MapLocation closestFriendToTargetLoc = Cache.PerTurn.CURRENT_LOCATION;
-    int closestFriendDistToTargetDist = closestFriendToTargetLoc.distanceSquaredTo(patrolTarget);
+    MapLocation closestFriendToTargetLoc = myLocation;
+    int closestFriendDistToTargetDist = myDistToTarget;
 
     // nearbyAllyLaunchers
+    int adjacentAllyLaunchers = 0;
     int nearbyAllyLaunchers = 0;
     int totalAllyLaunchers = 0;
+    int numCloserAllies = 0;
     for (RobotInfo ally : alliedRobots) {
       if (ally.type == RobotType.LAUNCHER) {
         totalAllyLaunchers++;
@@ -252,15 +257,20 @@ public class Launcher extends MobileRobot {
           closestFriendToTargetLoc = ally.location;
           closestFriendDistToTargetDist = friendToTargetDist;
         }
-        if (ally.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Utils.DSQ_2by2)) {
+        if (ally.location.isWithinDistanceSquared(myLocation, Utils.DSQ_1by1)) {
+          adjacentAllyLaunchers++;
           nearbyAllyLaunchers++;
+        } else if (ally.location.isWithinDistanceSquared(myLocation, Utils.DSQ_2by2)) {
+          nearbyAllyLaunchers++;
+        }
+        if (friendToTargetDist < myDistToTarget || (friendToTargetDist == myDistToTarget && ally.ID < Cache.Permanent.ID)) {
+          numCloserAllies++;
         }
       }
     }
 
 
-    int distToTarget = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(patrolTarget);
-    switch (distToTarget) {
+    switch (myDistToTarget) {
       case 25: case 24: case 23: case 22: case 21: case 20: case 19: case 18: // 3by3 plus
       case 17:
         if (nearbyAllyLaunchers < 3) {
@@ -282,12 +292,12 @@ public class Launcher extends MobileRobot {
     // make sure we have friends
     if (nearbyAllyLaunchers < MIN_GROUP_SIZE_TO_MOVE - 1) { // 1 for self
       if (totalAllyLaunchers > 0) {
-        if (!closestFriendToTargetLoc.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
+        if (!closestFriendToTargetLoc.isAdjacentTo(myLocation)) {
           // move towards friend closest to current target
           rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
-        } else if (closestFriendToTargetLoc.equals(Cache.PerTurn.CURRENT_LOCATION)) {
+        } else if (closestFriendToTargetLoc.equals(myLocation)) {
           rc.setIndicatorString("I'm the closest, staying still" + " -target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
         }
@@ -296,7 +306,7 @@ public class Launcher extends MobileRobot {
       numTurnsWaitingForFriends++;
       if (numTurnsWaitingForFriends > TURNS_TO_WAIT) {
         // go back to nearest HQ
-        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(myLocation);
         if (currentTask.numTurnsNearTarget > 0) {
           currentTask.numTurnsNearTarget -= (MIN_GROUP_SIZE_TO_MOVE - totalAllyLaunchers);
           if (currentTask.numTurnsNearTarget < 0) currentTask.numTurnsNearTarget = 0;
@@ -311,13 +321,53 @@ public class Launcher extends MobileRobot {
     } else {
       // ayy we got friends, now we can go!
       numTurnsWaitingForFriends = 0;
-      rc.setIndicatorString("got friends! lessgo! to " + currentTask.type.name + "@" + patrolTarget + " - turns@target:" + currentTask.numTurnsNearTarget);
       // TODO if we're closest to the target, don't move
-      if (closestFriendDistToTargetDist < Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(patrolTarget)) {
-//        return closestFriendToTargetLoc.add(closestFriendToTargetLoc.directionTo(patrolTarget));
-        return patrolTarget;
-      } else {
-        return Cache.PerTurn.CURRENT_LOCATION;
+      Direction toTarget = myLocation.directionTo(patrolTarget);
+      if (closestFriendDistToTargetDist < myDistToTarget) { // someone else is closer
+        rc.setIndicatorString("clump friend -> " + currentTask.type.name + "@" + currentTask.targetLocation + "via-" + patrolTarget + " - turns@target:" + currentTask.numTurnsNearTarget);
+////        return closestFriendToTargetLoc.add(closestFriendToTargetLoc.directionTo(patrolTarget));
+//        MapLocation lineFormationCenter = closestFriendToTargetLoc;
+//        MapLocation lineFormationPointLeft = lineFormationCenter;//.add(toTarget.rotateLeft());
+//        MapLocation lineFormationPointRight = lineFormationCenter;//.add(toTarget.rotateRight());
+////        Direction toTargetLeft = toTarget.rotateLeft();
+////        Direction toTargetRight = toTarget.rotateRight();
+//        MapLocation targetLocation = currentTask.targetLocation;
+//        MapLocation closestLinePoint = null;
+//        int closestLinePointDist = Integer.MAX_VALUE;
+//        for (int i = 0; i < 10; i++) {
+//          lineFormationPointLeft = lineFormationPointLeft.add(lineFormationPointLeft.directionTo(patrolTarget).rotateLeft().rotateLeft());
+//          left_point: {
+//            int dist = lineFormationPointLeft.distanceSquaredTo(myLocation);
+//            if (dist > 0 && rc.canSenseLocation(lineFormationPointLeft) && (rc.isLocationOccupied(lineFormationPointLeft) || !rc.sensePassability(lineFormationPointLeft))) {
+//              break left_point;
+//            }
+//            if (dist < closestLinePointDist) {
+//              closestLinePoint = lineFormationPointLeft;
+//              closestLinePointDist = dist;
+//            }
+//          }
+//          lineFormationPointRight = lineFormationPointRight.add(lineFormationPointRight.directionTo(patrolTarget).rotateRight().rotateRight());
+//          right_point: {
+//            int dist = lineFormationPointRight.distanceSquaredTo(myLocation);
+//            if (dist > 0 && rc.canSenseLocation(lineFormationPointRight) && (rc.isLocationOccupied(lineFormationPointRight) || !rc.sensePassability(lineFormationPointRight))) {
+//              break right_point;
+//            }
+//            if (dist < closestLinePointDist) {
+//              closestLinePoint = lineFormationPointRight;
+//              closestLinePointDist = dist;
+//            }
+//          }
+//          if (i % 2 == 1) {
+//            if (closestLinePoint != null) {
+//              break;
+//            }
+//            lineFormationPointLeft = lineFormationPointRight = lineFormationCenter = lineFormationCenter.subtract(toTarget);
+//          }
+//        }
+        return patrolTarget; //closestLinePoint != null ? closestLinePoint : patrolTarget;
+      } else { // i'm the closest
+        rc.setIndicatorString("advance clump -> " + currentTask.type.name + "@" + currentTask.targetLocation + "via-" + patrolTarget + " - turns@target:" + currentTask.numTurnsNearTarget);
+        return myLocation; //adjacentAllyLaunchers >= (MIN_GROUP_SIZE_TO_MOVE - 1)*0.75 ? patrolTarget : myLocation;
       }
 //      return patrolTarget;
     }

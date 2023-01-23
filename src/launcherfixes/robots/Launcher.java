@@ -589,7 +589,7 @@ public class Launcher extends MobileRobot {
           Printer.print("Failed to select patrol target for type: " + type);
         }
       }
-      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+//      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
   }
