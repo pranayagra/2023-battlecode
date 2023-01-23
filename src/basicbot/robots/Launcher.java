@@ -573,7 +573,8 @@ public class Launcher extends MobileRobot {
               }
             } else {
               type = PatrolTargetType.TARGET_ON_CYCLE;
-              update();
+              parentLauncher.resetVisited();
+              return update();
 //            if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS)) {
 //              randomizeExplorationTarget(true);
 //            }
