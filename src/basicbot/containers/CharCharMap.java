@@ -1,5 +1,10 @@
 package basicbot.containers;
 
+import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
+
+import javax.xml.bind.annotation.XmlType;
+
 public class CharCharMap {
   private StringBuilder keys;
   private StringBuilder values;
@@ -22,12 +27,21 @@ public class CharCharMap {
     }
     return values.charAt(index);
   }
+  public MapLocation getMapLocationOrDefault(char key, MapLocation fallback) {
+    char mapLoc = getOrDefault(key);
+    if (mapLoc == DEFAULT_CHAR) return fallback;
+    return new MapLocation(mapLoc / GameConstants.MAP_MAX_HEIGHT, mapLoc % GameConstants.MAP_MAX_HEIGHT);
+  }
   public char getOrDefault(char key) {
     int index = keys.indexOf(String.valueOf(key));
     if (index == -1) {
       return DEFAULT_CHAR;
     }
     return values.charAt(index);
+  }
+
+  public void put(char key, MapLocation loc) {
+    this.put(key, (char) (loc.x * GameConstants.MAP_MAX_HEIGHT + loc.y));
   }
 
   public void put(char key, char value) {

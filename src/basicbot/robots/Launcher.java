@@ -16,7 +16,7 @@ import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
-  private static final int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out
+  private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
   private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
@@ -55,7 +55,12 @@ public class Launcher extends MobileRobot {
   @Override
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
-
+    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
+    if(manaIncome > 4) {
+      MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
+    } else {
+      MIN_GROUP_SIZE_TO_MOVE = 3;
+    }
     //TODO: refactor this out
     updateEnemyStateInformation();
 
@@ -211,7 +216,8 @@ public class Launcher extends MobileRobot {
    */
   private MapLocation getDestination() throws GameActionException {
     // if one of our friends got hurt, go to him
-    MapLocation destination;// = AttackMicro.updateAndGetInjuredAllyTarget();
+    MapLocation destination;
+//    MapLocation destination = AttackMicro.updateAndGetInjuredAllyTarget();
 //    if (destination != null) {
 //      rc.setIndicatorString("going to injured ally: " + destination);
 //      return destination;

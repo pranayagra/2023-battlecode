@@ -96,6 +96,7 @@ public class AttackMicro {
   private static MapLocation moveTowardsFriendTarget;
 
   private static CharCharMap lastRoundFriendsHealth = new CharCharMap();
+  private static CharCharMap lastRoundFriendsLocation = new CharCharMap();
   private static int healthLastRound;
   public static MapLocation updateAndGetInjuredAllyTarget() {
     if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 && Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length > 0 && moveTowardsFriendCounter == 0) {
@@ -113,7 +114,7 @@ public class AttackMicro {
           if (dist < closestDist) {
             closestDist = dist;
             moveTowardsFriendCounter = 1;
-            moveTowardsFriendTarget = robot.location;
+            moveTowardsFriendTarget = lastRoundFriendsLocation.getMapLocationOrDefault((char) robot.ID, robot.location);
           }
         }
         {
@@ -121,7 +122,9 @@ public class AttackMicro {
           if (dist < closestDist) {
             closestDist = dist;
             moveTowardsFriendCounter = 1;
-            moveTowardsFriendTarget = robot.location;
+//            moveTowardsFriendTarget = robot.location;
+            moveTowardsFriendTarget = lastRoundFriendsLocation.getMapLocationOrDefault((char) robot.ID, robot.location);
+
           }
         }
         {
@@ -129,7 +132,9 @@ public class AttackMicro {
           if (dist < closestDist) {
             closestDist = dist;
             moveTowardsFriendCounter = 1;
-            moveTowardsFriendTarget = robot.location;
+//            moveTowardsFriendTarget = robot.location;
+            moveTowardsFriendTarget = lastRoundFriendsLocation.getMapLocationOrDefault((char) robot.ID, robot.location);
+
           }
         }
       }
@@ -141,7 +146,8 @@ public class AttackMicro {
         // move towards friend
 //        Printer.print("move to friend that took damage " + moveTowardsFriendTarget);
         rc.setIndicatorDot(moveTowardsFriendTarget, 0, 255, 255);
-        target = moveTowardsFriendTarget.add(Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget));
+//        target = moveTowardsFriendTarget.add(Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget));
+        target = moveTowardsFriendTarget;
 //        Direction dir = Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget);
 //        pathing.moveInDirLoose(dir);
       }
@@ -154,8 +160,10 @@ public class AttackMicro {
     }
 
     lastRoundFriendsHealth.clear();
+    lastRoundFriendsLocation.clear();
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
       lastRoundFriendsHealth.put((char) robot.ID, (char) robot.health);
+      lastRoundFriendsLocation.put((char) robot.ID, robot.location);
     }
     if (moveTowardsFriendCounter == 0) healthLastRound = Cache.PerTurn.HEALTH;
     return target;
