@@ -163,6 +163,10 @@ public class Carrier extends MobileRobot {
     int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
     int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
     int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
+    double adamantiumWeighting = 2;
+    if (Cache.Permanent.MAP_AREA > 900) {
+      adamantiumWeighting = 1.5;
+    }
     int MAX_INCOME = 31;
     // TODO: check for existence of Elixir wells
     if ((40 * adamantiumIncome) / 100 > 9) {
@@ -171,7 +175,7 @@ public class Carrier extends MobileRobot {
       }
       return CarrierTask.FETCH_MANA;
     }
-    if (1.5 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+    if (adamantiumWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       }
