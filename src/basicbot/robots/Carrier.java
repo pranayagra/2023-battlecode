@@ -171,7 +171,7 @@ public class Carrier extends MobileRobot {
       }
       return CarrierTask.FETCH_MANA;
     }
-    if (2 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+    if (1.5 * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       }
