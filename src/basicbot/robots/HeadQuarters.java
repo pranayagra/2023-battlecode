@@ -3,10 +3,9 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
 import basicbot.knowledge.Cache;
+import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Constants;
-import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -101,44 +100,44 @@ public class HeadQuarters extends Robot {
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
-      unknown_symmetry: if (MapMetaInfo.knownSymmetry == null) {
+      unknown_symmetry: if (RunningMemory.knownSymmetry == null) {
 //      do {
-//        prev = MapMetaInfo.knownSymmetry;
+//        prev = RunningMemory.knownSymmetry;
         for (MapLocation myHQ : HqMetaInfo.hqLocations) {
           MapLocation enemyHQ;
-          if (!MapMetaInfo.notRotational) {
+          if (!RunningMemory.notRotationalSymmetry) {
             enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
             if (rc.canSenseLocation(enemyHQ)) {
 //            Printer.print("Checking for enemy HQ at " + enemyHQ);
               RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
               if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL);
+                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL);
               }
             }
           }
-          if (!MapMetaInfo.notHorizontal) {
+          if (!RunningMemory.notHorizontalSymmetry) {
             enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
             if (rc.canSenseLocation(enemyHQ)) {
 //            Printer.print("Checking for enemy HQ at " + enemyHQ);
               RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
               if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL);
+                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL);
               }
             }
           }
-          if (!MapMetaInfo.notVertical) {
+          if (!RunningMemory.notVerticalSymmetry) {
             enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
             if (rc.canSenseLocation(enemyHQ)) {
 //            Printer.print("Checking for enemy HQ at " + enemyHQ);
               RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
               if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL);
+                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL);
               }
             }
           }
         }
-//      } while (prev != MapMetaInfo.knownSymmetry);
-        if (MapMetaInfo.knownSymmetry == null) {
+//      } while (prev != RunningMemory.knownSymmetry);
+        if (RunningMemory.knownSymmetry == null) {
           updateSymmetryComms();
         }
       }

@@ -1,6 +1,7 @@
 package basicbot.communications;
 
 import basicbot.knowledge.Cache;
+import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -11,7 +12,7 @@ public class Communicator {
 
 
     public static void init() throws GameActionException {
-      MapMetaInfo.updateSymmetry();
+      RunningMemory.updateSymmetry();
       HqMetaInfo.init();
     }
 
@@ -26,7 +27,7 @@ public class Communicator {
         newEnemyHQlocs[i] = HqMetaInfo.hqLocations[i];
       }
       newHQlocs[hqID] = Cache.PerTurn.CURRENT_LOCATION;
-      newEnemyHQlocs[hqID] = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, MapMetaInfo.guessedSymmetry);
+      newEnemyHQlocs[hqID] = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, RunningMemory.guessedSymmetry);
       HqMetaInfo.hqLocations = newHQlocs;
       HqMetaInfo.enemyHqLocations = newEnemyHQlocs;
       CommsHandler.writeHqCount(HqMetaInfo.hqCount);
@@ -48,7 +49,7 @@ public class Communicator {
     }
 
     public static void updateOnTurnStart() throws GameActionException {
-      if (MapMetaInfo.updateSymmetry()) {
+      if (RunningMemory.updateSymmetry()) {
         HqMetaInfo.recomputeEnemyHqLocations();
       }
     }
@@ -115,7 +116,7 @@ public class Communicator {
       if (writer.readWellExists(i)) {
         MapLocation wellLocation = writer.readWellLocation(i);
         if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
-          wellLocation = Utils.applySymmetry(wellLocation, MapMetaInfo.guessedSymmetry);
+          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
         }
         int dist = fromHere.distanceSquaredTo(wellLocation);
         if (dist < closestDist) {
@@ -144,9 +145,9 @@ public class Communicator {
       MapLocation enemyWell;
       if (HqMetaInfo.isEnemyTerritory(wellLoc)) {
         enemyWell = wellLoc;
-        wellLoc = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+        wellLoc = Utils.applySymmetry(wellLoc, RunningMemory.guessedSymmetry);
       } else {
-        enemyWell = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+        enemyWell = Utils.applySymmetry(wellLoc, RunningMemory.guessedSymmetry);
       }
       if (closestEnemyWell == null) {
         closestEnemyWell = enemyWell;
@@ -175,9 +176,9 @@ public class Communicator {
       MapLocation enemyWell;
       if (HqMetaInfo.isEnemyTerritory(wellLoc)) {
         enemyWell = wellLoc;
-        wellLoc = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+        wellLoc = Utils.applySymmetry(wellLoc, RunningMemory.guessedSymmetry);
       } else {
-        enemyWell = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+        enemyWell = Utils.applySymmetry(wellLoc, RunningMemory.guessedSymmetry);
       }
       if (closestEnemyWell == null) {
         closestEnemyWell = enemyWell;
@@ -206,9 +207,9 @@ public class Communicator {
       MapLocation enemyWell;
       if (HqMetaInfo.isEnemyTerritory(wellLoc)) {
         enemyWell = wellLoc;
-        wellLoc = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+        wellLoc = Utils.applySymmetry(wellLoc, RunningMemory.guessedSymmetry);
       } else {
-        enemyWell = Utils.applySymmetry(wellLoc, MapMetaInfo.guessedSymmetry);
+        enemyWell = Utils.applySymmetry(wellLoc, RunningMemory.guessedSymmetry);
       }
       if (closestEnemyWell == null) {
         closestEnemyWell = enemyWell;

@@ -3,9 +3,9 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.containers.HashSet;
+import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
 import basicbot.utils.Printer;
@@ -493,7 +493,7 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException any issues with moving
    */
   private boolean executeScout() throws GameActionException {
-    if (MapMetaInfo.knownSymmetry != null) return true;
+    if (RunningMemory.knownSymmetry != null) return true;
     if (Cache.PerTurn.ROUND_NUM <= MIN_TURN_TO_EXPLORE) {
 //      Printer.print("Scout: too early to explore");
       return true;

@@ -18,7 +18,7 @@ public class AttackMicro {
     AttackCandidate bestTarget = null;
     for (RobotInfo enemy : enemies) {
       if (onlyAttackers && !AttackMicro.isAttacker(enemy.getType())) continue;
-      if (rc.canAttack(enemy.location)) {
+      if (enemy.type != RobotType.HEADQUARTERS && rc.canAttack(enemy.location)) {
         AttackCandidate at = new AttackCandidate(enemy);
         if (at.isBetterThan(bestTarget)) bestTarget = at;
       }

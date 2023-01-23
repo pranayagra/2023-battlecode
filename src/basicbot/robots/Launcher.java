@@ -3,11 +3,11 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
 import basicbot.containers.HashSet;
+import basicbot.knowledge.Cache;
+import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.knowledge.Cache;
 import basicbot.utils.Constants;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
@@ -20,31 +20,29 @@ public class Launcher extends MobileRobot {
   private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
   private static final int TURNS_AT_HOT_SPOT = 10;
+  private static final int TURNS_AT_FIGHT = 5;
+  private static final int MAX_LAUNCHER_TASKS = 10;
 
-  private int numTurnsWaiting = 0;
-  private int numTurnsNearTarget = 0;
-  private int numTurnsAtHotSpot = 0;
+  private int numTurnsWaitingForFriends = 0;
+
+  private final LauncherTask[] launcherTaskStack;
+  private int launcherTaskStackPointer;
+  private LauncherTask currentTask;
   private HashSet<MapLocation> visitedLocations;
-  private PatrolTargetType patrolTargetType;
-  private MapLocation patrolTarget;
-  private MapLocation patrolTargetVisitedMarker;
-  private PatrolTargetType savedLastTargetType;
-  private MapLocation savedLastTarget;
-  private MapLocation savedLastTargetVisitedMarker;
-
-  private PatrolTargetType preHotSpotSavedTargetType;
-  private MapLocation preHotSpotSavedLastTarget;
-  private MapLocation preHotSpotSavedLastTargetVisitedMarker;
 
   private boolean launcherInVision;
   private boolean carrierInVision;
   private boolean carrierInAttackRange;
+  private MapLocation lastAttackedLocation;
 
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
-    patrolTargetType = PatrolTargetType.DEFAULT_FIRST_TARGET;
+    LauncherTask.parentLauncher = this;
+    LauncherTask.rc = rc;
     resetVisited();
-    computeInitialPatrolTarget();
+    launcherTaskStack = new LauncherTask[MAX_LAUNCHER_TASKS];
+    launcherTaskStackPointer = -1;
+    addLauncherTask(setupInitialLauncherTask());
   }
 
   private void resetVisited() {
@@ -86,7 +84,13 @@ public class Launcher extends MobileRobot {
 
     tryAttack(true);
 
-    updatePatrolTarget();
+    int maxTaskChanges = 5;
+    while (currentTask.update() && maxTaskChanges-- > 0) {
+      completeLauncherTask();
+    }
+    if (maxTaskChanges <= 0) {
+      Printer.print("Launcher task stack looping too much");
+    }
 
     // do micro -- returns true if we did micro -> should not do exploration/patrolling behavior
     boolean didAnyMicro = false;
@@ -96,28 +100,12 @@ public class Launcher extends MobileRobot {
       tryAttack(false);
     }
     if (didAnyMicro) {
-      numTurnsNearTarget = 0;
+      currentTask.numTurnsNearTarget = 0;
+      addFightTask(lastAttackedLocation != null ? lastAttackedLocation : Cache.PerTurn.CURRENT_LOCATION);
     } else {
-      boolean canMove = Cache.PerTurn.ROUND_NUM >= MIN_TURN_TO_MOVE;
-      int numFriendlyLaunchers = 0;
-      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        if (robot.type == RobotType.LAUNCHER) {
-          numFriendlyLaunchers++;
-        }
-      }
-      if (numFriendlyLaunchers >= MIN_GROUP_SIZE_TO_MOVE - 1) canMove = true;
-//      if (numFriendlyLaunchers == 0) {
-//        numTurnsWaiting++;
-//      } else {
-//        numTurnsWaiting = 0;
-//      }
-      if (canMove) {
-        MapLocation target = getDestination();
-        if (target != null) {
-          attemptMoveTowards(target);
-        }
-//          rc.setIndicatorString("patrol target: " + target);
-//        } while (target != null && attemptMoveTowards(target)); // moves every other turn
+      MapLocation target = getDestination();
+      if (target != null) {
+        attemptMoveTowards(target);
       }
     }
 
@@ -220,31 +208,22 @@ public class Launcher extends MobileRobot {
       rc.setIndicatorString("chasing enemy: " + destination);
       return destination;
     }
-    // closest enemy to our closest HQ -- friendlies in danger -> will come back to protect HQ
-    destination = Communicator.getClosestEnemy(HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION));
-    if (destination != null) {
-      rc.setIndicatorString("closest commed enemy: " + destination);
-      return destination;
-    }
 
-    // early game -- just explore on our own side of the map
-//    if (Cache.PerTurn.ROUND_NUM < MicroConstants.ATTACK_TURN && HqMetaInfo.isEnemyTerritory(Cache.PerTurn.CURRENT_LOCATION)) {
-//      if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS)) {
-//        randomizeExplorationTarget(true);
-//      }
-//      return explorationTarget;
-//    }
+    if (!currentTask.type.isHotSpot) { // not patrolling a hot spot - consider defending home
+      // closest enemy to our closest HQ -- friendlies in danger -> will come back to protect HQ
+      destination = Communicator.getClosestEnemy(HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION));
+      if (destination != null) {
+        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(destination);
+        if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination, destination.distanceSquaredTo(closestHq))) {
+          addFightTask(destination);
+          rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
+          return destination;
+        }
+      }
+    }
 
     // do actual patrolling -> cycle between different enemy hotspots (wells / HQs)
-    destination = getPatrolTarget(); //shouldn't return null
-    if (destination != null) return destination;
-
-    destination = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-    if (destination.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Utils.DSQ_2by2)) {
-      destination = HqMetaInfo.enemyHqLocations[Utils.rng.nextInt(HqMetaInfo.hqCount)];
-    }
-    return destination;
-//    return explorationTarget;
+    return getPatrolTarget(); //shouldn't return null
   }
 
   /**
@@ -254,6 +233,7 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any issues with
    */
   private MapLocation getPatrolTarget() throws GameActionException {
+    MapLocation patrolTarget = currentTask.patrolLocation;
 
 //    RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     RobotInfo[] alliedRobots = Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS;
@@ -280,44 +260,23 @@ public class Launcher extends MobileRobot {
 
     int distToTarget = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(patrolTarget);
     switch (distToTarget) {
-      case 25:
-      case 24:
-      case 23:
-      case 22:
-      case 21:
-      case 20:
-      case 19:
-      case 18: // 3by3 plus
+      case 25: case 24: case 23: case 22: case 21: case 20: case 19: case 18: // 3by3 plus
       case 17:
         if (nearbyAllyLaunchers < 3) {
           break;
         }
       case 16: // launcher action
-      case 15:
-      case 14:
-      case 13:
-      case 12:
-      case 11:
-      case 10:
-      case 9:
-      case 8: // 2by2
-      case 7:
-      case 6:
-      case 5:
-      case 4:
-      case 3:
-      case 2: // 1by1 (adjacent)
-      case 1:
-      case 0:
-        numTurnsNearTarget++;
+      case 15: case 14: case 13: case 12: case 11: case 10: case 9: case 8: // 2by2
+      case 7: case 6: case 5: case 4: case 3: case 2: // 1by1 (adjacent)
+      case 1: case 0:
+        currentTask.numTurnsNearTarget++;
       default:
         break;
     }
 
-    if (patrolTargetType.isOurSide) {
+    if (currentTask.type.isOurSide) {
       return patrolTarget;
     }
-
 
     // make sure we have friends
     if (nearbyAllyLaunchers < MIN_GROUP_SIZE_TO_MOVE - 1) { // 1 for self
@@ -333,30 +292,24 @@ public class Launcher extends MobileRobot {
         }
       }
       // stay still, not enough friends
-      numTurnsWaiting++;
-      if (numTurnsWaiting > TURNS_TO_WAIT) {
+      numTurnsWaitingForFriends++;
+      if (numTurnsWaitingForFriends > TURNS_TO_WAIT) {
         // go back to nearest HQ
-//        Printer.print("waiting -- save last target -- " + patrolTargetType + ": " + patrolTarget);
-//        savedLastTargetType = patrolTargetType;
-//        savedLastTarget = patrolTarget;
-//        patrolTargetType = PatrolTargetType.OUR_HQ;
-//        patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-        if (numTurnsNearTarget > 0) {
-          numTurnsNearTarget -= (MIN_GROUP_SIZE_TO_MOVE - totalAllyLaunchers);
-          if (numTurnsNearTarget < 0) numTurnsNearTarget = 0;
-          numTurnsAtHotSpot = 0;
+        if (currentTask.numTurnsNearTarget > 0) {
+          currentTask.numTurnsNearTarget -= (MIN_GROUP_SIZE_TO_MOVE - totalAllyLaunchers);
+          if (currentTask.numTurnsNearTarget < 0) currentTask.numTurnsNearTarget = 0;
         }
         rc.setIndicatorString("retreating towards HQ: " + closestHq);
         return closestHq;
       } else {
 //        return explorationTarget; // explore? still while waiting
         rc.setIndicatorString("waiting for friends");
-        return Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
+        return closestFriendToTargetLoc;//Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
       }
     } else {
       // ayy we got friends, now we can go!
-      numTurnsWaiting = 0;
+      numTurnsWaitingForFriends = 0;
 //      rc.setIndicatorString("got friends! lessgo! to " + patrolTarget + " - turns@target:" + numTurnsNearTarget);
       // TODO if we're closest to the target, don't move
       if (closestFriendDistToTargetDist < Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(patrolTarget)) {
@@ -373,255 +326,315 @@ public class Launcher extends MobileRobot {
    * determines if there is a hot spot we need to visit when spawned
    * @throws GameActionException any issues with figuring out a hot spot
    */
-  private void computeInitialPatrolTarget() throws GameActionException {
+  private LauncherTask setupInitialLauncherTask() throws GameActionException {
     MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
     MapLocation mostEndangeredWell = endangeredWellPair[0];
     MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
-    if (mostEndangeredWell == null) {
-      return;
-    }
-    int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
+    if (mostEndangeredWell != null) {
+      int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
 //    Printer.print("endangered wells found! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
-    if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
-//      Printer.print("endangered wells found! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
-      Direction oursToTheirs = mostEndangeredWell.directionTo(mostEndangeredEnemyWell);
-      MapLocation toGuard = mostEndangeredWell.add(oursToTheirs).add(oursToTheirs);
-//      Printer.print("need to guard hotspot - save last target -- " + patrolTargetType + ": " + patrolTarget);
-      preHotSpotSavedTargetType = patrolTargetType;
-      preHotSpotSavedLastTarget = patrolTarget;
-      preHotSpotSavedLastTargetVisitedMarker = patrolTargetVisitedMarker;
-      patrolTargetType = PatrolTargetType.HOT_SPOT;
-      patrolTarget = toGuard;
-      patrolTargetVisitedMarker = mostEndangeredWell;
+      if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
+        //      Printer.print("endangered wells found! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
+        Direction oursToTheirs = mostEndangeredWell.directionTo(mostEndangeredEnemyWell);
+        MapLocation toGuard = mostEndangeredWell.add(oursToTheirs).add(oursToTheirs);
+        //      Printer.print("need to guard hotspot - save last target -- " + patrolTargetType + ": " + patrolTarget);
+        return new LauncherTask(PatrolTargetType.HOT_SPOT_WELL_DEFENSE, mostEndangeredWell, toGuard);
+      }
     }
+
+    return new LauncherTask(PatrolTargetType.DEFAULT_FIRST_TARGET, null, null);
   }
 
-  /**
-   * will update the patrol target to go to if needed
-   * @throws GameActionException any issues during calculations
-   */
-  private void updatePatrolTarget() throws GameActionException {
-//    MapLocation ans = AttackMicro.getBestTarget();
-//    if (ans != null) {
-//      // need to immediately respond
-//      oldTarget = patrolTarget;
-//      patrolTarget = ans;
-//      return;
+  private void addLauncherTask(LauncherTask launcherTask) {
+    if (launcherTask == null) {
+      return;
+    }
+    if (launcherTaskStackPointer < MAX_LAUNCHER_TASKS-1) {
+      launcherTaskStack[++launcherTaskStackPointer] = launcherTask;
+    } else {
+      Printer.print("launcher task stack overflow");
+      for (int i = launcherTaskStackPointer; --i >= 0;) {
+        Printer.print(i  + ": " + launcherTaskStack[i].type.name + " - " + launcherTaskStack[i].targetLocation);
+      }
+//      die();
+      launcherTaskStack[launcherTaskStackPointer] = launcherTask;
+    }
+    currentTask = launcherTask;
+  }
+  private void completeLauncherTask() throws GameActionException {
+    launcherTaskStack[launcherTaskStackPointer--] = null;
+    while (launcherTaskStackPointer >= 0 && (launcherTaskStack[launcherTaskStackPointer] == null)) {// || launcherTaskStack[launcherTaskStackPointer].type == PatrolTargetType.HOT_SPOT_FIGHT)) {
+      launcherTaskStack[launcherTaskStackPointer--] = null;
+    }
+    if (launcherTaskStackPointer <= -1) {
+      addLauncherTask(new LauncherTask(PatrolTargetType.DEFAULT_FIRST_TARGET, null, null));
+    }
+    currentTask = launcherTaskStack[launcherTaskStackPointer];
+    currentTask.numTurnsNearTarget = 0;
+  }
+  private void addFightTask(MapLocation fightLocation) throws GameActionException {
+    if (currentTask != null && currentTask.type == PatrolTargetType.HOT_SPOT_FIGHT && currentTask.targetLocation.isWithinDistanceSquared(fightLocation, Cache.Permanent.VISION_RADIUS_SQUARED)) return;
+
+//    Printer.print("adding fight task");
+//    for (int i = launcherTaskStackPointer; --i >= 0;) {
+//      Printer.print(i  + ": " + launcherTaskStack[i].type.name + " - " + launcherTaskStack[i].targetLocation);
 //    }
-    if (patrolTargetType == PatrolTargetType.ENEMY_HQ && patrolTarget != null) {
-      if (rc.canSenseLocation(patrolTarget) && HqMetaInfo.getClosestEnemyHqLocation(patrolTarget).equals(patrolTarget)) { // we still think there should be an enemy HQ here
-        RobotInfo robot = rc.senseRobotAtLocation(patrolTarget);
-        if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-//          if (rc.getRoundNum() == 350) {
-//            Printer.print("ERROR: expected enemy HQ is not an HQ " + patrolTarget, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
-//            Printer.print("Closest enemy HQ to patrol: " + HqMetaInfo.getClosestEnemyHqLocation(patrolTarget));
-//          }
-          if (rc.canWriteSharedArray(0,0)) {
-            MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
-          }
-          // TODO: eliminate symmetry and retry
-//          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
-//          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget);
-        }
-      }
-    }
-    if (numTurnsNearTarget > 0 && patrolTarget != null && numTurnsNearTarget < TURNS_AT_TARGET) {
-      return; // exit early if we're near the patrol target -- finish patrolling
-    }
-    patrol_complete: if (numTurnsNearTarget >= TURNS_AT_TARGET) {
-      if (patrolTargetType == PatrolTargetType.HOT_SPOT) {
-        // need to be more careful with hotspots, wait for more friends
-        if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length < MIN_HOT_SPOT_GROUP_SIZE) {
-          numTurnsAtHotSpot = 0;
-          break patrol_complete;
-        }
-        if (++numTurnsAtHotSpot < TURNS_AT_HOT_SPOT) {
-          break patrol_complete;
-        }
-      }
-
-      numTurnsNearTarget = 0;
-      numTurnsAtHotSpot = 0;
-      // mark the current target as visited
-      if (patrolTarget != null) {
-        visitedLocations.add(patrolTargetVisitedMarker != null ? patrolTargetVisitedMarker : patrolTarget);
-//        currentTargetType = currentTargetType.next();
-        patrolTarget = null;
-        patrolTargetVisitedMarker = null;
-      }
-
-      // restore old target
-      if (patrolTargetType == PatrolTargetType.HOT_SPOT) {
-//        Printer.print("pre-restore hotspot saved target: " + preHotSpotSavedTargetType + ": " + preHotSpotSavedLastTarget);
-        if (preHotSpotSavedLastTarget != null || preHotSpotSavedTargetType != null) {
-          patrolTargetType = preHotSpotSavedTargetType;
-          patrolTarget = preHotSpotSavedLastTarget;
-          patrolTargetVisitedMarker = preHotSpotSavedLastTargetVisitedMarker;
-          preHotSpotSavedTargetType = null;
-          preHotSpotSavedLastTarget = null;
-          preHotSpotSavedLastTargetVisitedMarker = null;
-        }
-      } else {
-        if (savedLastTarget != null || savedLastTargetType != null) {
-          patrolTargetType = savedLastTargetType;
-          patrolTarget = savedLastTarget;
-          patrolTargetVisitedMarker = savedLastTargetVisitedMarker;
-          savedLastTargetType = null;
-          savedLastTarget = null;
-          savedLastTargetVisitedMarker = null;
-        }
-      }
-    }
-    // update if we haven't gotten near the target
-    if (numTurnsNearTarget == 0 || patrolTarget == null) { // we are done patrolling the current location
-      // update the target if needed
-      switch (patrolTargetType) {
-        case OUR_HQ:
-          patrolTarget = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-          patrolTargetVisitedMarker = patrolTarget;
-          break;
-        case OUR_WELL: our_well: {
-          if (true) break our_well;
-          patrolTargetType = PatrolTargetType.OUR_WELL;
-          ResourceType rt = ResourceType.ADAMANTIUM;
-          if (Utils.rng.nextBoolean()) rt = ResourceType.MANA;
-          MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, rt); // TODO: make pick mana vs ad
-          Direction awayFromBase = HqMetaInfo.getClosestHqLocation(closestWellLocation).directionTo(closestWellLocation);
-          patrolTarget = closestWellLocation.add(awayFromBase).add(awayFromBase);
-          patrolTargetVisitedMarker = closestWellLocation;
-          if (!visitedLocations.contains(patrolTargetVisitedMarker)) {
-            rc.setIndicatorString("patrolling our well: " + patrolTarget);
-            break; // switch to enemy well if all our wells are visited
-          }
-        }
-        case ENEMY_WELL:
-          patrolTargetType = PatrolTargetType.ENEMY_WELL;
-//          Printer.print("trying to find enemy well for patrolling");
-          MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
-          int closestDist = Integer.MAX_VALUE;
-          MapLocation closestEnemyWell = null;
-          for (int i = 0; i < CommsHandler.MANA_WELL_SLOTS; i++) {
-            if (CommsHandler.readManaWellExists(i)) {
-              MapLocation wellLocation = CommsHandler.readManaWellLocation(i);
-              if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
-                wellLocation = Utils.applySymmetry(wellLocation, MapMetaInfo.guessedSymmetry);
-              }
-              if (visitedLocations.contains(wellLocation)) continue;
-              int dist = myLoc.distanceSquaredTo(wellLocation);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestEnemyWell = wellLocation;
-              }
-            }
-          }
-          for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
-            if (CommsHandler.readAdamantiumWellExists(i)) {
-              MapLocation wellLocation = CommsHandler.readAdamantiumWellLocation(i);
-              if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
-                wellLocation = Utils.applySymmetry(wellLocation, MapMetaInfo.guessedSymmetry);
-              }
-              if (visitedLocations.contains(wellLocation)) continue;
-              int dist = myLoc.distanceSquaredTo(wellLocation);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestEnemyWell = wellLocation;
-              }
-            }
-          }
-          for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
-            if (CommsHandler.readElixirWellExists(i)) {
-              MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
-              if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
-                wellLocation = Utils.applySymmetry(wellLocation, MapMetaInfo.guessedSymmetry);
-              }
-              if (visitedLocations.contains(wellLocation)) continue;
-              int dist = myLoc.distanceSquaredTo(wellLocation);
-              if (dist < closestDist) {
-                closestDist = dist;
-                closestEnemyWell = wellLocation;
-              }
-            }
-          }
-
-          if (closestEnemyWell != null) {
-            Direction towardsEnemyBase = closestEnemyWell.directionTo(HqMetaInfo.getClosestEnemyHqLocation(closestEnemyWell));
-            patrolTarget = closestEnemyWell.add(towardsEnemyBase).add(towardsEnemyBase);
-            patrolTargetVisitedMarker = closestEnemyWell;
-            rc.setIndicatorString("patrolling enemy well: " + patrolTarget);
-            break; // fall through to enemy HQ if no enemy well known
-          }
-        case ENEMY_HQ:
-          if (patrolTargetType == PatrolTargetType.ENEMY_HQ && patrolTarget != null) {
-            break;
-          }
-          patrolTargetType = PatrolTargetType.ENEMY_HQ;
-//          patrolTarget = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-          MapLocation[] enemyHQs = HqMetaInfo.enemyHqLocations;
-          MapLocation closestHQ = null;
-          int bestDist = 1000000;
-          for (MapLocation enemyHQ : enemyHQs) {
-            if (visitedLocations.contains(enemyHQ)) continue;
-//            int dist = enemyHQ.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
-            int dist = Utils.applySymmetry(enemyHQ, MapMetaInfo.guessedSymmetry).distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
-            if (dist < bestDist) {
-              bestDist = dist;
-              closestHQ = enemyHQ;
-            }
-          }
-          if (closestHQ != null) {
-            patrolTarget = closestHQ;
-            patrolTargetVisitedMarker = closestHQ;
-            rc.setIndicatorString("patrolling enemy HQ: " + patrolTarget);
-            break;
-          }
-//          Printer.print("ERROR: no closest enemy HQ found for patrol -- visited: " + visitedLocations);
-        default:
-          patrolTargetType = PatrolTargetType.TARGET_ON_CYCLE;
-          if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS)) {
-            randomizeExplorationTarget(true);
-          }
-          resetVisited();
-          rc.setIndicatorString("patrolling default: " + explorationTarget);
-          patrolTarget = explorationTarget;
-          patrolTargetVisitedMarker = explorationTarget;
-          break;
-        case HOT_SPOT:
-          if (patrolTarget == null) { // done patrolling the hot spot
-            Printer.print("done patrolling -- revert to " + savedLastTargetType + ": " + savedLastTarget);
-            patrolTargetType = savedLastTargetType;
-            patrolTarget = savedLastTarget;
-            patrolTargetVisitedMarker = savedLastTargetVisitedMarker;
-          }
-          if (patrolTarget != null) {
-            rc.setIndicatorString("patrolling hot spot: " + patrolTarget);
-            break;
-          }
-      }
-      if (patrolTarget == null) {
-        Printer.print("Failed to select patrol target for type: " + patrolTargetType);
-      }
-      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
-    }
-    rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolTarget, 200,200,200);
+//      MapLocation enemyLocation = lastAttackedLocation != null ? lastAttackedLocation : Cache.PerTurn.CURRENT_LOCATION;
+//      // average of self and enemy
+    Direction toSelf = fightLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+    MapLocation toPatrolFrom = fightLocation.translate(toSelf.dx * 2, toSelf.dy * 2);
+    if (currentTask != null && currentTask.type == PatrolTargetType.HOT_SPOT_FIGHT && currentTask.targetLocation.isWithinDistanceSquared(toPatrolFrom, Cache.Permanent.ACTION_RADIUS_SQUARED)) return;
+//      addLauncherTask(new LauncherTask(PatrolTargetType.HOT_SPOT_FIGHT, enemyLocation, new MapLocation(toPatrolFrom.x / 2, toPatrolFrom.y / 2)));
+    addLauncherTask(new LauncherTask(PatrolTargetType.HOT_SPOT_FIGHT, fightLocation, toPatrolFrom));
   }
 
   public enum PatrolTargetType {
-    OUR_HQ(true),
-    OUR_WELL(true),
-    ENEMY_WELL(false),
-    ENEMY_HQ(false),
-    HOT_SPOT(false);
+    OUR_HQ("OUR_HQ", true, false, Launcher.TURNS_AT_TARGET, true),
+    OUR_WELL("OUR_WELL", true, false, Launcher.TURNS_AT_TARGET, true),
+    ENEMY_WELL("ENEMY_WELL", false, false, Launcher.TURNS_AT_TARGET, true),
+    ENEMY_HQ("ENEMY_HQ", false, false, Launcher.TURNS_AT_TARGET, false),
+    HOT_SPOT_WELL_DEFENSE("HOT_WELL", false, true, Launcher.TURNS_AT_HOT_SPOT, false),
+    HOT_SPOT_FIGHT("HOT_FIGHT", false, true, Launcher.TURNS_AT_FIGHT, false);
 
     public static final PatrolTargetType DEFAULT_FIRST_TARGET = OUR_WELL;
     public static final PatrolTargetType TARGET_ON_CYCLE = OUR_WELL;
 
     public final boolean isOurSide;
+    public final boolean isHotSpot;
+    public final int numTurnsToStayAtTarget;
+    public final boolean shouldAlwaysUpdate;
+    public final String name;
 
-    PatrolTargetType(boolean isOurSide) {
+    PatrolTargetType(String name, boolean isOurSide, boolean isHotSpot, int numTurnsToStayAtTarget, boolean shouldAlwaysUpdate) {
+      this.name = name;
       this.isOurSide = isOurSide;
+      this.isHotSpot = isHotSpot;
+      this.numTurnsToStayAtTarget = numTurnsToStayAtTarget;
+      this.shouldAlwaysUpdate = shouldAlwaysUpdate;
     }
   }
 
+  private static class LauncherTask {
+    private static Launcher parentLauncher;
+    private static RobotController rc;
+
+    PatrolTargetType type;
+    MapLocation patrolLocation;
+    MapLocation targetLocation;
+
+    int numTurnsNearTarget = 0;
+
+    private LauncherTask(PatrolTargetType type, MapLocation targetLocation, MapLocation patrolLocation) throws GameActionException {
+      this.type = type;
+      this.numTurnsNearTarget = 0;
+      if (patrolLocation != null) {
+        this.patrolLocation = patrolLocation;
+        this.targetLocation = targetLocation;
+      } else {
+        update();
+      }
+    }
+
+    /**
+     * updates the patrol target to go to if needed
+     * @return true if this task is complete
+     * @throws GameActionException any issues with sensing and updating
+     */
+    private boolean update() throws GameActionException {
+      update_symmetry: if (type == PatrolTargetType.ENEMY_HQ && targetLocation != null) {
+        if (rc.canSenseLocation(targetLocation) && HqMetaInfo.getClosestEnemyHqLocation(targetLocation).equals(targetLocation)) { // we still think there should be an enemy HQ here
+          RobotInfo robot = rc.senseRobotAtLocation(targetLocation);
+          if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+//            Printer.print("ERROR: expected enemy HQ is not an HQ " + patrolTarget, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
+//            Printer.print("Closest enemy HQ to patrol: " + HqMetaInfo.getClosestEnemyHqLocation(targetLocation));
+            RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
+          }
+        }
+      }
+
+      at_target: if (numTurnsNearTarget > 0 && patrolLocation != null && numTurnsNearTarget < TURNS_AT_TARGET) {
+        rc.setIndicatorString("Completing patrol " + type.name + "@" + targetLocation + " (via: " + patrolLocation + ")" + " --turns=" + numTurnsNearTarget);
+        return false; // exit early if we're near the patrol target -- finish patrolling
+      }
+      patrol_complete: if (numTurnsNearTarget >= TURNS_AT_TARGET) {
+        if (type.isHotSpot) {
+          // need to be more careful with hotspots, wait for more friends
+          if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length < MIN_HOT_SPOT_GROUP_SIZE) {
+            numTurnsNearTarget /= 2;
+            break patrol_complete;
+          }
+          if (++numTurnsNearTarget < TURNS_AT_HOT_SPOT) {
+            break patrol_complete;
+          }
+        }
+
+        numTurnsNearTarget = 0;
+        // mark the current target as visited
+        if (targetLocation != null) {
+          parentLauncher.visitedLocations.add(targetLocation);
+//          if (Cache.Permanent.ID == 10819) {
+//            Printer.print("Done patrolling " + type.name + "@" + targetLocation + " (via: " + patrolLocation + ")");
+//            Printer.print("Visited locations: " + parentLauncher.visitedLocations);
+//          }
+          return true;
+        }
+      }
+
+      // update if we haven't gotten near the target
+      if ((numTurnsNearTarget == 0 && type.shouldAlwaysUpdate) || patrolLocation == null) { // we are done patrolling the current location
+        // update the target if needed
+        switch (type) {
+          case OUR_HQ:
+//            patrolTargetType = PatrolTargetType.OUR_HQ;
+            targetLocation = parentLauncher.determinePatrollingTargetLocationOurHq();
+            if (targetLocation != null) {
+              Direction randomDir = Utils.randomDirection();
+              patrolLocation = targetLocation.add(randomDir).add(randomDir);
+              rc.setIndicatorString("patrolling our hq " + targetLocation + " - from " + patrolLocation);
+              break;
+            }
+          case OUR_WELL: our_well: {
+            if (true) break our_well;
+            type = PatrolTargetType.OUR_WELL;
+            targetLocation = parentLauncher.determinePatrollingTargetLocationOurWell();
+            if (targetLocation != null) {
+              Direction awayFromBase = HqMetaInfo.getClosestHqLocation(targetLocation).directionTo(targetLocation);
+              patrolLocation = targetLocation.add(awayFromBase).add(awayFromBase);
+              rc.setIndicatorString("patrolling our well " + targetLocation + " - from " + patrolLocation);
+              break; // switch to enemy well if all our wells are visited
+            }
+          }
+          case ENEMY_WELL:
+            type = PatrolTargetType.ENEMY_WELL;
+//          Printer.print("trying to find enemy well for patrolling");
+            targetLocation = parentLauncher.determinePatrollingTargetLocationEnemyWell();
+            if (targetLocation != null) {
+              Direction towardsEnemyBase = targetLocation.directionTo(HqMetaInfo.getClosestEnemyHqLocation(targetLocation));
+              patrolLocation = targetLocation.add(towardsEnemyBase).add(towardsEnemyBase);
+              rc.setIndicatorString("patrolling enemy well " + targetLocation + " - from " + patrolLocation);
+              break; // fall through to enemy HQ if no enemy well known
+            }
+          case ENEMY_HQ:
+            type = PatrolTargetType.ENEMY_HQ;
+            targetLocation = parentLauncher.determinePatrollingTargetLocationEnemyHq();
+            if (targetLocation != null) {
+              patrolLocation = targetLocation;
+              int tries = 10;
+              while (patrolLocation.isWithinDistanceSquared(targetLocation, RobotType.HEADQUARTERS.actionRadiusSquared) && --tries >= 0) {
+                patrolLocation = patrolLocation.add(Utils.randomDirection());
+              }
+              if (tries < 0) {
+                Direction toSelf = patrolLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+                patrolLocation = targetLocation.translate(toSelf.dx*4, toSelf.dy*4);
+              }
+              rc.setIndicatorString("patrolling enemy HQ " + targetLocation + " - from " + patrolLocation);
+              break;
+            }
+//          Printer.print("ERROR: no closest enemy HQ found for patrol -- visited: " + visitedLocations);
+          default:
+            if (type.isHotSpot) {
+              if (patrolLocation != null) {
+                rc.setIndicatorString("patrolling hot spot: " + patrolLocation);
+                break;
+              }
+            } else {
+              type = PatrolTargetType.TARGET_ON_CYCLE;
+              update();
+//            if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(explorationTarget, EXPLORATION_REACHED_RADIUS)) {
+//              randomizeExplorationTarget(true);
+//            }
+//            parentLauncher.resetVisited();
+//            rc.setIndicatorString("patrolling default: " + explorationTarget);
+//            patrolLocation = explorationTarget;
+//            targetLocation = explorationTarget;
+            }
+            break;
+        }
+        if (patrolLocation == null) {
+          Printer.print("Failed to select patrol target for type: " + type);
+        }
+      }
+      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      return false;
+    }
+  }
+
+  private MapLocation determinePatrollingTargetLocationEnemyHq() {
+//          patrolTarget = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    MapLocation[] enemyHQs = HqMetaInfo.enemyHqLocations;
+    MapLocation closestHQ = null;
+    int bestDist = 1000000;
+    for (MapLocation enemyHQ : enemyHQs) {
+      if (visitedLocations.contains(enemyHQ)) continue;
+//            int dist = enemyHQ.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
+      int dist = Utils.applySymmetry(enemyHQ, RunningMemory.guessedSymmetry).distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
+      if (dist < bestDist) {
+        bestDist = dist;
+        closestHQ = enemyHQ;
+      }
+    }
+    return closestHQ;
+  }
+
+  private MapLocation determinePatrollingTargetLocationEnemyWell() throws GameActionException {
+    MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
+    int closestDist = Integer.MAX_VALUE;
+    MapLocation closestEnemyWell = null;
+    for (int i = 0; i < CommsHandler.MANA_WELL_SLOTS; i++) {
+      if (CommsHandler.readManaWellExists(i)) {
+        MapLocation wellLocation = CommsHandler.readManaWellLocation(i);
+        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
+        }
+        if (visitedLocations.contains(wellLocation)) continue;
+        int dist = myLoc.distanceSquaredTo(wellLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestEnemyWell = wellLocation;
+        }
+      }
+    }
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (CommsHandler.readAdamantiumWellExists(i)) {
+        MapLocation wellLocation = CommsHandler.readAdamantiumWellLocation(i);
+        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
+        }
+        if (visitedLocations.contains(wellLocation)) continue;
+        int dist = myLoc.distanceSquaredTo(wellLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestEnemyWell = wellLocation;
+        }
+      }
+    }
+    for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
+      if (CommsHandler.readElixirWellExists(i)) {
+        MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
+        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
+        }
+        if (visitedLocations.contains(wellLocation)) continue;
+        int dist = myLoc.distanceSquaredTo(wellLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestEnemyWell = wellLocation;
+        }
+      }
+    }
+    return closestEnemyWell;
+  }
+
+  private MapLocation determinePatrollingTargetLocationOurWell() throws GameActionException {
+    ResourceType rt = ResourceType.ADAMANTIUM;
+    if (Utils.rng.nextBoolean()) rt = ResourceType.MANA;
+    MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, rt); // TODO: make pick mana vs ad
+    return closestWellLocation;
+  }
+
+  private MapLocation determinePatrollingTargetLocationOurHq() {
+    return HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+  }
 
 
   /**
@@ -645,7 +658,11 @@ public class Launcher extends MobileRobot {
   boolean tryAttack(boolean onlyAttackers) throws GameActionException {
     if (!rc.isActionReady()) return false;
     MapLocation bestAttackTarget = AttackMicro.getBestAttackTarget(onlyAttackers);
-    return bestAttackTarget != null && attack(bestAttackTarget);
+    if (bestAttackTarget != null) {
+      lastAttackedLocation = bestAttackTarget;
+      return attack(bestAttackTarget);
+    }
+    return false;
 //    boolean attacked = bestAttackTarget != null && attack(bestAttackTarget);
 //    if (onlyAttackers) return attacked;
 //    return attemptCloudAttack();

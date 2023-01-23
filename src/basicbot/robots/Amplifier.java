@@ -1,8 +1,8 @@
 package basicbot.robots;
 
 import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
 import basicbot.knowledge.Cache;
+import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -112,12 +112,10 @@ public class Amplifier extends MobileRobot {
     if (rc.canSenseLocation(HQLocation)) {
       RobotInfo robot = rc.senseRobotAtLocation(HQLocation);
       if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-//        Printer.print("ERROR: expected enemy HQ is not an HQ " + HQLocation, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
-        if (rc.canWriteSharedArray(0,0)) {
-          MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
-        }
+//        Printer.print("ERROR: expected enemy HQ is not an HQ " + HQLocation, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
+        RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
         // TODO: eliminate symmetry and retry
-//          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
+//          RunningMemory.publishNotSymmetry(RunningMemory.guessedSymmetry);
 //          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget)
         return false;
       }
@@ -132,7 +130,7 @@ public class Amplifier extends MobileRobot {
     for (int i = 0; i < numHQs && numTries < 4; i++) {
       MapLocation HQLocation = HqMetaInfo.enemyHqLocations[i];
       // check whether or not we are confident that the symmetry is right before doing this over and over
-      if (MapMetaInfo.knownSymmetry == null) {
+      if (RunningMemory.knownSymmetry == null) {
         if (!ifValidEnemyHQ(HQLocation)) {
           i = -1;
           ++numTries;

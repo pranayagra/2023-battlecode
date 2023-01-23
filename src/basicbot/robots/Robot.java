@@ -1,7 +1,6 @@
 package basicbot.robots;
 
 import basicbot.communications.Communicator;
-import basicbot.communications.MapMetaInfo;
 import basicbot.knowledge.Memory;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
@@ -116,7 +115,7 @@ public abstract class Robot {
     }
   }
 
-  private void die() {
+  protected void die() {
     Clock.yield();
     Clock.yield();
     rc.resign();
@@ -202,12 +201,14 @@ public abstract class Robot {
    * @throws GameActionException if sensing fails
    */
   protected void updateSymmetryComms() throws GameActionException {
-    if (MapMetaInfo.knownSymmetry != null) return;
-    if (!rc.canWriteSharedArray(0,0)) return;
-    if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
+    if (RunningMemory.knownSymmetry != null) {
+      if (RunningMemory.symmetryInfoDirty) RunningMemory.broadcastSymmetry();
+      return;
+    }
+//    if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
 
     // TODO: actually do the computation
-    int visionRadiusSq = Cache.Permanent.VISION_RADIUS_SQUARED;
+//    int visionRadiusSq = Cache.Permanent.VISION_RADIUS_SQUARED;
     int midlineThreshold = Cache.Permanent.VISION_RADIUS_FLOOR / 2;
     MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
     int myX = myLoc.x;
@@ -215,7 +216,7 @@ public abstract class Robot {
     int mapWidth = Cache.Permanent.MAP_WIDTH;
     int mapHeight = Cache.Permanent.MAP_HEIGHT;
     // if Vertical not ruled out (flipY, horizontal midline)
-    if (!MapMetaInfo.notVertical) { // could be vertical
+    if (!RunningMemory.notVerticalSymmetry) { // could be vertical
       // check if y is near the middle
       nearHorizMidline:
       if (myY * 2 <= mapHeight + midlineThreshold
@@ -223,25 +224,25 @@ public abstract class Robot {
         MapLocation test1 = new MapLocation(myX, mapHeight / 2 - 1);
         MapLocation test2 = new MapLocation(myX, mapHeight - mapHeight / 2);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.VERTICAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
           break nearHorizMidline;
         }
         test1 = new MapLocation(myX - 2, mapHeight / 2 - 1);
         test2 = new MapLocation(myX - 2, mapHeight - mapHeight / 2);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.VERTICAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
           break nearHorizMidline;
         }
         test1 = new MapLocation(myX + 2, mapHeight / 2 - 1);
         test2 = new MapLocation(myX + 2, mapHeight - mapHeight / 2);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.VERTICAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL); // eliminate Vertical symmetry
           break nearHorizMidline;
         }
       }
     }
     // if Horizontal not ruled out (flipX, vertical midline)
-    if (!MapMetaInfo.notHorizontal) { // could be horizontal
+    if (!RunningMemory.notHorizontalSymmetry) { // could be horizontal
       // check if x is near the middle
       nearVertMidline:
       if (myX * 2 <= mapWidth + midlineThreshold
@@ -249,25 +250,25 @@ public abstract class Robot {
         MapLocation test1 = new MapLocation(mapWidth / 2 - 1, myY);
         MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, myY);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.HORIZONTAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
           break nearVertMidline;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, myY - 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, myY - 2);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.HORIZONTAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
           break nearVertMidline;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, myY + 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, myY + 2);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.HORIZONTAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL); // eliminate Horizontal symmetry
           break nearVertMidline;
         }
       }
     }
     // if Rotational not ruled out (rotXY, near center)
-    if (!MapMetaInfo.notRotational) { // could be rotational
+    if (!RunningMemory.notRotationalSymmetry) { // could be rotational
       // check if near the center
       nearCenter:
       if (myX * 2 <= mapWidth + midlineThreshold
@@ -277,17 +278,19 @@ public abstract class Robot {
         MapLocation test1 = new MapLocation(mapWidth / 2 - 1, mapHeight / 2 - 1);
         MapLocation test2 = new MapLocation(mapWidth - mapWidth / 2, mapHeight - mapHeight / 2);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.ROTATIONAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
           break nearCenter;
         }
         test1 = new MapLocation(mapWidth / 2 - 1, mapHeight - mapHeight / 2);
         test2 = new MapLocation(mapWidth - mapWidth / 2, mapHeight / 2 - 1);
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.ROTATIONAL)) {
-          MapMetaInfo.writeNot(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
+          RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
           break nearCenter;
         }
       }
     }
+
+    RunningMemory.broadcastSymmetry();
   }
   private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2, Utils.MapSymmetry symmetryToCheck) throws GameActionException {
     rc.setIndicatorDot(test1, 211, 211, 211);

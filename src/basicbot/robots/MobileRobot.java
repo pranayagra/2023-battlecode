@@ -1,8 +1,8 @@
 package basicbot.robots;
 
 import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
 import basicbot.knowledge.Cache;
+import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -42,7 +42,7 @@ public abstract class MobileRobot extends Robot {
           explorationTarget = loc;
           break;
         }
-        if (MapMetaInfo.knownSymmetry == null && Utils.rng.nextInt(5)<2) {
+        if (RunningMemory.knownSymmetry == null && Utils.rng.nextInt(5)<2) {
 //          MapLocation oldTarget = explorationTarget;
 //          int tries = 10;
 //          do {
@@ -64,12 +64,10 @@ public abstract class MobileRobot extends Robot {
         if (rc.canSenseLocation(explorationTarget)) {
           RobotInfo robot = rc.senseRobotAtLocation(explorationTarget);
           if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + MapMetaInfo.guessedSymmetry + ") and retrying...");
-            if (rc.canWriteSharedArray(0,0)) {
-              MapMetaInfo.writeNot(MapMetaInfo.guessedSymmetry);
-            }
+            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
+            RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
             // TODO: eliminate symmetry and retry
-//          RunningMemory.publishNotSymmetry(MapMetaInfo.guessedSymmetry);
+//          RunningMemory.publishNotSymmetry(RunningMemory.guessedSymmetry);
 //          explorationTarget = communicator.archonInfo.replaceEnemyArchon(explorationTarget);
           }
         }

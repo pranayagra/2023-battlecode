@@ -1,5 +1,8 @@
 package basicbot.containers;
 
+import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
+
 public class CharSet {
 
   private StringBuilder builder;
@@ -17,11 +20,17 @@ public class CharSet {
 //    return buffer.indexOf(String.valueOf(number)) != -1;
 //    return string.contains(String.valueOf(number));
   }
+  public boolean contains(MapLocation loc) {
+    return builder.indexOf(String.valueOf((char) (loc.x * GameConstants.MAP_MAX_HEIGHT + loc.y))) != -1;
+  }
 
   public void add(char number) {
     builder.append(number);
 //    buffer.append(number);
 //    string += number;
+  }
+  public void add(MapLocation loc) {
+    builder.append((char) (loc.x * GameConstants.MAP_MAX_HEIGHT + loc.y));
   }
 
   public void clear() {
@@ -34,5 +43,8 @@ public class CharSet {
     builder.deleteCharAt(builder.indexOf(String.valueOf(number)));
 //    buffer.deleteCharAt(buffer.indexOf(String.valueOf(number)));
 //    string = string.replace(String.valueOf(number), "");
+  }
+  public void remove(MapLocation loc) {
+    builder.deleteCharAt(builder.indexOf(String.valueOf((char) (loc.x * GameConstants.MAP_MAX_HEIGHT + loc.y))));
   }
 }

@@ -1,6 +1,7 @@
 package basicbot.communications;
 
 import basicbot.knowledge.Cache;
+import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Utils;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -19,16 +20,16 @@ public class HqMetaInfo {
     switch (HqMetaInfo.hqCount) {
       case 4:
         HqMetaInfo.hqLocations[3] = CommsHandler.readOurHqLocation(3);
-        HqMetaInfo.enemyHqLocations[3] = Utils.applySymmetry(HqMetaInfo.hqLocations[3], MapMetaInfo.guessedSymmetry);
+        HqMetaInfo.enemyHqLocations[3] = Utils.applySymmetry(HqMetaInfo.hqLocations[3], RunningMemory.guessedSymmetry);
       case 3:
         HqMetaInfo.hqLocations[2] = CommsHandler.readOurHqLocation(2);
-        HqMetaInfo.enemyHqLocations[2] = Utils.applySymmetry(HqMetaInfo.hqLocations[2], MapMetaInfo.guessedSymmetry);
+        HqMetaInfo.enemyHqLocations[2] = Utils.applySymmetry(HqMetaInfo.hqLocations[2], RunningMemory.guessedSymmetry);
       case 2:
         HqMetaInfo.hqLocations[1] = CommsHandler.readOurHqLocation(1);
-        HqMetaInfo.enemyHqLocations[1] = Utils.applySymmetry(HqMetaInfo.hqLocations[1], MapMetaInfo.guessedSymmetry);
+        HqMetaInfo.enemyHqLocations[1] = Utils.applySymmetry(HqMetaInfo.hqLocations[1], RunningMemory.guessedSymmetry);
       case 1:
         HqMetaInfo.hqLocations[0] = CommsHandler.readOurHqLocation(0);
-        HqMetaInfo.enemyHqLocations[0] = Utils.applySymmetry(HqMetaInfo.hqLocations[0], MapMetaInfo.guessedSymmetry);
+        HqMetaInfo.enemyHqLocations[0] = Utils.applySymmetry(HqMetaInfo.hqLocations[0], RunningMemory.guessedSymmetry);
         break;
       default:
 //          if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS) {
@@ -151,7 +152,7 @@ public class HqMetaInfo {
   }
 
   public static void recomputeEnemyHqLocations() {
-    Utils.MapSymmetry symmetry = MapMetaInfo.guessedSymmetry;
+    Utils.MapSymmetry symmetry = RunningMemory.guessedSymmetry;
 //    if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS && hqCount != hqLocations.length) {
 //      Printer.print("recompute enemy locations: hqCount=" + hqCount + " - numHq=" + hqLocations.length + " - numEnemy=" + enemyHqLocations.length);
 //    }
