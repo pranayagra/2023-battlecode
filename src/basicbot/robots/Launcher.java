@@ -209,7 +209,7 @@ public class Launcher extends MobileRobot {
       return destination;
     }
 
-    if (!currentTask.type.isHotSpot) { // not patrolling a hot spot - consider defending home
+    if (currentTask.type != PatrolTargetType.HOT_SPOT_FIGHT) { // not patrolling a hot spot - consider defending home
       // closest enemy to our closest HQ -- friendlies in danger -> will come back to protect HQ
       destination = Communicator.getClosestEnemy(HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION));
       if (destination != null) {
@@ -219,6 +219,7 @@ public class Launcher extends MobileRobot {
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
           return destination;
         }
+//        return destination;
       }
     }
 
