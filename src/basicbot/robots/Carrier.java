@@ -177,7 +177,8 @@ public class Carrier extends MobileRobot {
       manaWeighting *= 2;
     }
 
-    if (Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION).distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < 100) {
+    MapLocation closestEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+    if (closestEnemy != null && closestEnemy.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < 100) {
       manaWeighting *= 20;
     }
     int MAX_INCOME = 31;
