@@ -438,7 +438,7 @@ public class Carrier extends MobileRobot {
     no_well: if (currentTask.targetWell == null
         || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
         || (lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
-      if ((lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
+      if ((lastEnemyLocation != null && currentTask.targetWell != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
         findNewWell(currentTask.collectionType, currentTask.targetWell);
       } else {
         findNewWell(currentTask.collectionType, null);

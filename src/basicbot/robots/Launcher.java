@@ -16,7 +16,7 @@ import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
-  private static final int MIN_GROUP_SIZE_TO_MOVE = 4; // min group size to move out
+  private static final int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
   private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
