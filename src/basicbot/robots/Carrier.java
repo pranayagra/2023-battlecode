@@ -47,6 +47,7 @@ public class Carrier extends MobileRobot {
 
   int fleeingCounter;
   MapLocation lastEnemyLocation;
+  int lastEnemyLocationRound;
   private RobotInfo cachedLastEnemyForBroadcast;
 
   public Carrier(RobotController rc) throws GameActionException {
@@ -377,6 +378,7 @@ public class Carrier extends MobileRobot {
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
       lastEnemyLocation = nearestCombatEnemy.location;
+      lastEnemyLocationRound = rc.getRoundNum();
       fleeingCounter = TURNS_TO_FLEE;
       // check if we need to cache the enemy for broadcasting (only if no friendly launchers nearby)
       cachedLastEnemyForBroadcast = nearestCombatEnemy;
@@ -434,9 +436,16 @@ public class Carrier extends MobileRobot {
   private boolean executeFetchResource(ResourceType resourceType) throws GameActionException {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
     no_well: if (currentTask.targetWell == null
-        || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))) {
+        || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
+        || (lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
       findNewWell(currentTask.collectionType, null);
-      if (currentTask.targetWell != null) break no_well;
+      boolean foundWell = currentTask.targetWell != null;
+      if (foundWell && lastEnemyLocation != null) {
+        int roundsSinceLastEnemy = rc.getRoundNum() - lastEnemyLocationRound;
+        boolean nearEnemy = currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && roundsSinceLastEnemy <= 8;
+        if (nearEnemy) foundWell = false;
+      }
+      if (foundWell) break no_well;
       WellInfo[] nearby = rc.senseNearbyWells(resourceType);
       if (nearby.length == 0) {
         if (currentTask.turnsRunning > MAX_TURNS_TO_LOOK_FOR_WELL) {
@@ -445,8 +454,13 @@ public class Carrier extends MobileRobot {
         } else {
           while (tryExplorationMove()) {
             nearby = rc.senseNearbyWells(resourceType);
+            int distance = Integer.MAX_VALUE;
             if (nearby.length > 0) {
-              currentTask.targetWell = nearby[Utils.rng.nextInt(nearby.length)].getMapLocation();
+              for (WellInfo well : nearby) {
+                if (Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(well.getMapLocation()) < distance) {
+                  currentTask.targetWell = well.getMapLocation();
+                }
+              }
               break no_well;
             }
           }
@@ -878,6 +892,9 @@ public class Carrier extends MobileRobot {
       if (!writer.readWellExists(i)) break;
       MapLocation wellLocation = writer.readWellLocation(i);
       if (!wellLocation.equals(toAvoid) && !blackListWells.contains(wellLocation)) {
+        if (lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 7) {
+          continue;
+        }
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (dist < closestDist) {
           closestDist = dist;
