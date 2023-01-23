@@ -1,13 +1,13 @@
-package basicbot.robots;
+package testing230122.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.communications.MapMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import testing230122.communications.CommsHandler;
+import testing230122.communications.Communicator;
+import testing230122.communications.HqMetaInfo;
+import testing230122.communications.MapMetaInfo;
+import testing230122.knowledge.Cache;
+import testing230122.utils.Constants;
+import testing230122.utils.Printer;
+import testing230122.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
@@ -97,7 +97,7 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-    if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 200) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
@@ -262,7 +262,7 @@ public class HeadQuarters extends Robot {
 
   private void normalSpawnOrder() throws GameActionException {
     if (spawnAmplifierCooldown > 0) --spawnAmplifierCooldown;
-//    spawnAmplifier = false;
+
     if (spawnAmplifier) {
       if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0 && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0].type != RobotType.HEADQUARTERS) {
         spawnAmplifier = false;

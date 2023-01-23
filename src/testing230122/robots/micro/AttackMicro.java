@@ -1,9 +1,9 @@
-package basicbot.robots.micro;
+package testing230122.robots.micro;
 
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.utils.Utils;
+import testing230122.communications.Communicator;
+import testing230122.communications.HqMetaInfo;
+import testing230122.knowledge.Cache;
+import testing230122.utils.Utils;
 import battlecode.common.*;
 
 public class AttackMicro {
@@ -18,7 +18,6 @@ public class AttackMicro {
     AttackCandidate bestTarget = null;
     for (RobotInfo enemy : enemies) {
       if (onlyAttackers && !AttackMicro.isAttacker(enemy.getType())) continue;
-      if (enemy.getType() == RobotType.HEADQUARTERS) continue; // no point in hitting HQ.
       if (rc.canAttack(enemy.location)) {
         AttackCandidate at = new AttackCandidate(enemy);
         if (at.isBetterThan(bestTarget)) bestTarget = at;
