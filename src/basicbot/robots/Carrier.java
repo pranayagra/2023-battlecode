@@ -169,9 +169,14 @@ public class Carrier extends MobileRobot {
     if (Cache.Permanent.MAP_AREA > 900) {
       manaWeighting = 1.75;
     }
+
+    if (Cache.PerTurn.ROUND_NUM < 40 && Utils.maxSingleAxisDist(HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION), Cache.PerTurn.CURRENT_LOCATION )> 40) {
+      manaWeighting = 0;
+    }
     if ((double)Cache.PerTurn.HEALTH / Cache.Permanent.MAX_HEALTH < 0.8) {
       manaWeighting *= 2;
     }
+
     if (Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION).distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < 100) {
       manaWeighting *= 20;
     }
