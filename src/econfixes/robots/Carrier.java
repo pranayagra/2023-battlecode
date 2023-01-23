@@ -1,16 +1,16 @@
-package basicbot.robots;
+package econfixes.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashMap;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.CarrierWellPathing;
-import basicbot.knowledge.Cache;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import econfixes.communications.CommsHandler;
+import econfixes.communications.Communicator;
+import econfixes.communications.HqMetaInfo;
+import econfixes.containers.HashMap;
+import econfixes.containers.HashSet;
+import econfixes.knowledge.RunningMemory;
+import econfixes.robots.micro.CarrierWellPathing;
+import econfixes.knowledge.Cache;
+import econfixes.robots.pathfinding.BugNav;
+import econfixes.utils.Printer;
+import econfixes.utils.Utils;
 import battlecode.common.*;
 
 import java.util.Arrays;
@@ -438,11 +438,7 @@ public class Carrier extends MobileRobot {
     no_well: if (currentTask.targetWell == null
         || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
         || (lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
-      if ((lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
-        findNewWell(currentTask.collectionType, currentTask.targetWell);
-      } else {
-        findNewWell(currentTask.collectionType, null);
-      }
+      findNewWell(currentTask.collectionType, null);
       if (currentTask.targetWell != null) break no_well;
 //      boolean foundWell = currentTask.targetWell != null;
 //      if (foundWell && lastEnemyLocation != null) {
