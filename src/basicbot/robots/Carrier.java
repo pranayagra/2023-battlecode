@@ -8,6 +8,7 @@ import basicbot.containers.HashSet;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
+import basicbot.robots.pathfinding.BugNav;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -552,7 +553,7 @@ public class Carrier extends MobileRobot {
         wellQueueOrder = CarrierWellPathing.getPathForWell(wellLocation, wellApproachDirection.get(wellLocation));
         wellEntryPoint = wellQueueOrder[0];
         for (int i = 0; i < wellQueueOrder.length; i++) {
-          if (rc.canSenseLocation(wellQueueOrder[i]) && rc.sensePassability(wellQueueOrder[i])) {
+          if (rc.canSenseLocation(wellQueueOrder[i]) && rc.sensePassability(wellQueueOrder[i]) && !BugNav.blockedLocations.contains(wellQueueOrder[i])) {
             RobotInfo robot = rc.senseRobotAtLocation(wellQueueOrder[i]);
             if (robot == null || robot.type != RobotType.HEADQUARTERS) {
               wellEntryPoint = wellQueueOrder[i];
@@ -644,7 +645,7 @@ public class Carrier extends MobileRobot {
           while (pathing.moveTowards(wellEntryPoint)) {}
           if (rc.isMovementReady()) {
             for (int i = 0; i < wellQueueOrder.length; i++) {
-              if (rc.canSenseLocation(wellQueueOrder[i]) && rc.sensePassability(wellQueueOrder[i])) {
+              if (rc.canSenseLocation(wellQueueOrder[i]) && rc.sensePassability(wellQueueOrder[i]) && !BugNav.blockedLocations.contains(wellQueueOrder[i])) {
                 RobotInfo robot = rc.senseRobotAtLocation(wellQueueOrder[i]);
                 if (robot == null || (robot.type != RobotType.HEADQUARTERS && robot.type != RobotType.CARRIER)) {
                   wellEntryPoint = wellQueueOrder[i];
@@ -835,11 +836,18 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException
    */
   private boolean isValidQueuePosition(MapLocation wellLocation, MapLocation queuePosition) throws GameActionException {
-    if (!rc.canSenseLocation(queuePosition)) return true; // assume it is valid if can't sense
-    if (rc.canSenseRobotAtLocation(queuePosition)) return false; // blocked by a robot
-    MapInfo mapInfo = rc.senseMapInfo(queuePosition);
-    if (!mapInfo.isPassable()) return false; // isn't passable
-    if (!queuePosition.add(mapInfo.getCurrentDirection()).isAdjacentTo(wellLocation)) return false; // gets blown away
+    local_checks: {
+      if (!rc.canSenseLocation(queuePosition)) break local_checks; // assume it is valid if can't sense
+      if (rc.canSenseRobotAtLocation(queuePosition)) return false; // blocked by a robot
+      MapInfo mapInfo = rc.senseMapInfo(queuePosition);
+      if (!mapInfo.isPassable()) return false; // isn't passable
+      if (!queuePosition.add(mapInfo.getCurrentDirection()).isAdjacentTo(wellLocation)) return false; // gets blown away
+    }
+    if (BugNav.blockedLocations.contains(queuePosition)) return false; // blocked by a bugnav
+    if (rc.canSenseLocation(queuePosition)
+        && BugNav.blockedLocations.contains(
+            queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()
+            ))) return false; // pushed into a blocked location
     return true;
   }
 
