@@ -383,9 +383,10 @@ public class Launcher extends MobileRobot {
    * @return the turns to wait based on current health.
    */
   private int turnsToWaitUntilRetreat() {
-    double healthPercentage = (Cache.PerTurn.HEALTH / (double) Cache.Permanent.MAX_HEALTH);
-    if (healthPercentage < 0.5 /* immediately go home */) return 0;
-    return (int) (healthPercentage * TURNS_TO_WAIT);
+    return TURNS_TO_WAIT;
+//    double healthPercentage = (Cache.PerTurn.HEALTH / (double) Cache.Permanent.MAX_HEALTH);
+//    if (healthPercentage < 0.5 /* immediately go home */) return 0;
+//    return (int) (healthPercentage * TURNS_TO_WAIT);
   }
 
   /**
