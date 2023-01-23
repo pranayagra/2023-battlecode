@@ -205,10 +205,16 @@ public class HeadQuarters extends Robot {
    * @throws GameActionException
    */
   private void handleIncome() throws GameActionException {
+
     int newAd = rc.getResourceAmount(ResourceType.ADAMANTIUM) - prevAdamantium;
     int newMana = rc.getResourceAmount(ResourceType.MANA) - prevMana;
     int newElixir = rc.getResourceAmount(ResourceType.ELIXIR) - prevElixir;
 
+    if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
+      newAd = 0;
+      newMana = 0;
+      newElixir = 0;
+    }
     // add current income & subtract off the income from WINDOW_SIZE rounds ago
     int ind = Cache.PerTurn.ROUND_NUM % INCOME_MOVING_AVERAGE_WINDOW_SIZE;
     adamantiumIncome += newAd - adamantiumIncomeHistory[ind];
