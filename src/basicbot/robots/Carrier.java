@@ -277,7 +277,8 @@ public class Carrier extends MobileRobot {
     int bestValue = 0;
 
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      RobotType type = enemyRobot.getType();
+      RobotType type = enemyRobot.type;
+      if (type == RobotType.HEADQUARTERS) continue;
       int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
       int carryingResourceValue = getInvWeight(enemyRobot);
       int enemyValue = costToBuild + carryingResourceValue;
@@ -320,6 +321,7 @@ public class Carrier extends MobileRobot {
     RobotInfo enemyToAttack = null;
 //    int numMoves = numMoves();
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (enemyRobot.type == RobotType.HEADQUARTERS) continue;
       if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, enemyRobot.type.actionRadiusSquared)) {
         enemyDamage += getInvWeight(enemyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR + enemyRobot.type.damage;
       }

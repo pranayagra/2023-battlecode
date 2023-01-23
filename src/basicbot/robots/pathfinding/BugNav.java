@@ -5,6 +5,7 @@ import basicbot.knowledge.Cache;
 import battlecode.common.*;
 
 public class BugNav{
+  static public CharSet blockedLocations = new CharSet(); // currently, only used for avoiding HQ's damage range
 
   static RobotController rc;
   static Pathing pathing;
@@ -55,6 +56,7 @@ public class BugNav{
 //    Printer.print("BUGNAV: Checking if can move in direction " + dir);
     if (!rc.canMove(dir)) return false;
     MapLocation nextLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
+    if (blockedLocations.contains(nextLoc)) return false;
     if (!rc.canSenseLocation(nextLoc)) return true; // don't know what's there, assume it's fine
     MapInfo newLocInfo = rc.senseMapInfo(nextLoc);
     Direction windCurrentDir = newLocInfo.getCurrentDirection();

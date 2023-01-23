@@ -30,6 +30,7 @@ public class Launcher extends MobileRobot {
   private LauncherTask currentTask;
   private HashSet<MapLocation> visitedLocations;
 
+  // enemy state information
   private boolean launcherInVision;
   private boolean carrierInVision;
   private boolean carrierInAttackRange;
@@ -53,6 +54,7 @@ public class Launcher extends MobileRobot {
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
 
+    //TODO: refactor this out
     updateEnemyStateInformation();
 
     if (!launcherInVision) {
@@ -181,6 +183,9 @@ public class Launcher extends MobileRobot {
     carrierInVision = false;
     carrierInAttackRange = false;
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (robot.type == RobotType.HEADQUARTERS) {
+        continue;
+      }
       if (robot.type == RobotType.LAUNCHER) {
         launcherInVision = true;
       } else if (robot.type == RobotType.CARRIER) {
