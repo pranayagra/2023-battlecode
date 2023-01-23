@@ -1,17 +1,17 @@
-package basicbot.robots;
+package supportivelaunchers.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharCharMap;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import supportivelaunchers.communications.CommsHandler;
+import supportivelaunchers.communications.Communicator;
+import supportivelaunchers.communications.HqMetaInfo;
+import supportivelaunchers.containers.CharCharMap;
+import supportivelaunchers.containers.HashSet;
+import supportivelaunchers.knowledge.Cache;
+import supportivelaunchers.knowledge.RunningMemory;
+import supportivelaunchers.robots.micro.AttackMicro;
+import supportivelaunchers.robots.micro.AttackerFightingMicro;
+import supportivelaunchers.utils.Constants;
+import supportivelaunchers.utils.Printer;
+import supportivelaunchers.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {

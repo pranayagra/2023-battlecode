@@ -1,4 +1,4 @@
-package basicbot.containers;
+package supportivelaunchers.containers;
 
 public class CharCharMap {
   private StringBuilder keys;

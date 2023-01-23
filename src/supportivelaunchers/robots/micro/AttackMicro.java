@@ -1,10 +1,10 @@
-package basicbot.robots.micro;
+package supportivelaunchers.robots.micro;
 
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharCharMap;
-import basicbot.knowledge.Cache;
-import basicbot.utils.Utils;
+import supportivelaunchers.communications.Communicator;
+import supportivelaunchers.communications.HqMetaInfo;
+import supportivelaunchers.containers.CharCharMap;
+import supportivelaunchers.knowledge.Cache;
+import supportivelaunchers.utils.Utils;
 import battlecode.common.*;
 
 public class AttackMicro {

@@ -1,16 +1,16 @@
-package basicbot.robots;
+package supportivelaunchers.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashMap;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.CarrierWellPathing;
-import basicbot.knowledge.Cache;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import supportivelaunchers.communications.CommsHandler;
+import supportivelaunchers.communications.Communicator;
+import supportivelaunchers.communications.HqMetaInfo;
+import supportivelaunchers.containers.HashMap;
+import supportivelaunchers.containers.HashSet;
+import supportivelaunchers.knowledge.RunningMemory;
+import supportivelaunchers.robots.micro.CarrierWellPathing;
+import supportivelaunchers.knowledge.Cache;
+import supportivelaunchers.robots.pathfinding.BugNav;
+import supportivelaunchers.utils.Printer;
+import supportivelaunchers.utils.Utils;
 import battlecode.common.*;
 
 import java.util.Arrays;
@@ -47,7 +47,6 @@ public class Carrier extends MobileRobot {
 
   int fleeingCounter;
   MapLocation lastEnemyLocation;
-  int lastEnemyLocationRound;
   private RobotInfo cachedLastEnemyForBroadcast;
 
   public Carrier(RobotController rc) throws GameActionException {
@@ -165,22 +164,9 @@ public class Carrier extends MobileRobot {
     int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
     int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
     int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
-    double manaWeighting = 2;
-
+    double adamantiumWeighting = 2;
     if (Cache.Permanent.MAP_AREA > 900) {
-      manaWeighting = 1.75;
-    }
-
-    if (Cache.PerTurn.ROUND_NUM < 40 && Utils.maxSingleAxisDist(HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION), Cache.PerTurn.CURRENT_LOCATION )> 40) {
-      manaWeighting = 0;
-    }
-    if ((double)Cache.PerTurn.HEALTH / Cache.Permanent.MAX_HEALTH < 0.8) {
-      manaWeighting *= 2;
-    }
-
-    MapLocation closestEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
-    if (closestEnemy != null && closestEnemy.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < 100) {
-      manaWeighting *= 20;
+      adamantiumWeighting = 1.5;
     }
     int MAX_INCOME = 31;
     // TODO: check for existence of Elixir wells
@@ -190,7 +176,7 @@ public class Carrier extends MobileRobot {
       }
       return CarrierTask.FETCH_MANA;
     }
-    if (manaWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+    if (adamantiumWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       }
@@ -378,7 +364,6 @@ public class Carrier extends MobileRobot {
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
       lastEnemyLocation = nearestCombatEnemy.location;
-      lastEnemyLocationRound = rc.getRoundNum();
       fleeingCounter = TURNS_TO_FLEE;
       // check if we need to cache the enemy for broadcasting (only if no friendly launchers nearby)
       cachedLastEnemyForBroadcast = nearestCombatEnemy;
@@ -436,16 +421,9 @@ public class Carrier extends MobileRobot {
   private boolean executeFetchResource(ResourceType resourceType) throws GameActionException {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
     no_well: if (currentTask.targetWell == null
-        || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
-        || (lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
+        || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))) {
       findNewWell(currentTask.collectionType, null);
-      boolean foundWell = currentTask.targetWell != null;
-      if (foundWell && lastEnemyLocation != null) {
-        int roundsSinceLastEnemy = rc.getRoundNum() - lastEnemyLocationRound;
-        boolean nearEnemy = currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && roundsSinceLastEnemy <= 8;
-        if (nearEnemy) foundWell = false;
-      }
-      if (foundWell) break no_well;
+      if (currentTask.targetWell != null) break no_well;
       WellInfo[] nearby = rc.senseNearbyWells(resourceType);
       if (nearby.length == 0) {
         if (currentTask.turnsRunning > MAX_TURNS_TO_LOOK_FOR_WELL) {
@@ -454,13 +432,8 @@ public class Carrier extends MobileRobot {
         } else {
           while (tryExplorationMove()) {
             nearby = rc.senseNearbyWells(resourceType);
-            int distance = Integer.MAX_VALUE;
             if (nearby.length > 0) {
-              for (WellInfo well : nearby) {
-                if (Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(well.getMapLocation()) < distance) {
-                  currentTask.targetWell = well.getMapLocation();
-                }
-              }
+              currentTask.targetWell = nearby[Utils.rng.nextInt(nearby.length)].getMapLocation();
               break no_well;
             }
           }
@@ -892,9 +865,6 @@ public class Carrier extends MobileRobot {
       if (!writer.readWellExists(i)) break;
       MapLocation wellLocation = writer.readWellLocation(i);
       if (!wellLocation.equals(toAvoid) && !blackListWells.contains(wellLocation)) {
-        if (lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 7) {
-          continue;
-        }
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (dist < closestDist) {
           closestDist = dist;
