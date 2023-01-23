@@ -49,6 +49,7 @@ public class SmitePathing {
       BugNav.setTarget(newDest);
       resetVisited();
       addVisited(Cache.PerTurn.CURRENT_LOCATION);
+//      doBuggingTurns = 0;
     }
   }
 
@@ -81,6 +82,7 @@ public class SmitePathing {
     }
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
     if (doBuggingTurns > 0) {
+//      return BugNav.tryBugging();
       if (!BugNav.checkDoneBugging()) {
         doBuggingTurns--;
         if (BugNav.tryBugging()) {

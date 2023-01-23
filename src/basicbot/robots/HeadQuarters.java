@@ -179,11 +179,14 @@ public class HeadQuarters extends Robot {
       }
     }
 
-    if (spawnIdx < spawnOrder.length) {
-      forceSpawnOrder();
-    } else {
-      normalSpawnOrder();
-    }
+    boolean spawned;
+    do {
+      if (spawnIdx < spawnOrder.length) {
+        spawned = forceSpawnOrder();
+      } else {
+        spawned = normalSpawnOrder();
+      }
+    } while (spawned && rc.isActionReady());
     // store the resources at the end of the turn
     prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
     prevMana = rc.getResourceAmount(ResourceType.MANA);
@@ -259,7 +262,12 @@ public class HeadQuarters extends Robot {
     return closestWellLocation;
   }
 
-  private void normalSpawnOrder() throws GameActionException {
+  /**
+   * spawns a unit based on resources we have
+   * @return true if spawned
+   * @throws GameActionException any issues
+   */
+  private boolean normalSpawnOrder() throws GameActionException {
     if (spawnAmplifierCooldown > 0) --spawnAmplifierCooldown;
 //    spawnAmplifier = false;
     if (spawnAmplifier) {
@@ -286,9 +294,10 @@ public class HeadQuarters extends Robot {
           spawnAmplifier = false;
           spawnAmplifierCooldown = 200;
           spawnAmplifierSafe = 0;
+          return true;
         }
       }
-      return;
+      return false;
     }
 
     if (Cache.PerTurn.ROUND_NUM >= 500 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
@@ -296,24 +305,36 @@ public class HeadQuarters extends Robot {
       rc.setIndicatorString("Build anchor");
       if (createAnchors()) {
         numAnchorsMade++;
+        return true;
       }
-      return;
+      return false;
     }
 
     if (canAfford(RobotType.LAUNCHER)) {
-      if (spawnLauncherTowardsEnemyHQ()) spawnAmplifierCooldown -= 2;
-    } else if (canAfford(RobotType.CARRIER)) {
+      if (spawnLauncherTowardsEnemyHQ()) {
+        spawnAmplifierCooldown -= 2;
+        return true;
+      }
+    }
+    if (canAfford(RobotType.CARRIER)) {
       SpawnType nextSpawn = carrierSpawnOrder[carrierSpawnOrderIdx];
       MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
       if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
         carrierSpawnOrderIdx = (carrierSpawnOrderIdx + 1) % carrierSpawnOrder.length;
         if (spawnAmplifierCooldown > 0) spawnAmplifierCooldown -= 2;
+        return true;
       }
     }
-
+    return false;
   }
 
-  private void forceSpawnOrder() throws GameActionException {
+  /**
+   * spawns a unit according to the initial spawn order
+   * @return true if spawned
+   * @throws GameActionException if something goes wrong
+   */
+  private boolean forceSpawnOrder() throws GameActionException {
+    if (!rc.isActionReady()) return false;
     SpawnType nextSpawn = spawnOrder[spawnIdx];
     switch (nextSpawn) {
       case CARRIER_MANA:
@@ -321,6 +342,7 @@ public class HeadQuarters extends Robot {
         MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
         if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
           spawnIdx++;
+          return true;
         }
         break;
       case LAUNCHER:
@@ -330,10 +352,12 @@ public class HeadQuarters extends Robot {
             MapLocation spawnLocation = lastSpawnLoc;
             //todo: do comms
             ++spawnIdx;
+            return true;
           }
         }
         break;
     }
+    return false;
   }
 
   private boolean spawnCarrierTowardsWell(WellInfo targetWell) throws GameActionException {
@@ -348,7 +372,8 @@ public class HeadQuarters extends Robot {
   private boolean spawnCarrierTowardsWell(MapLocation targetWell) throws GameActionException {
     if (rc.senseNearbyRobots(targetWell, RobotType.CARRIER.actionRadiusSquared, Cache.Permanent.OUR_TEAM).length > 12) return false;
 
-    MapLocation goal = targetWell;
+    Direction dirToWell = Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell);
+    MapLocation goal = Cache.PerTurn.CURRENT_LOCATION.translate(dirToWell.dx * 4, dirToWell.dy * 4);
     MapLocation toSpawn = goal;
     while (!buildRobotAtOrAround(RobotType.CARRIER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
 //      rc.setIndicatorString("Attempted spawn at " + toSpawn);
