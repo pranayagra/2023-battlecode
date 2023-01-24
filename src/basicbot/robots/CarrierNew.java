@@ -279,7 +279,7 @@ public class CarrierNew extends MobileRobot {
                     if (wellData.numRounds >= 20) {
                         // todo: create comm structure and write
                         locWrote = wellLoc;
-                        int numMiners = Math.min(wellData.numMiners / wellData.numRounds, 8);
+                        int numMiners = Math.min(wellData.numMiners / wellData.numRounds, 7);
                         ResourceType type = wellData.type;
                         CommsHandler.writePranayWellInfoLocation(idx, wellLoc);
                         CommsHandler.writePranayWellInfoType(idx, type.resourceID);
@@ -434,7 +434,7 @@ public class CarrierNew extends MobileRobot {
     @Override
     protected void runTurn() throws GameActionException {
         closestHQLocation = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-//        if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
+//        if (Cache.PerTurn.ROUND_NUM >= 500) rc.resign();
         Printer.appendToIndicator("task=" + HQAssignedTask.collectionType + " miningFrom=" + wellMiningFrom);
 
         wellDataProtocol();

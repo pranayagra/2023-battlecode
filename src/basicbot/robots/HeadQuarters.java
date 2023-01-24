@@ -62,6 +62,9 @@ public class HeadQuarters extends Robot {
 
   MapLocation[] spawnLocations;
 
+  private int numAdamantiumCarriers;
+  private int numManaCarriers;
+
 
 
   private boolean foundEndangeredWells;
@@ -271,6 +274,8 @@ public class HeadQuarters extends Robot {
 //      Printer.print("Spawned " + nextSpawn + " at " + spawnLocation);
       int index = this.hqID * 2 + ++idxToWriteAt;
 //      Printer.print("spawned... comm at " + idxToWriteAt);
+      if (nextSpawn == SpawnType.CARRIER_MANA) ++numManaCarriers;
+      if (nextSpawn == SpawnType.CARRIER_ADAMANTIUM) ++numAdamantiumCarriers;
       if (Cache.PerTurn.ROUND_NUM % 2 == 0) {
           assert idxToWriteAt < 4;
           Printer.print("O Writing carrier spawn at " + index + " at " + spawnLocation + " with comm bits " + commBits + " and target " + wellLocation);
@@ -449,6 +454,11 @@ public class HeadQuarters extends Robot {
     }
     if (canAfford(RobotType.CARRIER)) {
       SpawnType nextSpawn = carrierSpawnOrder[carrierSpawnOrderIdx];
+      if (numAdamantiumCarriers - numManaCarriers >= 2) {
+        nextSpawn = SpawnType.CARRIER_MANA;
+      } else if (numManaCarriers - numAdamantiumCarriers >= 2) {
+        nextSpawn = SpawnType.CARRIER_ADAMANTIUM;
+      }
       MapLocation wellLocation = getPreferredCarrierSpawnLocation(nextSpawn);
       MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
       if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn, wellLocation)) {
