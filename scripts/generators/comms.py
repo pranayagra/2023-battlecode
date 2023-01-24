@@ -70,13 +70,32 @@ SCHEMA = {
     'slots': 4,
     'bits': {
       'loc': LOCATION_BITS,
+      #'odd_spawn_loc': LOCATION_BITS,
+      #'even_spawn_loc': LOCATION_BITS,
+      #'odd_spawn_instruction': 2,
+      #'even_spawn_instruction': 2,
+      'adamantium_income': 5, # changing any of these income bit#'s require changing the max value checking done manually in HQ and Carrier.
+      'mana_income': 5,
+      'elixir_income': 5,
+    }
+  },
+  'pranay_our_hq': {
+    'slots': 8,
+    'bits': {
       'odd_spawn_loc': LOCATION_BITS,
       'even_spawn_loc': LOCATION_BITS,
       'odd_spawn_instruction': 2,
       'even_spawn_instruction': 2,
-      'adamantium_income': 5, # changing any of these income bit#'s require changing the max value checking done manually in HQ and Carrier.
-      'mana_income': 5,
-      'elixir_income': 5,
+      'odd_target_loc': LOCATION_BITS,
+      'even_target_loc': LOCATION_BITS,
+    }
+  },
+  'pranay_well_info': {
+    'slots': 4,
+    'bits': {
+      'loc': LOCATION_BITS,
+      'type': 2,
+      'num_miners': 3,
     }
   },
   'adamantium_well': {
@@ -98,7 +117,7 @@ SCHEMA = {
     }
   },
   'enemy': {
-    'slots': 26,
+    'slots': 3,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,

@@ -1,10 +1,9 @@
-package basicbot.utils;
+package sprint2ptest.utils;
 
-import basicbot.knowledge.Cache;
+import sprint2ptest.knowledge.Cache;
 
 public class Printer {
     public static StringBuilder print = new StringBuilder();
-    public static StringBuilder indicator = new StringBuilder();
 
     public static void print(String s) {
       print.append(s).append("\n");
@@ -24,7 +23,6 @@ public class Printer {
 
     public static void cleanPrint() {
       print = new StringBuilder();
-      indicator = new StringBuilder();
       print.append(" *** ");
       print.append(Cache.PerTurn.CURRENT_LOCATION);
       print.append(" ***\n");
@@ -36,6 +34,4 @@ public class Printer {
       }
       cleanPrint();
     }
-
-    public static void appendToIndicator(String s) { indicator.append(s);}
 }

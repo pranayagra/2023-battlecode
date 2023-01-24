@@ -1,16 +1,16 @@
-package basicbot.robots;
+package sprint2ptest.robots;
 
-import basicbot.communications.Communicator;
-import basicbot.knowledge.Memory;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.robots.pathfinding.Pathing;
-import basicbot.knowledge.Cache;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import sprint2ptest.communications.Communicator;
+import sprint2ptest.knowledge.Memory;
+import sprint2ptest.knowledge.RunningMemory;
+import sprint2ptest.robots.micro.AttackMicro;
+import sprint2ptest.robots.micro.AttackerFightingMicro;
+import sprint2ptest.robots.pathfinding.BugNav;
+import sprint2ptest.robots.pathfinding.Pathing;
+import sprint2ptest.knowledge.Cache;
+import sprint2ptest.utils.Global;
+import sprint2ptest.utils.Printer;
+import sprint2ptest.utils.Utils;
 import battlecode.common.*;
 
 public abstract class Robot {
@@ -63,7 +63,7 @@ public abstract class Robot {
   public static Robot fromRC(RobotController rc) throws GameActionException {
     switch (rc.getType()) {
       case HEADQUARTERS: return new HeadQuarters(rc);
-      case CARRIER: return new CarrierNew(rc);
+      case CARRIER: return new Carrier(rc);
       case LAUNCHER: return new Launcher(rc);
       case DESTABILIZER: return new Destabilizer(rc);
       case BOOSTER: return new Booster(rc);
@@ -85,7 +85,6 @@ public abstract class Robot {
       try {
         this.runTurnWrapper();
 //                Printer.cleanPrint();
-        if (Printer.indicator.toString().length() > 0) rc.setIndicatorString(Printer.indicator.toString());
         Printer.submitPrint();
       } catch (GameActionException e) {
         // something illegal in the Battlecode world

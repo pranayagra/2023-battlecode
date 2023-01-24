@@ -1,16 +1,13 @@
-package basicbot.robots;
+package sprint2ptest.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import sprint2ptest.communications.CommsHandler;
+import sprint2ptest.communications.Communicator;
+import sprint2ptest.communications.HqMetaInfo;
+import sprint2ptest.knowledge.Cache;
+import sprint2ptest.knowledge.RunningMemory;
+import sprint2ptest.utils.Constants;
+import sprint2ptest.utils.Utils;
 import battlecode.common.*;
-
-import java.util.HashMap;
 
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
@@ -37,7 +34,7 @@ public class HeadQuarters extends Robot {
   private MapLocation lastSpawnLoc = null;
 
   private int carrierSpawnOrderIdx = 0;
-  private final SpawnType[] carrierSpawnOrder = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA};//new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA};
+  private final SpawnType[] carrierSpawnOrder = new SpawnType[] {SpawnType.CARRIER_ADAMANTIUM, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA};
 
   private static final SpawnType[] spawnOrderEnemyHQHere = new SpawnType[] {SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA, SpawnType.CARRIER_MANA};
   private static final SpawnType[] spawnOrder20x20 = new SpawnType[] {SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.LAUNCHER, SpawnType.CARRIER_MANA, SpawnType.CARRIER_ADAMANTIUM};
@@ -66,8 +63,6 @@ public class HeadQuarters extends Robot {
 
   private boolean foundEndangeredWells;
   private int checkedEndangeredWellsCounter;
-
-  private int idxToWriteAt;
 
 
   public HeadQuarters(RobotController rc) throws GameActionException {
@@ -101,19 +96,9 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 50) rc.resign();
-    idxToWriteAt = 0;
-    if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
-      WellInfo[] wellInfos = rc.senseNearbyWells();
-      for (WellInfo wellInfo : wellInfos) {
-        WellData wellData = new WellData(wellInfo.getMapLocation(), wellInfo.getResourceType().resourceID, 0);
-        wellMap.put(wellInfo.getMapLocation(), wellData);
-      }
-    }
-
+//    if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
-
       updateWellExploration();
       unknown_symmetry: if (RunningMemory.knownSymmetry == null) {
 //      do {
@@ -160,7 +145,6 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
     Communicator.clearEnemyComms();
     handleIncome();
-    readWellData();
 
 //    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
 
@@ -196,14 +180,13 @@ public class HeadQuarters extends Robot {
     }
 
     boolean spawned;
-    int tries = 0;
     do {
       if (spawnIdx < spawnOrder.length) {
         spawned = forceSpawnOrder();
       } else {
         spawned = normalSpawnOrder();
       }
-    } while (spawned && rc.isActionReady() && tries++ < 10);
+    } while (spawned && rc.isActionReady());
     // store the resources at the end of the turn
     prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
     prevMana = rc.getResourceAmount(ResourceType.MANA);
@@ -260,135 +243,27 @@ public class HeadQuarters extends Robot {
     }
   }
 
-  private boolean spawnAndCommCarrier(MapLocation preferredSpawnLocation, SpawnType nextSpawn, MapLocation wellLocation) throws GameActionException {
-    if (preferredSpawnLocation == null) preferredSpawnLocation = Utils.randomMapLocation();
-    if (wellLocation == null) wellLocation = CommsHandler.NONEXISTENT_MAP_LOC;
-//    Printer.print("Spawning " + nextSpawn + " at " + preferredSpawnLocation + " towards " + wellLocation + "");
-    if (idxToWriteAt >= 2) return false;
+  private boolean spawnAndCommCarrier(MapLocation preferredSpawnLocation, SpawnType nextSpawn) throws GameActionException {
     if (spawnCarrierTowardsWell(preferredSpawnLocation)) {
       int commBits = nextSpawn.getCommBits();
       MapLocation spawnLocation = lastSpawnLoc;
 //      Printer.print("Spawned " + nextSpawn + " at " + spawnLocation);
-      int index = this.hqID * 2 + ++idxToWriteAt;
-//      Printer.print("spawned... comm at " + idxToWriteAt);
       if (Cache.PerTurn.ROUND_NUM % 2 == 0) {
-          assert idxToWriteAt < 4;
-          Printer.print("O Writing carrier spawn at " + index + " at " + spawnLocation + " with comm bits " + commBits + " and target " + wellLocation);
-          CommsHandler.writePranayOurHqOddSpawnLocation(index, spawnLocation);
-          CommsHandler.writePranayOurHqOddSpawnInstruction(index, commBits);
-          CommsHandler.writePranayOurHqOddTargetLocation(index, wellLocation);
+        CommsHandler.writeOurHqOddSpawnLocation(this.hqID, spawnLocation);
+        CommsHandler.writeOurHqOddSpawnInstruction(this.hqID, commBits);
       } else {
-        assert idxToWriteAt < 4;
-        Printer.print("E Writing carrier spawn at " + index + " at " + spawnLocation + " with comm bits " + commBits + " and target " + wellLocation);
-        CommsHandler.writePranayOurHqEvenSpawnLocation(index, spawnLocation);
-        CommsHandler.writePranayOurHqEvenSpawnInstruction(index, commBits);
-        CommsHandler.writePranayOurHqEvenTargetLocation(index, wellLocation);
+        CommsHandler.writeOurHqEvenSpawnLocation(this.hqID, spawnLocation);
+        CommsHandler.writeOurHqEvenSpawnInstruction(this.hqID, commBits);
       }
       return true;
     }
     return false;
   }
 
-  class WellData {
-    public MapLocation location;
-    public ResourceType type;
-    public int numMiners;
-
-    public WellData(MapLocation location, int type, int numMiners) {
-      this.location = location;
-      switch(type) {
-        case 1:
-          this.type = ResourceType.ADAMANTIUM;
-          break;
-        case 2:
-          this.type = ResourceType.MANA;
-          break;
-      }
-      this.numMiners = numMiners;
-    }
-  }
-
-  HashMap<MapLocation, WellData> wellMap = new HashMap<>();
-  private void readWellData() throws GameActionException {
-    for (int i = 0; i < 4; ++i) {
-      if (CommsHandler.readPranayWellInfoExists(i)) {
-        MapLocation wellLocation = CommsHandler.readPranayWellInfoLocation(i);
-        int wellType = CommsHandler.readPranayWellInfoType(i);
-        int wellMiners = CommsHandler.readPranayWellInfoNumMiners(i);
-        if (wellMap.containsKey(wellLocation)) {
-          WellData wellData = wellMap.get(wellLocation);
-          if (wellData.numMiners == 0 || wellMiners != 0) {
-            wellData.numMiners = wellMiners;
-          }
-        } else {
-          wellMap.put(wellLocation, new WellData(wellLocation, wellType, wellMiners));
-        }
-
-        if (this.hqID + 1 == HqMetaInfo.hqCount) CommsHandler.writePranayWellInfoLocation(i, CommsHandler.NONEXISTENT_MAP_LOC);
-      }
-    }
-  }
-
-  class BestSpawn {
-    MapLocation bestADSpawn;
-    MapLocation bestManaSpawn;
-  }
-
-  private BestSpawn getBestWellLocation() throws GameActionException {
-    MapLocation bestSpawnForAD = null;
-    int bestDistForAD = Integer.MAX_VALUE;
-    MapLocation bestSpawnForMana = null;
-    int bestDistForMana = Integer.MAX_VALUE;
-    if (Cache.PerTurn.ROUND_NUM <= 50) {
-      for (MapLocation wellLocation : wellMap.keySet()) {
-        WellData wellData = wellMap.get(wellLocation);
-        if (wellData.numMiners >= 7) continue; // too full
-        int candidateDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-        if (wellData.type == ResourceType.ADAMANTIUM) {
-          if (candidateDist < bestDistForAD && candidateDist <= 100) {
-            bestDistForAD = candidateDist;
-            bestSpawnForAD = wellLocation;
-          }
-        } else if (wellData.type == ResourceType.MANA) {
-          if (candidateDist < bestDistForMana && candidateDist <= 250) {
-            bestDistForMana = candidateDist;
-            bestSpawnForMana = wellLocation;
-          }
-        }
-      }
-    } else {
-      for (MapLocation wellLocation : wellMap.keySet()) {
-        WellData wellData = wellMap.get(wellLocation);
-        if (wellData.numMiners >= 7) continue; // too full
-        int candidateDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-        if (wellData.type == ResourceType.ADAMANTIUM) {
-          if (candidateDist < bestDistForAD) {
-            bestDistForAD = candidateDist;
-            bestSpawnForAD = wellLocation;
-          }
-        } else if (wellData.type == ResourceType.MANA) {
-          if (candidateDist < bestDistForMana) {
-            bestDistForMana = candidateDist;
-            bestSpawnForMana = wellLocation;
-          }
-        }
-      }
-    }
-    BestSpawn bestSpawn = new BestSpawn();
-    bestSpawn.bestADSpawn = bestSpawnForAD;
-    bestSpawn.bestManaSpawn = bestSpawnForMana;
-//    Printer.print("Best AD spawn: " + bestSpawnForAD + " dist: " + bestDistForAD);
-//    Printer.print("Best Mana spawn: " + bestSpawnForMana + " dist: " + bestDistForMana);
-    return bestSpawn;
-  }
-
   private MapLocation getPreferredCarrierSpawnLocation(SpawnType nextSpawn) throws GameActionException {
-    BestSpawn bestSpawns = getBestWellLocation();
-    MapLocation closestWellLocation = null;
-    if (nextSpawn == SpawnType.CARRIER_ADAMANTIUM) {
-      closestWellLocation = bestSpawns.bestADSpawn;
-    } else if (nextSpawn == SpawnType.CARRIER_MANA) {
-      closestWellLocation = bestSpawns.bestManaSpawn;
+    MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, nextSpawn.getResourceType());
+    if (closestWellLocation == null) {
+      closestWellLocation = Utils.randomMapLocation();
     }
     return closestWellLocation;
   }
@@ -449,9 +324,8 @@ public class HeadQuarters extends Robot {
     }
     if (canAfford(RobotType.CARRIER)) {
       SpawnType nextSpawn = carrierSpawnOrder[carrierSpawnOrderIdx];
-      MapLocation wellLocation = getPreferredCarrierSpawnLocation(nextSpawn);
       MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
-      if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn, wellLocation)) {
+      if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
         carrierSpawnOrderIdx = (carrierSpawnOrderIdx + 1) % carrierSpawnOrder.length;
         if (spawnAmplifierCooldown > 0) spawnAmplifierCooldown -= 2;
         return true;
@@ -459,22 +333,6 @@ public class HeadQuarters extends Robot {
     }
     return false;
   }
-
-
-  private SpawnType assignRandomTask() {
-    double pAD = Cache.Permanent.MAP_AREA / (60.0*60.0) * Math.exp(-0.01*Cache.PerTurn.ROUND_NUM);
-    if (Cache.PerTurn.ROUND_NUM >= 10) {
-      pAD = Math.max(0.75, pAD);
-      pAD = Math.min(0.25, pAD);
-    }
-
-    if (Utils.rng.nextDouble() < pAD) {
-      return SpawnType.CARRIER_ADAMANTIUM;
-    } else {
-      return SpawnType.CARRIER_MANA;
-    }
-  }
-
 
   /**
    * spawns a unit according to the initial spawn order
@@ -487,23 +345,10 @@ public class HeadQuarters extends Robot {
     switch (nextSpawn) {
       case CARRIER_MANA:
       case CARRIER_ADAMANTIUM:
-        BestSpawn bestSpawn = getBestWellLocation();
-        SpawnType spawnType = assignRandomTask();
-        if (bestSpawn.bestADSpawn != null && bestSpawn.bestManaSpawn == null) {
-          spawnType = SpawnType.CARRIER_ADAMANTIUM;
-        } else if (bestSpawn.bestADSpawn == null && bestSpawn.bestManaSpawn != null) {
-          spawnType = SpawnType.CARRIER_MANA;
-        }
-        if (spawnType == SpawnType.CARRIER_ADAMANTIUM) {
-          if (spawnAndCommCarrier(bestSpawn.bestADSpawn, SpawnType.CARRIER_ADAMANTIUM, bestSpawn.bestADSpawn)) {
-            spawnIdx++;
-            return true;
-          }
-        } else if (spawnType == SpawnType.CARRIER_MANA) {
-          if (spawnAndCommCarrier(bestSpawn.bestManaSpawn, SpawnType.CARRIER_MANA, bestSpawn.bestManaSpawn)) {
-            spawnIdx++;
-            return true;
-          }
+        MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
+        if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
+          spawnIdx++;
+          return true;
         }
         break;
       case LAUNCHER:
@@ -725,8 +570,8 @@ public class HeadQuarters extends Robot {
 
     public int getCommBits() {
         switch (this) {
-            case CARRIER_ADAMANTIUM: return 1;
-            case CARRIER_MANA: return 2;
+            case CARRIER_MANA: return 1;
+            case CARRIER_ADAMANTIUM: return 2;
             case LAUNCHER: return 3;
         }
         throw new RuntimeException("unknown spawn type: " + this);

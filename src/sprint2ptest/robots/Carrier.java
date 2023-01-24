@@ -1,16 +1,16 @@
-package basicbot.robots;
+package sprint2ptest.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashMap;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.CarrierWellPathing;
-import basicbot.knowledge.Cache;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import sprint2ptest.communications.CommsHandler;
+import sprint2ptest.communications.Communicator;
+import sprint2ptest.communications.HqMetaInfo;
+import sprint2ptest.containers.HashMap;
+import sprint2ptest.containers.HashSet;
+import sprint2ptest.knowledge.RunningMemory;
+import sprint2ptest.robots.micro.CarrierWellPathing;
+import sprint2ptest.knowledge.Cache;
+import sprint2ptest.robots.pathfinding.BugNav;
+import sprint2ptest.utils.Printer;
+import sprint2ptest.utils.Utils;
 import battlecode.common.*;
 
 import java.util.Arrays;
@@ -73,46 +73,46 @@ public class Carrier extends MobileRobot {
 
   private void checkAssignedTask() throws GameActionException {
 //    Printer.print("Checking assigned task");
-//    if (Cache.PerTurn.ROUND_NUM % 2 == 0) {
-//      for (int i = 0; i < HqMetaInfo.hqCount; ++i) {
-//        if (CommsHandler.readOurHqEvenSpawnExists(i)) {
-//          MapLocation hqLocation = CommsHandler.readOurHqEvenSpawnLocation(i);
-////          Printer.print("hq location: " + hqLocation, "my location: " + Cache.PerTurn.CURRENT_LOCATION);
-//          if (Cache.PerTurn.CURRENT_LOCATION.equals(hqLocation)) {
-//            int instruction = CommsHandler.readOurHqEvenSpawnInstruction(i);
-//            switch (instruction) {
-//              case 1:
-//                HQAssignedTask = CarrierTask.FETCH_MANA;
-////                Printer.print("HQ assigned me to fetch mana");
-//                return;
-//              case 2:
-//                HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
-////                Printer.print("HQ assigned me to fetch adamantium");
-//                return;
-//            }
-//          }
-//        }
-//      }
-//    } else {
-//      for (int i = 0; i < HqMetaInfo.hqCount; ++i) {
-//        if (CommsHandler.readOurHqOddSpawnExists(i)) {
-//          MapLocation hqLocation = CommsHandler.readOurHqOddSpawnLocation(i);
-//          if (Cache.PerTurn.CURRENT_LOCATION.equals(hqLocation)) {
-//            int instruction = CommsHandler.readOurHqOddSpawnInstruction(i);
-//            switch (instruction) {
-//              case 1:
-//                HQAssignedTask = CarrierTask.FETCH_MANA;
-////                Printer.print("HQ assigned me to fetch mana");
-//                return;
-//              case 2:
-//                HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
-////                Printer.print("HQ assigned me to fetch adamantium");
-//                return;
-//            }
-//          }
-//        }
-//      }
-//    }
+    if (Cache.PerTurn.ROUND_NUM % 2 == 0) {
+      for (int i = 0; i < HqMetaInfo.hqCount; ++i) {
+        if (CommsHandler.readOurHqEvenSpawnExists(i)) {
+          MapLocation hqLocation = CommsHandler.readOurHqEvenSpawnLocation(i);
+//          Printer.print("hq location: " + hqLocation, "my location: " + Cache.PerTurn.CURRENT_LOCATION);
+          if (Cache.PerTurn.CURRENT_LOCATION.equals(hqLocation)) {
+            int instruction = CommsHandler.readOurHqEvenSpawnInstruction(i);
+            switch (instruction) {
+              case 1:
+                HQAssignedTask = CarrierTask.FETCH_MANA;
+//                Printer.print("HQ assigned me to fetch mana");
+                return;
+              case 2:
+                HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
+//                Printer.print("HQ assigned me to fetch adamantium");
+                return;
+            }
+          }
+        }
+      }
+    } else {
+      for (int i = 0; i < HqMetaInfo.hqCount; ++i) {
+        if (CommsHandler.readOurHqOddSpawnExists(i)) {
+          MapLocation hqLocation = CommsHandler.readOurHqOddSpawnLocation(i);
+          if (Cache.PerTurn.CURRENT_LOCATION.equals(hqLocation)) {
+            int instruction = CommsHandler.readOurHqOddSpawnInstruction(i);
+            switch (instruction) {
+              case 1:
+                HQAssignedTask = CarrierTask.FETCH_MANA;
+//                Printer.print("HQ assigned me to fetch mana");
+                return;
+              case 2:
+                HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
+//                Printer.print("HQ assigned me to fetch adamantium");
+                return;
+            }
+          }
+        }
+      }
+    }
   }
 
   private CarrierTask determineNewTask() throws GameActionException {
