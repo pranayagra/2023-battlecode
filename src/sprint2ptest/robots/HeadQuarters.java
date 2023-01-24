@@ -6,6 +6,7 @@ import sprint2ptest.communications.HqMetaInfo;
 import sprint2ptest.knowledge.Cache;
 import sprint2ptest.knowledge.RunningMemory;
 import sprint2ptest.utils.Constants;
+import sprint2ptest.utils.Printer;
 import sprint2ptest.utils.Utils;
 import battlecode.common.*;
 
