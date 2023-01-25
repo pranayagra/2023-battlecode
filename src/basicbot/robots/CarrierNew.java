@@ -1,12 +1,9 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.containers.HashMap;
-import basicbot.containers.HashMapNodeVal;
 import basicbot.containers.HashSet;
-import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
 import basicbot.robots.pathfinding.BugNav;
@@ -179,6 +176,9 @@ public class CarrierNew extends MobileRobot {
         if (rc.getWeight() >= 39) return;
         if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellMiningFrom, SET_WELL_PATH_DISTANCE)) return;
 
+        closeToTargetWell = false;
+        roundNumWhenCloseToTarget = 2000;
+        numRoundsCloseToTarget = 0;
         Printer.appendToIndicator(" micro_move");
 //        if (approachWell(wellMiningFrom)) return;
 
@@ -256,6 +256,7 @@ public class CarrierNew extends MobileRobot {
             // we can update the well data
             WellData wellData = temporaryWellDataMap.get(wellLoc);
             wellData.numMiners = Math.max(wellData.numMiners, numMiners);
+            wellData.numGoodLocations = Math.max(wellData.numGoodLocations, numGoodLocations);
             wellData.numRounds++;
         }
 //        if (rc.getID() == 11883) {
@@ -325,12 +326,14 @@ public class CarrierNew extends MobileRobot {
                         CommsHandler.writePranayWellInfoLocation(idx, wellLoc);
                         CommsHandler.writePranayWellInfoType(idx, type.resourceID);
                         CommsHandler.writePranayWellInfoNumMiners(idx, numMiners);
+                        CommsHandler.writePranayWellInfoNumGoodSlots(idx, wellData.numGoodLocations);
 //                        Printer.print("writing well(>25) info", "well=" + wellLoc, " data=" + temporaryWellDataMap.get(wellLoc));
                         break;
                     } else if (!allKnownWells.contains(wellLoc)) {
                         ResourceType type = wellData.type; //12+1+3
                         CommsHandler.writePranayWellInfoLocation(idx, wellLoc);
                         CommsHandler.writePranayWellInfoType(idx, type.resourceID);
+                        CommsHandler.writePranayWellInfoNumGoodSlots(idx, wellData.numGoodLocations);
 //                        CommsHandler.writePranayWellInfoNumMiners(idx, 0);
                         allKnownWells.add(wellLoc);
 //                        Printer.print("writing well(imp) info", "well=" + wellLoc, " data=" + temporaryWellDataMap.get(wellLoc));
@@ -343,6 +346,7 @@ public class CarrierNew extends MobileRobot {
                     ResourceType type = wellData.type; //12+1+3
                     CommsHandler.writePranayWellInfoLocation(idx, wellLoc);
                     CommsHandler.writePranayWellInfoType(idx, type.resourceID);
+                    CommsHandler.writePranayWellInfoNumGoodSlots(idx, wellData.numGoodLocations);
 //                    CommsHandler.writePranayWellInfoNumMiners(idx, 0);
 //                    Printer.print("writing well(gen) info", "well=" + wellLoc, " data=" + temporaryWellDataMap.get(wellLoc));
                     break;
@@ -360,11 +364,32 @@ public class CarrierNew extends MobileRobot {
         return false;
     }
 
+    private boolean closeToTargetWell;
+    private int roundNumWhenCloseToTarget;
+    private int numRoundsCloseToTarget;
     private void moveToTargetWell() throws GameActionException {
         if (wellMiningFrom == null) return;
         if (!rc.isMovementReady()) return;
         if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellMiningFrom, SET_WELL_PATH_DISTANCE)) return;
         if (rc.getWeight() >= 39) return;
+
+        if (!closeToTargetWell && Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellMiningFrom, 16)) {
+            closeToTargetWell = true;
+            roundNumWhenCloseToTarget = Cache.PerTurn.ROUND_NUM;
+            ++numRoundsCloseToTarget;
+        }
+
+        // tried for 10 rounds, give up
+        if (closeToTargetWell && (Cache.PerTurn.ROUND_NUM - roundNumWhenCloseToTarget >= 20 && numRoundsCloseToTarget >= 10) || (Cache.PerTurn.ROUND_NUM - roundNumWhenCloseToTarget >= 50)) {
+            closeToTargetWell = false;
+            roundNumWhenCloseToTarget = 2000;
+            numRoundsCloseToTarget = 0;
+            blackListWells.add(wellMiningFrom);
+            wellMiningFrom = null;
+            target = null;
+            return;
+        }
+
         Printer.appendToIndicator(" move_to_well");
         if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
             pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellMiningFrom));
@@ -417,6 +442,7 @@ public class CarrierNew extends MobileRobot {
         for (RobotInfo robotInfo : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
             if (robotInfo.type == RobotType.LAUNCHER || robotInfo.type == RobotType.DESTABILIZER) {
                 fleeingCounter = 6;
+                target = null;
                 break;
             }
         }
@@ -468,13 +494,47 @@ public class CarrierNew extends MobileRobot {
     }
 
     MapLocation target = null;
-    private void randomExplore() throws GameActionException {
+    MapLocation[] locs = new MapLocation[8];
+    int currDistance = 10;
+    private void generateTargets(MapLocation center, int distance) {
+        locs[0] = center.translate(distance, 0);
+        locs[1] = center.translate(-distance, 0);
+        locs[2] = center.translate(0, distance);
+        locs[3] = center.translate(0, -distance);
+        locs[4] = center.translate(distance, distance);
+        locs[5] = center.translate(-distance, distance);
+        locs[6] = center.translate(distance, -distance);
+        locs[7] = center.translate(-distance, -distance);
+    }
+
+    int startIndex = 0;
+    int currIndex = 0;
+    private void setupExplore() {
+        startIndex = Utils.rng.nextInt(8);
+        currIndex = (startIndex + 1) % 8;
+        int maxDist = 10 + Math.max(0, (Cache.PerTurn.ROUND_NUM - 150) / 100 * 10);
+        currDistance = Utils.rng.nextInt(maxDist) + 10;
+    }
+
+    private void randomExplore(boolean random) throws GameActionException {
+        int maxDistance = 15;
+        if (Cache.PerTurn.ROUND_NUM >= 100) {
+            maxDistance = 15 + Math.max(0, (Cache.PerTurn.ROUND_NUM - 100) / 100 * 10);
+        }
+        if (Cache.PerTurn.ROUND_NUM <= 500) {
+            maxDistance = Math.min(maxDistance, 30);
+        }
+        if (startIndex == currIndex) {
+            setupExplore();
+        }
         if (target == null || Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(target, 10)) {
             do {
                 target = Utils.randomMapLocation();
-            } while (target.distanceSquaredTo(Cache.Permanent.START_LOCATION) >= 200);
+//                else
+//                target = locs[currIndex];
+//                currIndex = (currIndex + 1) % 8;
+            } while (Utils.maxSingleAxisDist(Cache.Permanent.START_LOCATION, target) > maxDistance);
         }
-//        pathing.moveTowards(target);
         if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
             pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(target));
         } else {
@@ -486,10 +546,13 @@ public class CarrierNew extends MobileRobot {
     private void checkIfNewWellExists() {
         if (wellMiningFrom != null) return;
         WellInfo[] wellInfos = rc.senseNearbyWells(HQAssignedTask.collectionType);
-        if (wellInfos.length > 0) {
-            wellMiningFrom = wellInfos[0].getMapLocation();
-            Printer.appendToIndicator(" newWell=" + wellMiningFrom);
-            return;
+
+        for (WellInfo wellInfo : wellInfos) {
+            if (!blackListWells.contains(wellInfo.getMapLocation())) {
+                Printer.appendToIndicator(" newWell=" + wellMiningFrom);
+                wellMiningFrom = wellInfo.getMapLocation();
+                return;
+            }
         }
     }
 
@@ -534,7 +597,7 @@ public class CarrierNew extends MobileRobot {
 //        }
         if (!depositingResources) {
             if (wellMiningFrom == null) {
-                randomExplore();
+                randomExplore(true);
                 rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, target, 255, 0, 0);
             } else {
                 moveToTargetWell();

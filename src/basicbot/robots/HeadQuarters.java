@@ -343,6 +343,7 @@ public class HeadQuarters extends Robot {
     public ResourceType type;
     public int numMinersObserved; // observed is lagged by ~50 turns and will generally be less than expected
     public int numMinersExpected;
+    public int numGoodSpots;
 
     public WellData(MapLocation location, int type, int numMiners) {
       this.location = location;
@@ -381,8 +382,12 @@ public class HeadQuarters extends Robot {
         MapLocation wellLocation = CommsHandler.readPranayWellInfoLocation(i);
         int wellType = CommsHandler.readPranayWellInfoType(i);
         int wellMiners = CommsHandler.readPranayWellInfoNumMiners(i);
+        int wellSpots = CommsHandler.readPranayWellInfoNumGoodSlots(i);
         if (wellMap.containsKey(wellLocation)) {
           WellData wellData = wellMap.get(wellLocation);
+          if (wellData.numGoodSpots == 0) {
+            wellData.numGoodSpots = wellSpots;
+          }
           if (wellMiners != 0) {
             wellData.numMinersObserved = wellMiners;
             if (wellData.numMinersObserved > wellData.numMinersExpected) {
@@ -396,12 +401,16 @@ public class HeadQuarters extends Robot {
         } else {
           wellMap.put(wellLocation, new WellData(wellLocation, wellType, wellMiners));
           WellData wellData = wellMap.get(wellLocation);
+          if (wellData.numGoodSpots == 0) {
+            wellData.numGoodSpots = wellSpots;
+          }
 //          Printer.print("new Well at " + wellLocation + " has " + wellData.numMinersObserved + " observed miners and " + wellData.numMinersExpected + " expected miners");
         }
 
         if (this.hqID + 1 == HqMetaInfo.hqCount) {
           CommsHandler.writePranayWellInfoLocation(i, CommsHandler.NONEXISTENT_MAP_LOC);
           CommsHandler.writePranayWellInfoNumMiners(i, 0);
+          CommsHandler.writePranayWellInfoNumGoodSlots(i, 0);
         }
       }
     }
@@ -421,6 +430,7 @@ public class HeadQuarters extends Robot {
       for (MapLocation wellLocation : wellMap.keySet()) {
         WellData wellData = wellMap.get(wellLocation);
         if (wellData.numMinersObserved >= 7 || wellData.numMinersExpected >= 7) continue; // too full
+        if (wellData.numGoodSpots != 0 && wellData.numGoodSpots <= wellData.numMinersObserved) continue; // too full
         int candidateDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (wellData.type == ResourceType.ADAMANTIUM) {
           if (candidateDist < bestDistForAD && candidateDist <= 100) {
@@ -438,6 +448,7 @@ public class HeadQuarters extends Robot {
       for (MapLocation wellLocation : wellMap.keySet()) {
         WellData wellData = wellMap.get(wellLocation);
         if ((wellData.numMinersObserved + wellData.numMinersExpected)/2 >= 7) continue; // too full
+        if (wellData.numGoodSpots != 0 && wellData.numGoodSpots <= (wellData.numMinersObserved + wellData.numMinersExpected)/2) continue; // too full
         int candidateDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
         if (wellData.type == ResourceType.ADAMANTIUM) {
           if (candidateDist < bestDistForAD) {

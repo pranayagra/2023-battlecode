@@ -95,7 +95,8 @@ SCHEMA = {
     'bits': {
       'loc': LOCATION_BITS,
       'type': 2,
-      'num_miners': 3,
+      'num_miners': 4,
+      'num_good_slots': 4,
     }
   },
   'adamantium_well': {
@@ -117,7 +118,7 @@ SCHEMA = {
     }
   },
   'enemy': {
-    'slots': 3,
+    'slots': 5,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,
