@@ -37,6 +37,8 @@ public class Launcher extends MobileRobot {
   private boolean carrierInAttackRange;
   private MapLocation lastAttackedLocation;
 
+  private int turnsInCloud;
+
 
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
@@ -46,6 +48,7 @@ public class Launcher extends MobileRobot {
     launcherTaskStack = new LauncherTask[MAX_LAUNCHER_TASKS];
     launcherTaskStackPointer = -1;
     addLauncherTask(setupInitialLauncherTask());
+    turnsInCloud = 0;
   }
 
   private void resetVisited() {
@@ -56,11 +59,24 @@ public class Launcher extends MobileRobot {
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
     int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
-    if(manaIncome > 4) {
+    if (manaIncome > 4) {
       MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
     } else {
       MIN_GROUP_SIZE_TO_MOVE = 3;
     }
+    if (rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION)) {
+      switch (++turnsInCloud) {
+        case 1: case 2: case 3:
+          MIN_GROUP_SIZE_TO_MOVE = 2;
+          break;
+        default:
+          MIN_GROUP_SIZE_TO_MOVE = 1;
+          break;
+      }
+    } else {
+      turnsInCloud = 0;
+    }
+
     //TODO: refactor this out
     updateEnemyStateInformation();
 
@@ -69,10 +85,9 @@ public class Launcher extends MobileRobot {
         // attack carrier in action radius and disable moving
         // TODO: let's consider moving forwards?
         MapLocation locationToAttack = bestCarrierInAction();
-        if (rc.canAttack(locationToAttack)) {
-          rc.attack(locationToAttack);
+        if (attack(locationToAttack)) {
+          return;
         }
-        return;
       } else if (carrierInVision) {
         // move towards
         Direction direction = bestCarrierInVision();
@@ -81,10 +96,9 @@ public class Launcher extends MobileRobot {
             updateEnemyStateInformation();
             if (!launcherInVision && carrierInAttackRange) {
               MapLocation locationToAttack = bestCarrierInAction();
-              if (rc.canAttack(locationToAttack)) {
-                rc.attack(locationToAttack);
+              if (attack(locationToAttack)) {
+                return;
               }
-              return;
             }
           }
         }
@@ -126,7 +140,7 @@ public class Launcher extends MobileRobot {
     MapLocation bestCarrierLocationToAttack = null;
     Direction bestDirection = null;
     int bestScore = Integer.MIN_VALUE;
-    int myDamage = rc.getType().damage;
+    int myDamage = Cache.Permanent.ROBOT_TYPE.damage;
     for (Direction dir : Utils.directions) {
       if (!rc.canMove(dir)) continue;
       MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
@@ -760,7 +774,7 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any issues with moving
    */
   private boolean attemptMoveTowards(MapLocation target) throws GameActionException {
-    return (Cache.PerTurn.ROUND_NUM % 3 != 0)
+    return (Cache.PerTurn.ROUND_NUM % 2 == 0)
         && pathing.moveTowards(target);
   }
 
@@ -778,10 +792,10 @@ public class Launcher extends MobileRobot {
       lastAttackedLocation = bestAttackTarget;
       return attack(bestAttackTarget);
     }
-    return false;
-//    boolean attacked = bestAttackTarget != null && attack(bestAttackTarget);
-//    if (onlyAttackers) return attacked;
-//    return attemptCloudAttack();
+//    return false;
+    boolean attacked = bestAttackTarget != null && attack(bestAttackTarget);
+    if (onlyAttackers) return attacked;
+    return attemptCloudAttack();
   }
 
 
@@ -796,10 +810,11 @@ public class Launcher extends MobileRobot {
 
   private boolean attemptCloudAttack() throws GameActionException {
     int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
+    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
     for (int i = -cells; i <= cells; ++i) {
       for (int j = -cells; j <= cells; ++j) {
         MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
-        if (rc.canAttack(loc)) {
+        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
           rc.attack(loc);
           return true;
         }
