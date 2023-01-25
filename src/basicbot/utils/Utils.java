@@ -295,40 +295,6 @@ public class Utils {
     //20 => 2
     return cooldownAfterMove / 10.0;
   }
-
-  /**
-   * converts a map location to a chunk index based on the chunk size calculated by cache
-   * @param location the location to get its chunk
-   * @return the chunk index
-   */
-  public static int locationToChunkIndex(MapLocation location) {
-    int x = location.x / Cache.Permanent.CHUNK_WIDTH;
-    int y = location.y / Cache.Permanent.CHUNK_HEIGHT;
-    return x + y * Cache.Permanent.NUM_HORIZONTAL_CHUNKS;
-  }
-
-  /**
-   * gets the center coord of the given chunk
-   * @param chunkIndex the index of the chunk in our chunk info
-   * @return the center location of the chunk
-   */
-  public static MapLocation chunkIndexToLocation(int chunkIndex) {
-    int x = chunkIndex % Cache.Permanent.NUM_HORIZONTAL_CHUNKS * Cache.Permanent.CHUNK_WIDTH;
-    int y = chunkIndex / Cache.Permanent.NUM_HORIZONTAL_CHUNKS * Cache.Permanent.CHUNK_HEIGHT;
-    return new MapLocation(x + Cache.Permanent.CHUNK_WIDTH / 2, y + Cache.Permanent.CHUNK_HEIGHT / 2);
-  }
-
-  /**
-   * convert the provided location to the center of its chunk
-   * @param location the location to find the chunk center
-   * @return the chunk center for the given location
-   */
-  public static MapLocation locationToChunkCenter(MapLocation location) {
-    int x = location.x - (location.x % Cache.Permanent.CHUNK_WIDTH);
-    int y = location.y - (location.y % Cache.Permanent.CHUNK_HEIGHT);
-    return new MapLocation(x + Cache.Permanent.CHUNK_WIDTH / 2, y + Cache.Permanent.CHUNK_HEIGHT / 2);
-  }
-
   /*
 
   */ // ================================== TOGGLE THIS OFF/ON

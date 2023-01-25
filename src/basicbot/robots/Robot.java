@@ -147,9 +147,10 @@ public abstract class Robot {
 
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
 
-    if (Cache.PerTurn.ROUND_NUM < 20 && Cache.PerTurn.ROUNDS_ALIVE == 0) {
-      initialWellExploration();
-    }
+    // PNAY
+//    if (Cache.PerTurn.ROUND_NUM < 20 && Cache.PerTurn.ROUNDS_ALIVE == 0) {
+//      initialWellExploration();
+//    }
 
     runTurnTypeWrapper();
 
