@@ -503,7 +503,7 @@ public class CarrierNew extends MobileRobot {
 //        if (rc.getID() == 11401) {
 //            System.out.println("bytes used1: " + Clock.getBytecodeNum());
 //        }
-        if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+//        if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
         Printer.appendToIndicator("task=" + HQAssignedTask.collectionType + " miningFrom=" + wellMiningFrom);
 
         wellDataProtocol();
