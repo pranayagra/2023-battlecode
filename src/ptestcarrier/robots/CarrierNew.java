@@ -423,7 +423,9 @@ public class CarrierNew extends MobileRobot {
         if (fleeingCounter > 0) {
             Printer.appendToIndicator(" flee=" + fleeingCounter);
             //todo: HQ location instead of start location
-            while (rc.isMovementReady() && --fleeingCounter >= 0 && pathing.moveTowards(Cache.Permanent.START_LOCATION)) {}
+            if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(Cache.Permanent.START_LOCATION, 36)) {
+                while (rc.isMovementReady() && --fleeingCounter >= 0 && pathing.moveTowards(Cache.Permanent.START_LOCATION)) {}
+            }
             while (rc.isMovementReady() && --fleeingCounter >= 0 && pathing.moveTowards(closestHQLocation)) {}
         }
     }
@@ -648,7 +650,7 @@ public class CarrierNew extends MobileRobot {
 
         healthLastRound = rc.getHealth();
 
-        if (cachedLastEnemyForBroadcast != null && (fleeingCounter > 0 || Cache.PerTurn.ROUND_NUM - cachedLastEnemyForBroadcastRound <= 6)) {
+        if (cachedLastEnemyForBroadcast != null && ((fleeingCounter > 0 && Cache.PerTurn.ROUND_NUM - cachedLastEnemyForBroadcastRound <= 50) || Cache.PerTurn.ROUND_NUM - cachedLastEnemyForBroadcastRound <= 6)) {
             Printer.appendToIndicator(" comm_enemy");
             if (rc.canWriteSharedArray(0, 0)) {
                 Communicator.writeEnemy(cachedLastEnemyForBroadcast);
