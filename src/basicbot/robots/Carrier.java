@@ -135,7 +135,6 @@ public class Carrier extends MobileRobot {
       return CarrierTask.ANCHOR_ISLAND;
     }
     // TODO: figure out which resource we should be collecting
-    if (HQAssignedTask != null) return HQAssignedTask;
     int totalAdamantiumAroundMe = 0;
     int totalManaAroundMe = 0;
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
@@ -164,9 +163,31 @@ public class Carrier extends MobileRobot {
 //    return CarrierTask.FETCH_MANA;
 //     END RSS AROUND ME APPROACH ====
 
+
+    final int MAX_INCOME = 31;
+
+    if (HQAssignedTask != null) {
+      if (rc.canWriteSharedArray(0, 0)) {
+        switch (HQAssignedTask) {
+          case FETCH_ADAMANTIUM:
+            CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(CommsHandler.readOurHqAdamantiumIncome(closestHQID) + 1, MAX_INCOME));
+            break;
+          case FETCH_MANA:
+            CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(CommsHandler.readOurHqManaIncome(closestHQID) + 1, MAX_INCOME));
+            break;
+          case FETCH_ELIXIR:
+            CommsHandler.writeOurHqElixirIncome(closestHQID, Math.min(CommsHandler.readOurHqElixirIncome(closestHQID) + 1, MAX_INCOME));
+            break;
+        }
+      }
+      return HQAssignedTask;
+    }
+
+
     int adamantiumIncome = CommsHandler.readOurHqAdamantiumIncome(closestHQID);
     int manaIncome = CommsHandler.readOurHqManaIncome(closestHQID);
     int elixirIncome = CommsHandler.readOurHqElixirIncome(closestHQID);
+
     double manaWeighting = 2;
 
     if (Cache.Permanent.MAP_AREA > 900) {
@@ -184,24 +205,26 @@ public class Carrier extends MobileRobot {
     if (closestEnemy != null && closestEnemy.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < 100) {
       manaWeighting *= 20;
     }
-    int MAX_INCOME = 31;
     // TODO: check for existence of Elixir wells
     if ((40 * adamantiumIncome) / 100 > 9) {
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
       }
+      HQAssignedTask = CarrierTask.FETCH_MANA;
       return CarrierTask.FETCH_MANA;
     }
     if (manaWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
       }
+      HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
       return CarrierTask.FETCH_ADAMANTIUM;
     }
     if (rc.canWriteSharedArray(0, 0)) {
 
       CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
     }
+    HQAssignedTask = CarrierTask.FETCH_MANA;
     return CarrierTask.FETCH_MANA;
 
 
