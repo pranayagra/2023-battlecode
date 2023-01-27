@@ -809,7 +809,7 @@ public class Launcher extends MobileRobot {
   }
 
   private boolean attemptCloudAttack() throws GameActionException {
-    MapLocation[] clouds = rc.senseNearbyCloudLocations();
+    MapLocation[] clouds = rc.senseNearbyCloudLocations(Cache.Permanent.ACTION_RADIUS_SQUARED);
     for (int i = clouds.length; --i >= 0;) {
       MapLocation loc = clouds[i];
       if (rc.canAttack(loc) && Utils.rng.nextBoolean()) {

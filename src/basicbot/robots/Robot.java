@@ -161,6 +161,7 @@ public abstract class Robot {
 
     if (++turnCount != rc.getRoundNum() - Cache.Permanent.ROUND_SPAWNED) { // took too much bytecode
       rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,0,255); // MAGENTA IF RAN OUT OF BYTECODE
+//      Printer.print(Cache.Permanent.ROBOT_TYPE + " ran out of bytecode! Overused: " + Clock.getBytecodeNum() + " bytecode");
       turnCount = rc.getRoundNum() - Cache.Permanent.ROUND_SPAWNED;
       dontYield = true;
     } else { // still on our turn logic -- finish turn with last few potentially expensive things

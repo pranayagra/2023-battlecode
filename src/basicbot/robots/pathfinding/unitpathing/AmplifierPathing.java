@@ -571,10 +571,10 @@ public class AmplifierPathing implements UnitPathing {
 
 
         int moveCooldown = RobotType.AMPLIFIER.movementCooldown;
-
         int shiftedMoveCD = moveCooldown << 4;
+        boolean notNearEdge = !(l$x0$y0.x <= 4.47213595499958 || l$x0$y0.y <= 4.47213595499958 || rc.getMapWidth() - l$x0$y0.x <= 4.47213595499958 || rc.getMapHeight() - l$x0$y0.y <= 4.47213595499958);
 
-        if (rc.canSenseLocation(l$x_1$y0)) { // check (-1, 0)
+        if (notNearEdge || rc.onTheMap(l$x_1$y0)) { // check (-1, 0)
           if (rc.sensePassability(l$x_1$y0) && !rc.isLocationOccupied(l$x_1$y0)) { 
             d$x_1$y0 = d$x0$y0 | 7; // from (0, 0)
             // dir$x_1$y0 = Direction.WEST;
@@ -583,7 +583,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y_1)) { // check (0, -1)
+        if (notNearEdge || rc.onTheMap(l$x0$y_1)) { // check (0, -1)
           if (rc.sensePassability(l$x0$y_1) && !rc.isLocationOccupied(l$x0$y_1)) { 
             d$x0$y_1 = d$x0$y0 | 5; // from (0, 0)
             // dir$x0$y_1 = Direction.SOUTH;
@@ -592,7 +592,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y1)) { // check (0, 1)
+        if (notNearEdge || rc.onTheMap(l$x0$y1)) { // check (0, 1)
           if (rc.sensePassability(l$x0$y1) && !rc.isLocationOccupied(l$x0$y1)) { 
             d$x0$y1 = d$x0$y0 | 1; // from (0, 0)
             // dir$x0$y1 = Direction.NORTH;
@@ -601,7 +601,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y0)) { // check (1, 0)
+        if (notNearEdge || rc.onTheMap(l$x1$y0)) { // check (1, 0)
           if (rc.sensePassability(l$x1$y0) && !rc.isLocationOccupied(l$x1$y0)) { 
             d$x1$y0 = d$x0$y0 | 3; // from (0, 0)
             // dir$x1$y0 = Direction.EAST;
@@ -610,7 +610,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y_1)) { // check (-1, -1)
+        if (notNearEdge || rc.onTheMap(l$x_1$y_1)) { // check (-1, -1)
           if (rc.sensePassability(l$x_1$y_1) && !rc.isLocationOccupied(l$x_1$y_1)) { 
             d$x_1$y_1 = d$x0$y0 | 6; // from (0, 0)
             // dir$x_1$y_1 = Direction.SOUTHWEST;
@@ -619,7 +619,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y1)) { // check (-1, 1)
+        if (notNearEdge || rc.onTheMap(l$x_1$y1)) { // check (-1, 1)
           if (rc.sensePassability(l$x_1$y1) && !rc.isLocationOccupied(l$x_1$y1)) { 
             d$x_1$y1 = d$x0$y0 | 8; // from (0, 0)
             // dir$x_1$y1 = Direction.NORTHWEST;
@@ -628,7 +628,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y_1)) { // check (1, -1)
+        if (notNearEdge || rc.onTheMap(l$x1$y_1)) { // check (1, -1)
           if (rc.sensePassability(l$x1$y_1) && !rc.isLocationOccupied(l$x1$y_1)) { 
             d$x1$y_1 = d$x0$y0 | 4; // from (0, 0)
             // dir$x1$y_1 = Direction.SOUTHEAST;
@@ -637,7 +637,7 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y1)) { // check (1, 1)
+        if (notNearEdge || rc.onTheMap(l$x1$y1)) { // check (1, 1)
           if (rc.sensePassability(l$x1$y1) && !rc.isLocationOccupied(l$x1$y1)) { 
             d$x1$y1 = d$x0$y0 | 2; // from (0, 0)
             // dir$x1$y1 = Direction.NORTHEAST;
@@ -646,8 +646,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y0)) { // check (-2, 0)
-          if (rc.sensePassability(l$x_2$y0)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y0)) { // check (-2, 0)
+          if ((!rc.canSenseLocation(l$x_2$y0) || rc.sensePassability(l$x_2$y0))) { 
             if (d$x_2$y0 > d$x_1$y0) { // from (-1, 0)
                 d$x_2$y0 = d$x_1$y0;
                 // dir$x_2$y0 = dir$x_1$y0;
@@ -664,8 +664,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y_2)) { // check (0, -2)
-          if (rc.sensePassability(l$x0$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x0$y_2)) { // check (0, -2)
+          if ((!rc.canSenseLocation(l$x0$y_2) || rc.sensePassability(l$x0$y_2))) { 
             if (d$x0$y_2 > d$x0$y_1) { // from (0, -1)
                 d$x0$y_2 = d$x0$y_1;
                 // dir$x0$y_2 = dir$x0$y_1;
@@ -682,8 +682,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y2)) { // check (0, 2)
-          if (rc.sensePassability(l$x0$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x0$y2)) { // check (0, 2)
+          if ((!rc.canSenseLocation(l$x0$y2) || rc.sensePassability(l$x0$y2))) { 
             if (d$x0$y2 > d$x0$y1) { // from (0, 1)
                 d$x0$y2 = d$x0$y1;
                 // dir$x0$y2 = dir$x0$y1;
@@ -700,8 +700,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y0)) { // check (2, 0)
-          if (rc.sensePassability(l$x2$y0)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y0)) { // check (2, 0)
+          if ((!rc.canSenseLocation(l$x2$y0) || rc.sensePassability(l$x2$y0))) { 
             if (d$x2$y0 > d$x1$y0) { // from (1, 0)
                 d$x2$y0 = d$x1$y0;
                 // dir$x2$y0 = dir$x1$y0;
@@ -718,8 +718,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y_1)) { // check (-2, -1)
-          if (rc.sensePassability(l$x_2$y_1)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y_1)) { // check (-2, -1)
+          if ((!rc.canSenseLocation(l$x_2$y_1) || rc.sensePassability(l$x_2$y_1))) { 
             if (d$x_2$y_1 > d$x_1$y0) { // from (-1, 0)
                 d$x_2$y_1 = d$x_1$y0;
                 // dir$x_2$y_1 = dir$x_1$y0;
@@ -736,8 +736,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y1)) { // check (-2, 1)
-          if (rc.sensePassability(l$x_2$y1)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y1)) { // check (-2, 1)
+          if ((!rc.canSenseLocation(l$x_2$y1) || rc.sensePassability(l$x_2$y1))) { 
             if (d$x_2$y1 > d$x_1$y0) { // from (-1, 0)
                 d$x_2$y1 = d$x_1$y0;
                 // dir$x_2$y1 = dir$x_1$y0;
@@ -754,8 +754,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y_2)) { // check (-1, -2)
-          if (rc.sensePassability(l$x_1$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_1$y_2)) { // check (-1, -2)
+          if ((!rc.canSenseLocation(l$x_1$y_2) || rc.sensePassability(l$x_1$y_2))) { 
             if (d$x_1$y_2 > d$x0$y_1) { // from (0, -1)
                 d$x_1$y_2 = d$x0$y_1;
                 // dir$x_1$y_2 = dir$x0$y_1;
@@ -776,8 +776,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y2)) { // check (-1, 2)
-          if (rc.sensePassability(l$x_1$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_1$y2)) { // check (-1, 2)
+          if ((!rc.canSenseLocation(l$x_1$y2) || rc.sensePassability(l$x_1$y2))) { 
             if (d$x_1$y2 > d$x0$y1) { // from (0, 1)
                 d$x_1$y2 = d$x0$y1;
                 // dir$x_1$y2 = dir$x0$y1;
@@ -798,8 +798,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y_2)) { // check (1, -2)
-          if (rc.sensePassability(l$x1$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x1$y_2)) { // check (1, -2)
+          if ((!rc.canSenseLocation(l$x1$y_2) || rc.sensePassability(l$x1$y_2))) { 
             if (d$x1$y_2 > d$x0$y_1) { // from (0, -1)
                 d$x1$y_2 = d$x0$y_1;
                 // dir$x1$y_2 = dir$x0$y_1;
@@ -816,8 +816,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y2)) { // check (1, 2)
-          if (rc.sensePassability(l$x1$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x1$y2)) { // check (1, 2)
+          if ((!rc.canSenseLocation(l$x1$y2) || rc.sensePassability(l$x1$y2))) { 
             if (d$x1$y2 > d$x0$y1) { // from (0, 1)
                 d$x1$y2 = d$x0$y1;
                 // dir$x1$y2 = dir$x0$y1;
@@ -834,8 +834,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y_1)) { // check (2, -1)
-          if (rc.sensePassability(l$x2$y_1)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y_1)) { // check (2, -1)
+          if ((!rc.canSenseLocation(l$x2$y_1) || rc.sensePassability(l$x2$y_1))) { 
             if (d$x2$y_1 > d$x1$y0) { // from (1, 0)
                 d$x2$y_1 = d$x1$y0;
                 // dir$x2$y_1 = dir$x1$y0;
@@ -856,8 +856,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y1)) { // check (2, 1)
-          if (rc.sensePassability(l$x2$y1)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y1)) { // check (2, 1)
+          if ((!rc.canSenseLocation(l$x2$y1) || rc.sensePassability(l$x2$y1))) { 
             if (d$x2$y1 > d$x1$y0) { // from (1, 0)
                 d$x2$y1 = d$x1$y0;
                 // dir$x2$y1 = dir$x1$y0;
@@ -878,8 +878,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y_2)) { // check (-2, -2)
-          if (rc.sensePassability(l$x_2$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y_2)) { // check (-2, -2)
+          if ((!rc.canSenseLocation(l$x_2$y_2) || rc.sensePassability(l$x_2$y_2))) { 
             if (d$x_2$y_2 > d$x_1$y_1) { // from (-1, -1)
                 d$x_2$y_2 = d$x_1$y_1;
                 // dir$x_2$y_2 = dir$x_1$y_1;
@@ -896,8 +896,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y2)) { // check (-2, 2)
-          if (rc.sensePassability(l$x_2$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y2)) { // check (-2, 2)
+          if ((!rc.canSenseLocation(l$x_2$y2) || rc.sensePassability(l$x_2$y2))) { 
             if (d$x_2$y2 > d$x_1$y1) { // from (-1, 1)
                 d$x_2$y2 = d$x_1$y1;
                 // dir$x_2$y2 = dir$x_1$y1;
@@ -914,8 +914,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y_2)) { // check (2, -2)
-          if (rc.sensePassability(l$x2$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y_2)) { // check (2, -2)
+          if ((!rc.canSenseLocation(l$x2$y_2) || rc.sensePassability(l$x2$y_2))) { 
             if (d$x2$y_2 > d$x1$y_1) { // from (1, -1)
                 d$x2$y_2 = d$x1$y_1;
                 // dir$x2$y_2 = dir$x1$y_1;
@@ -932,8 +932,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y2)) { // check (2, 2)
-          if (rc.sensePassability(l$x2$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y2)) { // check (2, 2)
+          if ((!rc.canSenseLocation(l$x2$y2) || rc.sensePassability(l$x2$y2))) { 
             if (d$x2$y2 > d$x1$y1) { // from (1, 1)
                 d$x2$y2 = d$x1$y1;
                 // dir$x2$y2 = dir$x1$y1;
@@ -950,8 +950,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y0)) { // check (-3, 0)
-          if (rc.sensePassability(l$x_3$y0)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y0)) { // check (-3, 0)
+          if ((!rc.canSenseLocation(l$x_3$y0) || rc.sensePassability(l$x_3$y0))) { 
             if (d$x_3$y0 > d$x_2$y0) { // from (-2, 0)
                 d$x_3$y0 = d$x_2$y0;
                 // dir$x_3$y0 = dir$x_2$y0;
@@ -968,8 +968,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y_3)) { // check (0, -3)
-          if (rc.sensePassability(l$x0$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x0$y_3)) { // check (0, -3)
+          if ((!rc.canSenseLocation(l$x0$y_3) || rc.sensePassability(l$x0$y_3))) { 
             if (d$x0$y_3 > d$x0$y_2) { // from (0, -2)
                 d$x0$y_3 = d$x0$y_2;
                 // dir$x0$y_3 = dir$x0$y_2;
@@ -986,8 +986,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y3)) { // check (0, 3)
-          if (rc.sensePassability(l$x0$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x0$y3)) { // check (0, 3)
+          if ((!rc.canSenseLocation(l$x0$y3) || rc.sensePassability(l$x0$y3))) { 
             if (d$x0$y3 > d$x0$y2) { // from (0, 2)
                 d$x0$y3 = d$x0$y2;
                 // dir$x0$y3 = dir$x0$y2;
@@ -1004,8 +1004,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y0)) { // check (3, 0)
-          if (rc.sensePassability(l$x3$y0)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y0)) { // check (3, 0)
+          if ((!rc.canSenseLocation(l$x3$y0) || rc.sensePassability(l$x3$y0))) { 
             if (d$x3$y0 > d$x2$y0) { // from (2, 0)
                 d$x3$y0 = d$x2$y0;
                 // dir$x3$y0 = dir$x2$y0;
@@ -1022,8 +1022,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y_1)) { // check (-3, -1)
-          if (rc.sensePassability(l$x_3$y_1)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y_1)) { // check (-3, -1)
+          if ((!rc.canSenseLocation(l$x_3$y_1) || rc.sensePassability(l$x_3$y_1))) { 
             if (d$x_3$y_1 > d$x_2$y0) { // from (-2, 0)
                 d$x_3$y_1 = d$x_2$y0;
                 // dir$x_3$y_1 = dir$x_2$y0;
@@ -1044,8 +1044,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y1)) { // check (-3, 1)
-          if (rc.sensePassability(l$x_3$y1)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y1)) { // check (-3, 1)
+          if ((!rc.canSenseLocation(l$x_3$y1) || rc.sensePassability(l$x_3$y1))) { 
             if (d$x_3$y1 > d$x_2$y0) { // from (-2, 0)
                 d$x_3$y1 = d$x_2$y0;
                 // dir$x_3$y1 = dir$x_2$y0;
@@ -1066,8 +1066,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y_3)) { // check (-1, -3)
-          if (rc.sensePassability(l$x_1$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x_1$y_3)) { // check (-1, -3)
+          if ((!rc.canSenseLocation(l$x_1$y_3) || rc.sensePassability(l$x_1$y_3))) { 
             if (d$x_1$y_3 > d$x0$y_2) { // from (0, -2)
                 d$x_1$y_3 = d$x0$y_2;
                 // dir$x_1$y_3 = dir$x0$y_2;
@@ -1088,8 +1088,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y3)) { // check (-1, 3)
-          if (rc.sensePassability(l$x_1$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x_1$y3)) { // check (-1, 3)
+          if ((!rc.canSenseLocation(l$x_1$y3) || rc.sensePassability(l$x_1$y3))) { 
             if (d$x_1$y3 > d$x0$y2) { // from (0, 2)
                 d$x_1$y3 = d$x0$y2;
                 // dir$x_1$y3 = dir$x0$y2;
@@ -1110,8 +1110,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y_3)) { // check (1, -3)
-          if (rc.sensePassability(l$x1$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x1$y_3)) { // check (1, -3)
+          if ((!rc.canSenseLocation(l$x1$y_3) || rc.sensePassability(l$x1$y_3))) { 
             if (d$x1$y_3 > d$x0$y_2) { // from (0, -2)
                 d$x1$y_3 = d$x0$y_2;
                 // dir$x1$y_3 = dir$x0$y_2;
@@ -1132,8 +1132,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y3)) { // check (1, 3)
-          if (rc.sensePassability(l$x1$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x1$y3)) { // check (1, 3)
+          if ((!rc.canSenseLocation(l$x1$y3) || rc.sensePassability(l$x1$y3))) { 
             if (d$x1$y3 > d$x0$y2) { // from (0, 2)
                 d$x1$y3 = d$x0$y2;
                 // dir$x1$y3 = dir$x0$y2;
@@ -1154,8 +1154,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y_1)) { // check (3, -1)
-          if (rc.sensePassability(l$x3$y_1)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y_1)) { // check (3, -1)
+          if ((!rc.canSenseLocation(l$x3$y_1) || rc.sensePassability(l$x3$y_1))) { 
             if (d$x3$y_1 > d$x2$y0) { // from (2, 0)
                 d$x3$y_1 = d$x2$y0;
                 // dir$x3$y_1 = dir$x2$y0;
@@ -1176,8 +1176,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y1)) { // check (3, 1)
-          if (rc.sensePassability(l$x3$y1)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y1)) { // check (3, 1)
+          if ((!rc.canSenseLocation(l$x3$y1) || rc.sensePassability(l$x3$y1))) { 
             if (d$x3$y1 > d$x2$y0) { // from (2, 0)
                 d$x3$y1 = d$x2$y0;
                 // dir$x3$y1 = dir$x2$y0;
@@ -1198,8 +1198,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y_2)) { // check (-3, -2)
-          if (rc.sensePassability(l$x_3$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y_2)) { // check (-3, -2)
+          if ((!rc.canSenseLocation(l$x_3$y_2) || rc.sensePassability(l$x_3$y_2))) { 
             if (d$x_3$y_2 > d$x_2$y_1) { // from (-2, -1)
                 d$x_3$y_2 = d$x_2$y_1;
                 // dir$x_3$y_2 = dir$x_2$y_1;
@@ -1216,8 +1216,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y2)) { // check (-3, 2)
-          if (rc.sensePassability(l$x_3$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y2)) { // check (-3, 2)
+          if ((!rc.canSenseLocation(l$x_3$y2) || rc.sensePassability(l$x_3$y2))) { 
             if (d$x_3$y2 > d$x_2$y1) { // from (-2, 1)
                 d$x_3$y2 = d$x_2$y1;
                 // dir$x_3$y2 = dir$x_2$y1;
@@ -1234,8 +1234,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y_3)) { // check (-2, -3)
-          if (rc.sensePassability(l$x_2$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y_3)) { // check (-2, -3)
+          if ((!rc.canSenseLocation(l$x_2$y_3) || rc.sensePassability(l$x_2$y_3))) { 
             if (d$x_2$y_3 > d$x_1$y_2) { // from (-1, -2)
                 d$x_2$y_3 = d$x_1$y_2;
                 // dir$x_2$y_3 = dir$x_1$y_2;
@@ -1256,8 +1256,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y3)) { // check (-2, 3)
-          if (rc.sensePassability(l$x_2$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y3)) { // check (-2, 3)
+          if ((!rc.canSenseLocation(l$x_2$y3) || rc.sensePassability(l$x_2$y3))) { 
             if (d$x_2$y3 > d$x_1$y2) { // from (-1, 2)
                 d$x_2$y3 = d$x_1$y2;
                 // dir$x_2$y3 = dir$x_1$y2;
@@ -1278,8 +1278,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y_3)) { // check (2, -3)
-          if (rc.sensePassability(l$x2$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y_3)) { // check (2, -3)
+          if ((!rc.canSenseLocation(l$x2$y_3) || rc.sensePassability(l$x2$y_3))) { 
             if (d$x2$y_3 > d$x1$y_2) { // from (1, -2)
                 d$x2$y_3 = d$x1$y_2;
                 // dir$x2$y_3 = dir$x1$y_2;
@@ -1296,8 +1296,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y3)) { // check (2, 3)
-          if (rc.sensePassability(l$x2$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y3)) { // check (2, 3)
+          if ((!rc.canSenseLocation(l$x2$y3) || rc.sensePassability(l$x2$y3))) { 
             if (d$x2$y3 > d$x1$y2) { // from (1, 2)
                 d$x2$y3 = d$x1$y2;
                 // dir$x2$y3 = dir$x1$y2;
@@ -1314,8 +1314,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y_2)) { // check (3, -2)
-          if (rc.sensePassability(l$x3$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y_2)) { // check (3, -2)
+          if ((!rc.canSenseLocation(l$x3$y_2) || rc.sensePassability(l$x3$y_2))) { 
             if (d$x3$y_2 > d$x2$y_1) { // from (2, -1)
                 d$x3$y_2 = d$x2$y_1;
                 // dir$x3$y_2 = dir$x2$y_1;
@@ -1336,8 +1336,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y2)) { // check (3, 2)
-          if (rc.sensePassability(l$x3$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y2)) { // check (3, 2)
+          if ((!rc.canSenseLocation(l$x3$y2) || rc.sensePassability(l$x3$y2))) { 
             if (d$x3$y2 > d$x2$y1) { // from (2, 1)
                 d$x3$y2 = d$x2$y1;
                 // dir$x3$y2 = dir$x2$y1;
@@ -1358,8 +1358,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_4$y0)) { // check (-4, 0)
-          if (rc.sensePassability(l$x_4$y0)) { 
+        if (notNearEdge || rc.onTheMap(l$x_4$y0)) { // check (-4, 0)
+          if ((!rc.canSenseLocation(l$x_4$y0) || rc.sensePassability(l$x_4$y0))) { 
             if (d$x_4$y0 > d$x_3$y0) { // from (-3, 0)
                 d$x_4$y0 = d$x_3$y0;
                 // dir$x_4$y0 = dir$x_3$y0;
@@ -1376,8 +1376,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y_4)) { // check (0, -4)
-          if (rc.sensePassability(l$x0$y_4)) { 
+        if (notNearEdge || rc.onTheMap(l$x0$y_4)) { // check (0, -4)
+          if ((!rc.canSenseLocation(l$x0$y_4) || rc.sensePassability(l$x0$y_4))) { 
             if (d$x0$y_4 > d$x0$y_3) { // from (0, -3)
                 d$x0$y_4 = d$x0$y_3;
                 // dir$x0$y_4 = dir$x0$y_3;
@@ -1394,8 +1394,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x0$y4)) { // check (0, 4)
-          if (rc.sensePassability(l$x0$y4)) { 
+        if (notNearEdge || rc.onTheMap(l$x0$y4)) { // check (0, 4)
+          if ((!rc.canSenseLocation(l$x0$y4) || rc.sensePassability(l$x0$y4))) { 
             if (d$x0$y4 > d$x0$y3) { // from (0, 3)
                 d$x0$y4 = d$x0$y3;
                 // dir$x0$y4 = dir$x0$y3;
@@ -1412,8 +1412,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x4$y0)) { // check (4, 0)
-          if (rc.sensePassability(l$x4$y0)) { 
+        if (notNearEdge || rc.onTheMap(l$x4$y0)) { // check (4, 0)
+          if ((!rc.canSenseLocation(l$x4$y0) || rc.sensePassability(l$x4$y0))) { 
             if (d$x4$y0 > d$x3$y0) { // from (3, 0)
                 d$x4$y0 = d$x3$y0;
                 // dir$x4$y0 = dir$x3$y0;
@@ -1430,8 +1430,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_4$y_1)) { // check (-4, -1)
-          if (rc.sensePassability(l$x_4$y_1)) { 
+        if (notNearEdge || rc.onTheMap(l$x_4$y_1)) { // check (-4, -1)
+          if ((!rc.canSenseLocation(l$x_4$y_1) || rc.sensePassability(l$x_4$y_1))) { 
             if (d$x_4$y_1 > d$x_3$y0) { // from (-3, 0)
                 d$x_4$y_1 = d$x_3$y0;
                 // dir$x_4$y_1 = dir$x_3$y0;
@@ -1452,8 +1452,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_4$y1)) { // check (-4, 1)
-          if (rc.sensePassability(l$x_4$y1)) { 
+        if (notNearEdge || rc.onTheMap(l$x_4$y1)) { // check (-4, 1)
+          if ((!rc.canSenseLocation(l$x_4$y1) || rc.sensePassability(l$x_4$y1))) { 
             if (d$x_4$y1 > d$x_3$y0) { // from (-3, 0)
                 d$x_4$y1 = d$x_3$y0;
                 // dir$x_4$y1 = dir$x_3$y0;
@@ -1474,8 +1474,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y_4)) { // check (-1, -4)
-          if (rc.sensePassability(l$x_1$y_4)) { 
+        if (notNearEdge || rc.onTheMap(l$x_1$y_4)) { // check (-1, -4)
+          if ((!rc.canSenseLocation(l$x_1$y_4) || rc.sensePassability(l$x_1$y_4))) { 
             if (d$x_1$y_4 > d$x0$y_3) { // from (0, -3)
                 d$x_1$y_4 = d$x0$y_3;
                 // dir$x_1$y_4 = dir$x0$y_3;
@@ -1496,8 +1496,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_1$y4)) { // check (-1, 4)
-          if (rc.sensePassability(l$x_1$y4)) { 
+        if (notNearEdge || rc.onTheMap(l$x_1$y4)) { // check (-1, 4)
+          if ((!rc.canSenseLocation(l$x_1$y4) || rc.sensePassability(l$x_1$y4))) { 
             if (d$x_1$y4 > d$x0$y3) { // from (0, 3)
                 d$x_1$y4 = d$x0$y3;
                 // dir$x_1$y4 = dir$x0$y3;
@@ -1518,8 +1518,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y_4)) { // check (1, -4)
-          if (rc.sensePassability(l$x1$y_4)) { 
+        if (notNearEdge || rc.onTheMap(l$x1$y_4)) { // check (1, -4)
+          if ((!rc.canSenseLocation(l$x1$y_4) || rc.sensePassability(l$x1$y_4))) { 
             if (d$x1$y_4 > d$x0$y_3) { // from (0, -3)
                 d$x1$y_4 = d$x0$y_3;
                 // dir$x1$y_4 = dir$x0$y_3;
@@ -1540,8 +1540,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x1$y4)) { // check (1, 4)
-          if (rc.sensePassability(l$x1$y4)) { 
+        if (notNearEdge || rc.onTheMap(l$x1$y4)) { // check (1, 4)
+          if ((!rc.canSenseLocation(l$x1$y4) || rc.sensePassability(l$x1$y4))) { 
             if (d$x1$y4 > d$x0$y3) { // from (0, 3)
                 d$x1$y4 = d$x0$y3;
                 // dir$x1$y4 = dir$x0$y3;
@@ -1562,8 +1562,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x4$y_1)) { // check (4, -1)
-          if (rc.sensePassability(l$x4$y_1)) { 
+        if (notNearEdge || rc.onTheMap(l$x4$y_1)) { // check (4, -1)
+          if ((!rc.canSenseLocation(l$x4$y_1) || rc.sensePassability(l$x4$y_1))) { 
             if (d$x4$y_1 > d$x3$y0) { // from (3, 0)
                 d$x4$y_1 = d$x3$y0;
                 // dir$x4$y_1 = dir$x3$y0;
@@ -1584,8 +1584,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x4$y1)) { // check (4, 1)
-          if (rc.sensePassability(l$x4$y1)) { 
+        if (notNearEdge || rc.onTheMap(l$x4$y1)) { // check (4, 1)
+          if ((!rc.canSenseLocation(l$x4$y1) || rc.sensePassability(l$x4$y1))) { 
             if (d$x4$y1 > d$x3$y0) { // from (3, 0)
                 d$x4$y1 = d$x3$y0;
                 // dir$x4$y1 = dir$x3$y0;
@@ -1606,8 +1606,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y_3)) { // check (-3, -3)
-          if (rc.sensePassability(l$x_3$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y_3)) { // check (-3, -3)
+          if ((!rc.canSenseLocation(l$x_3$y_3) || rc.sensePassability(l$x_3$y_3))) { 
             if (d$x_3$y_3 > d$x_2$y_2) { // from (-2, -2)
                 d$x_3$y_3 = d$x_2$y_2;
                 // dir$x_3$y_3 = dir$x_2$y_2;
@@ -1624,8 +1624,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_3$y3)) { // check (-3, 3)
-          if (rc.sensePassability(l$x_3$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x_3$y3)) { // check (-3, 3)
+          if ((!rc.canSenseLocation(l$x_3$y3) || rc.sensePassability(l$x_3$y3))) { 
             if (d$x_3$y3 > d$x_2$y2) { // from (-2, 2)
                 d$x_3$y3 = d$x_2$y2;
                 // dir$x_3$y3 = dir$x_2$y2;
@@ -1642,8 +1642,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y_3)) { // check (3, -3)
-          if (rc.sensePassability(l$x3$y_3)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y_3)) { // check (3, -3)
+          if ((!rc.canSenseLocation(l$x3$y_3) || rc.sensePassability(l$x3$y_3))) { 
             if (d$x3$y_3 > d$x2$y_2) { // from (2, -2)
                 d$x3$y_3 = d$x2$y_2;
                 // dir$x3$y_3 = dir$x2$y_2;
@@ -1660,8 +1660,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x3$y3)) { // check (3, 3)
-          if (rc.sensePassability(l$x3$y3)) { 
+        if (notNearEdge || rc.onTheMap(l$x3$y3)) { // check (3, 3)
+          if ((!rc.canSenseLocation(l$x3$y3) || rc.sensePassability(l$x3$y3))) { 
             if (d$x3$y3 > d$x2$y2) { // from (2, 2)
                 d$x3$y3 = d$x2$y2;
                 // dir$x3$y3 = dir$x2$y2;
@@ -1678,8 +1678,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_4$y_2)) { // check (-4, -2)
-          if (rc.sensePassability(l$x_4$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_4$y_2)) { // check (-4, -2)
+          if ((!rc.canSenseLocation(l$x_4$y_2) || rc.sensePassability(l$x_4$y_2))) { 
             if (d$x_4$y_2 > d$x_3$y_1) { // from (-3, -1)
                 d$x_4$y_2 = d$x_3$y_1;
                 // dir$x_4$y_2 = dir$x_3$y_1;
@@ -1700,8 +1700,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_4$y2)) { // check (-4, 2)
-          if (rc.sensePassability(l$x_4$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x_4$y2)) { // check (-4, 2)
+          if ((!rc.canSenseLocation(l$x_4$y2) || rc.sensePassability(l$x_4$y2))) { 
             if (d$x_4$y2 > d$x_3$y1) { // from (-3, 1)
                 d$x_4$y2 = d$x_3$y1;
                 // dir$x_4$y2 = dir$x_3$y1;
@@ -1722,8 +1722,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y_4)) { // check (-2, -4)
-          if (rc.sensePassability(l$x_2$y_4)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y_4)) { // check (-2, -4)
+          if ((!rc.canSenseLocation(l$x_2$y_4) || rc.sensePassability(l$x_2$y_4))) { 
             if (d$x_2$y_4 > d$x_1$y_3) { // from (-1, -3)
                 d$x_2$y_4 = d$x_1$y_3;
                 // dir$x_2$y_4 = dir$x_1$y_3;
@@ -1744,8 +1744,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x_2$y4)) { // check (-2, 4)
-          if (rc.sensePassability(l$x_2$y4)) { 
+        if (notNearEdge || rc.onTheMap(l$x_2$y4)) { // check (-2, 4)
+          if ((!rc.canSenseLocation(l$x_2$y4) || rc.sensePassability(l$x_2$y4))) { 
             if (d$x_2$y4 > d$x_1$y3) { // from (-1, 3)
                 d$x_2$y4 = d$x_1$y3;
                 // dir$x_2$y4 = dir$x_1$y3;
@@ -1766,8 +1766,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y_4)) { // check (2, -4)
-          if (rc.sensePassability(l$x2$y_4)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y_4)) { // check (2, -4)
+          if ((!rc.canSenseLocation(l$x2$y_4) || rc.sensePassability(l$x2$y_4))) { 
             if (d$x2$y_4 > d$x1$y_3) { // from (1, -3)
                 d$x2$y_4 = d$x1$y_3;
                 // dir$x2$y_4 = dir$x1$y_3;
@@ -1788,8 +1788,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x2$y4)) { // check (2, 4)
-          if (rc.sensePassability(l$x2$y4)) { 
+        if (notNearEdge || rc.onTheMap(l$x2$y4)) { // check (2, 4)
+          if ((!rc.canSenseLocation(l$x2$y4) || rc.sensePassability(l$x2$y4))) { 
             if (d$x2$y4 > d$x1$y3) { // from (1, 3)
                 d$x2$y4 = d$x1$y3;
                 // dir$x2$y4 = dir$x1$y3;
@@ -1810,8 +1810,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x4$y_2)) { // check (4, -2)
-          if (rc.sensePassability(l$x4$y_2)) { 
+        if (notNearEdge || rc.onTheMap(l$x4$y_2)) { // check (4, -2)
+          if ((!rc.canSenseLocation(l$x4$y_2) || rc.sensePassability(l$x4$y_2))) { 
             if (d$x4$y_2 > d$x3$y_1) { // from (3, -1)
                 d$x4$y_2 = d$x3$y_1;
                 // dir$x4$y_2 = dir$x3$y_1;
@@ -1832,8 +1832,8 @@ public class AmplifierPathing implements UnitPathing {
           }
         }
 
-        if (rc.canSenseLocation(l$x4$y2)) { // check (4, 2)
-          if (rc.sensePassability(l$x4$y2)) { 
+        if (notNearEdge || rc.onTheMap(l$x4$y2)) { // check (4, 2)
+          if ((!rc.canSenseLocation(l$x4$y2) || rc.sensePassability(l$x4$y2))) { 
             if (d$x4$y2 > d$x3$y1) { // from (3, 1)
                 d$x4$y2 = d$x3$y1;
                 // dir$x4$y2 = dir$x3$y1;

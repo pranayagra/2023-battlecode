@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import math
 
 def encode(x, y):
   # return (x+7) + 15*(y+7)
@@ -101,28 +102,27 @@ def gen_bfs(radius, type):
 """
   if type == 'Carrier':
     out += f"""
-        int moveCooldown = (int) (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight() * GameConstants.CARRIER_MOVEMENT_SLOPE);
-"""
+        int moveCooldown = (int) (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight() * GameConstants.CARRIER_MOVEMENT_SLOPE);"""
   else:
     out += f"""
-        int moveCooldown = RobotType.{type.upper()}.movementCooldown;
-"""
+        int moveCooldown = RobotType.{type.upper()}.movementCooldown;"""
   out += f"""
         int shiftedMoveCD = moveCooldown << {DIRECTION_BITS};
+        boolean notNearEdge = !(l{encode(0,0)}.x <= {math.sqrt(RADII[type])} || l{encode(0,0)}.y <= {math.sqrt(RADII[type])} || rc.getMapWidth() - l{encode(0,0)}.x <= {math.sqrt(RADII[type])} || rc.getMapHeight() - l{encode(0,0)}.y <= {math.sqrt(RADII[type])});
 """
   for r2 in range(1, radius+1):
     for x in range(-7, 8):
       for y in range(-7, 8):
         if dist(x, y) == r2:
           out += f"""
-        if (rc.canSenseLocation(l{encode(x,y)})) {{ // check ({x}, {y})"""
+        if (notNearEdge || rc.onTheMap(l{encode(x,y)})) {{ // check ({x}, {y})"""
           indent = "  "
           if r2 <= 2:
             out += f"""
           if (rc.sensePassability(l{encode(x,y)}) && !rc.isLocationOccupied(l{encode(x,y)})) {{ """
           else:
             out += f"""
-          if (rc.sensePassability(l{encode(x,y)})) {{ """
+          if ((!rc.canSenseLocation(l{encode(x,y)}) || rc.sensePassability(l{encode(x,y)}))) {{ """
           if r2 > 2:
             dxdy = [(dx, dy) for dx in range(-1, 2) for dy in range(-1, 2) if (dx, dy) != (0, 0) and dist(x+dx,y+dy) <= radius]
             dxdy = sorted(dxdy, key=lambda dd: dist(x+dd[0], y+dd[1]))
