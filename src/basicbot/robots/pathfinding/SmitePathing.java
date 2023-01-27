@@ -76,8 +76,10 @@ public class SmitePathing {
 //        ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
 //        : Cache.Permanent.ROBOT_TYPE.movementCooldown);
 //    int numMoves = (int) Math.ceil((GameConstants.COOLDOWN_LIMIT - rc.getMovementCooldownTurns()) / cooldownCost);
-    if (forceBugging || Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
-        || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED) { // too many robots nearby, just bug
+    if (forceBugging
+        || Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
+        || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED // too many robots nearby, just bug
+    ) {
       doBuggingTurns += 5;
       return BugNav.tryBugging();
     }

@@ -809,17 +809,26 @@ public class Launcher extends MobileRobot {
   }
 
   private boolean attemptCloudAttack() throws GameActionException {
-    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
-    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
-    for (int i = -cells; i <= cells; ++i) {
-      for (int j = -cells; j <= cells; ++j) {
-        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
-        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
-          rc.attack(loc);
-          return true;
-        }
+    MapLocation[] clouds = rc.senseNearbyCloudLocations();
+    for (int i = clouds.length; --i >= 0;) {
+      MapLocation loc = clouds[i];
+      if (rc.canAttack(loc) && Utils.rng.nextBoolean()) {
+        rc.attack(loc);
+        return true;
       }
     }
-    return false;
+    return clouds.length > 0 && attack(clouds[0]);
+//    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
+//    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
+//    for (int i = -cells; i <= cells; ++i) {
+//      for (int j = -cells; j <= cells; ++j) {
+//        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
+//        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
+//          rc.attack(loc);
+//          return true;
+//        }
+//      }
+//    }
+//    return false;
   }
 }
