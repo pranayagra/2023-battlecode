@@ -70,6 +70,10 @@ public class AttackerFightingMicro {
         case DESTABILIZER:
           shouldMicro = true;
           break;
+        case HEADQUARTERS:
+          if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(r.location, RobotType.HEADQUARTERS.actionRadiusSquared)) {
+            shouldMicro = true; // need to get out of here. current micro SHOULD walk out.
+          }
         default:
           break;
       }
