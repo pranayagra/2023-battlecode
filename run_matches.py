@@ -22,7 +22,8 @@ customMaps = ['TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil'
 ogMaps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
 # maps = ['SmallElements']
 sprint1Maps = ["ArtistRendition", "BatSignal", "BowAndArrow", "Cat", "Clown", "Diagonal", "Eyelands", "Frog", "Grievance", "Hah", "Jail", "KingdomRush", "Minefield", "Movepls", "Orbit", "Pathfind", "Pit", "Pizza", "Quiet", "Rectangle", "Scatter", "Sun", "Tacocat"]
-maps = ogMaps + sprint1Maps + customMaps
+sprint2Maps = ["BattleSuns", "Checkmate2", "Cornucopia", "Crossword", "Cube", "Divergence", "FourNations", "HideAndSeek", "Lantern", "Lines", "Maze", "Pakbot", "Piglets", "Risk", "Sine", "Snowflake", "SomethingFishy", "Spin", "Spiral", "Squares", "Star", "Sus", "SweetDreams", "TicTacToe", "USA"]
+maps = ogMaps + sprint1Maps + sprint2Maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
