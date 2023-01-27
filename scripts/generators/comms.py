@@ -61,7 +61,7 @@ WELL_SCHEMA = {
   'upgraded_bool': BOOL_BITS,
 }
 
-SCHEMA = {
+OLD_SCHEMA = {
   '': {
     'slots': 1,
     'bits': {key: value['bits'] for key,value in METAINFO.items()}
@@ -113,6 +113,81 @@ SCHEMA = {
   #   }
   # },
 }
+
+PTESTCARRIER_SCHEMA = {
+  '': {
+    'slots': 1,
+    'bits': {key: value['bits'] for key,value in METAINFO.items()}
+  },
+  'our_hq': {
+    'slots': 4,
+    'bits': {
+      'loc': LOCATION_BITS,
+      # 'odd_spawn_loc': LOCATION_BITS,
+      # 'even_spawn_loc': LOCATION_BITS,
+      # 'odd_spawn_instruction': 2,
+      # 'even_spawn_instruction': 2,
+      'adamantium_income': 5, # changing any of these income bit#'s require changing the max value checking done manually in HQ and Carrier.
+      'mana_income': 5,
+      'elixir_income': 5,
+    }
+  },
+  'pranay_our_hq': {
+    'slots': 8,
+    'bits': {
+      'odd_spawn_loc': LOCATION_BITS,
+      'even_spawn_loc': LOCATION_BITS,
+      'odd_spawn_instruction': 2,
+      'even_spawn_instruction': 2,
+      'odd_target_loc': LOCATION_BITS,
+      'even_target_loc': LOCATION_BITS,
+    }
+  },
+  'pranay_well_info': {
+    'slots': 4,
+    'bits': {
+      'loc': LOCATION_BITS,
+      'type': 2,
+      'num_miners': 4,
+      'num_good_slots': 4,
+    }
+  },
+  'adamantium_well': {
+    'slots': 4,
+    'bits': {
+      **WELL_SCHEMA,
+    }
+  },
+  'mana_well': {
+    'slots': 4,
+    'bits': {
+      **WELL_SCHEMA,
+    }
+  },
+  # 'elixir_well': {
+  #   'slots': 4,
+  #   'bits': {
+  #     **WELL_SCHEMA,
+  #   }
+  # },
+  'enemy': {
+    'slots': 10,
+    'bits': {
+      'odd_loc': LOCATION_BITS,
+      'even_loc': LOCATION_BITS,
+    }
+  },
+  # 'attack_pod': {
+  #   'slots': 10,
+  #   'bits': {
+  #     'amp_alive_bool': BOOL_BITS,
+  #     'amp_loc': LOCATION_BITS,
+  #     'launcher_registry': 6,
+  #   }
+  # },
+}
+
+SCHEMA = PTESTCARRIER_SCHEMA
 
 def is_suffix_special(attr: str) -> bool:
   return any(attr.endswith(suffix) for suffix in SPECIAL_ATTR_SUFFIXES)

@@ -63,7 +63,7 @@ public abstract class Robot {
   public static Robot fromRC(RobotController rc) throws GameActionException {
     switch (rc.getType()) {
       case HEADQUARTERS: return new HeadQuarters(rc);
-      case CARRIER: return new Carrier(rc);
+      case CARRIER: return new CarrierNew(rc);
       case LAUNCHER: return new Launcher(rc);
       case DESTABILIZER: return new Destabilizer(rc);
       case BOOSTER: return new Booster(rc);
@@ -85,6 +85,7 @@ public abstract class Robot {
       try {
         this.runTurnWrapper();
 //                Printer.cleanPrint();
+        if (Printer.indicator.toString().length() > 0) rc.setIndicatorString(Printer.indicator.toString());
         Printer.submitPrint();
       } catch (GameActionException e) {
         // something illegal in the Battlecode world
@@ -127,7 +128,6 @@ public abstract class Robot {
    */
   private void runTurnWrapper() throws GameActionException {
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
-
     Memory.updateOnTurn();
     if (!dontYield) {
       rc.setIndicatorString("ac: " + rc.getActionCooldownTurns() + " mc: " + rc.getMovementCooldownTurns());
@@ -145,7 +145,6 @@ public abstract class Robot {
 //    Utils.finishByteCodeCounting("updating-comm-metainfo");
 
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
-
     if (Cache.PerTurn.ROUND_NUM < 20 && Cache.PerTurn.ROUNDS_ALIVE == 0) {
       initialWellExploration();
     }
@@ -340,8 +339,8 @@ public abstract class Robot {
     boolean needAd = knownWellLoc == null;
     knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.MANA);
     boolean needMana = knownWellLoc == null;
-    knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ELIXIR);
-    boolean needElixir = knownWellLoc == null;
+//    knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ELIXIR);
+    boolean needElixir = false;//knownWellLoc == null;
     if (!needAd && !needMana && !needElixir) return;
 //    if (needAd || needMana) {
 //      Printer.print("Early game checking for wells: needAd=" + needAd + ", needMana=" + needMana);
