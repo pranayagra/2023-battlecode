@@ -104,7 +104,7 @@ public abstract class Robot {
         // end turn - make code wait until next turn
         if (!dontYield) Clock.yield();
         else {
-          if (Clock.getBytecodesLeft() < 0.9 * Cache.Permanent.ROBOT_TYPE.bytecodeLimit) { // if don't have 90% of limit, still yield
+          if (Clock.getBytecodesLeft() < 0.8 * Cache.Permanent.ROBOT_TYPE.bytecodeLimit) { // if don't have 80% of limit, still yield
             dontYield = false;
             Clock.yield();
 //                    } else {
@@ -425,9 +425,9 @@ public abstract class Robot {
    * @throws GameActionException if sending the message fails
    */
   protected void commNearbyEnemies() throws GameActionException {
-    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0) {
+    if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0) return;
 
-      // no already seen enemy or closest seen is very far
+    // no already seen enemy or closest seen is very far
 //      Printer.cleanPrint();
 //      Printer.print("closestCommedEnemy: " + closestCommedEnemy, "enemy: " + enemy);
 //      if (closestCommedEnemy != null) {
@@ -438,21 +438,21 @@ public abstract class Robot {
 //          || !closestCommedEnemy.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)) {
 ////        communicator.enqueueMessage(new EnemyFoundMessage(enemy));
 //      }
-      if (!rc.canWriteSharedArray(0,0)) return;
-      RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
-      int commedEnemies = 0;
-      for (int i = allNearbyEnemyRobots.length; --i >= 0;) {
-        RobotInfo enemy = allNearbyEnemyRobots[i];
-        switch (enemy.type) {
-          case CARRIER:
-          case HEADQUARTERS:
-            break;
-          default:
-            Communicator.writeEnemy(enemy);
-            if (++commedEnemies >= 5) {
-              return;
-            }
-        }
+    if (!rc.canWriteSharedArray(0,0)) return;
+    RobotInfo[] allNearbyEnemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
+    int commedEnemies = 0;
+    for (int i = allNearbyEnemyRobots.length; --i >= 0;) {
+      if (Clock.getBytecodesLeft() < 200) return;
+      RobotInfo enemy = allNearbyEnemyRobots[i];
+      switch (enemy.type) {
+        case CARRIER:
+        case HEADQUARTERS:
+          break;
+        default:
+          Communicator.writeEnemy(enemy);
+          if (++commedEnemies >= 5) {
+            return;
+          }
       }
     }
   }

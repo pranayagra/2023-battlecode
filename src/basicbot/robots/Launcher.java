@@ -75,7 +75,9 @@ public class Launcher extends MobileRobot {
     } else {
       turnsInCloud = 0;
     }
-    MIN_GROUP_SIZE_TO_MOVE = 1;
+    if (Cache.PerTurn.ROUND_NUM < 1000) {
+      MIN_GROUP_SIZE_TO_MOVE = 1;
+    }
 
     //TODO: refactor this out
     updateEnemyStateInformation();
@@ -280,10 +282,14 @@ public class Launcher extends MobileRobot {
       destination = Communicator.getClosestEnemy(HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION));
       if (destination != null) {
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(destination);
-        if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination, destination.distanceSquaredTo(closestHq)*4)) {
+        if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination,
+            Math.max(
+                destination.distanceSquaredTo(closestHq)*4,
+                200
+            ))) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 0, 0);
+          rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;
@@ -360,11 +366,11 @@ public class Launcher extends MobileRobot {
       if (totalAllyLaunchers > 0) {
         if (!closestFriendToTargetLoc.isAdjacentTo(myLocation)) {
           // move towards friend closest to current target
-          rc.setIndicatorString("moving towards friend at " + closestFriendToTargetLoc + "-target: " + patrolTarget + " -type=" + currentTask.type.name);
+          rc.setIndicatorString("moving towards friend (" + nearbyAllyLaunchers + "," + totalAllyLaunchers + "," + (MIN_GROUP_SIZE_TO_MOVE-1) + ") at " + closestFriendToTargetLoc + "-target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
         } else if (closestFriendToTargetLoc.equals(myLocation)) {
-          rc.setIndicatorString("I'm the closest, staying still" + " -target: " + patrolTarget + " -type=" + currentTask.type.name);
+          rc.setIndicatorString("I'm the closest (" + nearbyAllyLaunchers + "," + totalAllyLaunchers + "," + (MIN_GROUP_SIZE_TO_MOVE-1) + "), staying still" + " -target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
         }
       }
@@ -528,8 +534,8 @@ public class Launcher extends MobileRobot {
     HOT_SPOT_WELL_DEFENSE("HOT_WELL", false, true, Launcher.TURNS_AT_HOT_SPOT, false),
     HOT_SPOT_FIGHT("HOT_FIGHT", false, true, Launcher.TURNS_AT_FIGHT, false);
 
-    public static final PatrolTargetType DEFAULT_FIRST_TARGET = OUR_WELL;
-    public static final PatrolTargetType TARGET_ON_CYCLE = OUR_WELL;
+    public static final PatrolTargetType DEFAULT_FIRST_TARGET = ENEMY_WELL;
+    public static final PatrolTargetType TARGET_ON_CYCLE = ENEMY_WELL;
 
     public final boolean isOurSide;
     public final boolean isHotSpot;
