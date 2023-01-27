@@ -15,14 +15,15 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['plaunchertest']
+bots = ['ptestcarrier', 'basicbot']
 # bots = ['spawnorderg']
 botsSet = set(bots)
 customMaps = ['TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
 ogMaps = ['maptestsmall', 'SmallElements', 'DefaultMap', 'AllElements']
 # maps = ['SmallElements']
 sprint1Maps = ["ArtistRendition", "BatSignal", "BowAndArrow", "Cat", "Clown", "Diagonal", "Eyelands", "Frog", "Grievance", "Hah", "Jail", "KingdomRush", "Minefield", "Movepls", "Orbit", "Pathfind", "Pit", "Pizza", "Quiet", "Rectangle", "Scatter", "Sun", "Tacocat"]
-maps = ogMaps + sprint1Maps + customMaps
+sprint2Maps = ["BattleSuns", "Checkmate2", "Cornucopia", "Crossword", "Cube", "Divergence", "FourNations", "HideAndSeek", "Lantern", "Lines", "Maze", "Pakbot", "Piglets", "Risk", "Sine", "Snowflake", "SomethingFishy", "Spin", "Spiral", "Squares", "Star", "Sus", "SweetDreams", "TicTacToe", "USA"]
+maps = ogMaps + sprint1Maps + sprint2Maps
 mapsSet = set(maps)
 
 matches = set(product(bots, maps))
@@ -52,7 +53,7 @@ for bot in set(bots + [currentBot]):
 def retrieveTotalUnitsSpawned(numRounds, output, team):
     totalValueA = 0
     last249Round = ((numRounds // 250) * 250) - 1
-    print('numRounds: ', numRounds, 'last249Round: ', last249Round, 'team: ', team)
+    # print('numRounds: ', numRounds, 'last249Round: ', last249Round, 'team: ', team)
     for i in range(4):
         startString = f'HQ{last249Round}{team}{i} ('
         startIndex = output.find(startString)
@@ -62,9 +63,9 @@ def retrieveTotalUnitsSpawned(numRounds, output, team):
         if endIndex == -1:
             continue
         value = output[startIndex + len(startString):endIndex]
-        print('count: ', value)
+        # print('count: ', value)
         totalValueA += int(value)
-    print(totalValueA)
+    # print(totalValueA)
 
     return totalValueA
 
@@ -84,9 +85,9 @@ def run_match(bot, map):
     start_time = time.time()
     try:
         outputA = str(subprocess.check_output(['./gradlew', 'run', '-PteamA=' + currentBot, '-PteamB=' + bot, '-Pmaps=' + map]))
-        print('after: ', time.time() - start_time)
+        # print('after: ', time.time() - start_time)
         outputB = str(subprocess.check_output(['./gradlew', 'run', '-PteamA=' + bot, '-PteamB=' + currentBot, '-Pmaps=' + map]))
-        print('after: ', time.time() - start_time)
+        # print('after: ', time.time() - start_time)
     except subprocess.CalledProcessError as exc:
         print("Status: FAIL", exc.returncode, exc.output)
         return 'Error'

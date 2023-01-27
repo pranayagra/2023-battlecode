@@ -51,7 +51,7 @@ public class Launcher extends MobileRobot {
   }
 
   private void resetVisited() {
-    visitedLocations = new HashSet<>(HqMetaInfo.hqCount + CommsHandler.ADAMANTIUM_WELL_SLOTS + CommsHandler.MANA_WELL_SLOTS + CommsHandler.ELIXIR_WELL_SLOTS);
+    visitedLocations = new HashSet<>(HqMetaInfo.hqCount + CommsHandler.ADAMANTIUM_WELL_SLOTS + CommsHandler.MANA_WELL_SLOTS);
   }
 
   @Override
@@ -777,20 +777,20 @@ public class Launcher extends MobileRobot {
         }
       }
     }
-    for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
-      if (CommsHandler.readElixirWellExists(i)) {
-        MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
-        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
-          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
-        }
-        if (visitedLocations.contains(wellLocation)) continue;
-        int dist = myLoc.distanceSquaredTo(wellLocation);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestEnemyWell = wellLocation;
-        }
-      }
-    }
+//    for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
+//      if (CommsHandler.readElixirWellExists(i)) {
+//        MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
+//        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+//          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
+//        }
+//        if (visitedLocations.contains(wellLocation)) continue;
+//        int dist = myLoc.distanceSquaredTo(wellLocation);
+//        if (dist < closestDist) {
+//          closestDist = dist;
+//          closestEnemyWell = wellLocation;
+//        }
+//      }
+//    }
     return closestEnemyWell;
   }
 
