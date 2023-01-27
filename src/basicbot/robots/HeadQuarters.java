@@ -705,7 +705,7 @@ public class HeadQuarters extends Robot {
   }
 
   private boolean createAnchors() throws GameActionException {
-    return buildAnchor(Anchor.ACCELERATING) || buildAnchor(Anchor.STANDARD);
+    return true; //buildAnchor(Anchor.ACCELERATING) || buildAnchor(Anchor.STANDARD);
   }
 
   private void determineTargetWell() throws GameActionException {
