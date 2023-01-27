@@ -50,7 +50,7 @@ public class SmitePathing {
       BugNav.setTarget(newDest);
       resetVisited();
       addVisited(Cache.PerTurn.CURRENT_LOCATION);
-//      doBuggingTurns = 0;
+      doBuggingTurns = 0;
     }
   }
 
@@ -72,15 +72,14 @@ public class SmitePathing {
 
   private boolean pathTo(MapLocation target) throws GameActionException {
     if (!rc.isMovementReady()) return false;
-//    int cooldownCost = (int) (Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER
-//        ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
-//        : Cache.Permanent.ROBOT_TYPE.movementCooldown);
-//    int numMoves = (int) Math.ceil((GameConstants.COOLDOWN_LIMIT - rc.getMovementCooldownTurns()) / cooldownCost);
+    int cooldownCost = (int) (Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER
+        ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
+        : Cache.Permanent.ROBOT_TYPE.movementCooldown);
     if (forceBugging
         || Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
         || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED // too many robots nearby, just bug
     ) {
-      doBuggingTurns += 5;
+      doBuggingTurns += 2;
       return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
     }
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
@@ -107,7 +106,11 @@ public class SmitePathing {
     // if i'm adjacent to my destination and it is unoccupied / not high rubble, move there
     if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(target)) { // TODO: maybe use adjacentTo if bytecode ok?
       // TODO: also check if not cloud/current (smite checks against high rubble)
-      return smiteMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target));
+      Direction toTarget = Cache.PerTurn.CURRENT_LOCATION.directionTo(target);
+      if (BugNav.canMoveInDirection(toTarget)) {
+        return smiteMove(toTarget);
+      }
+//      return smiteMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target));
 //      if (rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(target))) {
 //      }
 //      return false;
@@ -118,16 +121,25 @@ public class SmitePathing {
     Direction dir = up.bestDir(target); // ~5000 bytecode (4700 avg&median)
 //    Utils.finishByteCodeCounting("unit-bfs");
 
-//    if (Cache.PerTurn.ROUND_NUM >= 92 && Cache.Permanent.ID == 12225) {
-//      Printer.print("nav towards: " + destination, "best dir: " + dir, "bug can move: " + BugNav.canMoveInDirection(dir));
-//    }
 
 //    if (dir == null || !rc.canMove(dir)) return false; // TODO: this checks null but if null should do something else
 //    if (dir != null && !BugNav.canMoveInDirection(dir)) return BugNav.tryBugging();
 //    if (dir == null && rc.canM) return BugNav.tryBugging();
 
     // don't know where to go / gonna revisit
-    if (dir == null || !BugNav.canMoveInDirection(dir) || isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir))) {
+    MapLocation windCurrentLoc = dir != null ? Cache.PerTurn.CURRENT_LOCATION.add(dir) : Cache.PerTurn.CURRENT_LOCATION;
+    MapInfo nextLocInfo = rc.senseMapInfo(windCurrentLoc);
+    if (nextLocInfo.getCurrentDirection() != Direction.CENTER && rc.getMovementCooldownTurns() + cooldownCost * nextLocInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM) > GameConstants.COOLDOWN_LIMIT) {
+      windCurrentLoc = windCurrentLoc.add(nextLocInfo.getCurrentDirection());
+    } else {
+      windCurrentLoc = null;
+    }
+
+//    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//      Printer.print("nav towards: " + destination, "best dir: " + dir, "bug can move: " + (dir == null ? "null" : BugNav.canMoveInDirection(dir)));
+//      Printer.print("visited: " + (dir == null ? "null" : isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir))), "wind current loc: " + windCurrentLoc, "visited wind current loc: " + (windCurrentLoc == null ? "null" : isVisited(windCurrentLoc)));
+//    }
+    if (dir == null || !BugNav.canMoveInDirection(dir) || isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir)) || (windCurrentLoc != null && isVisited(windCurrentLoc))) {
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try fuzzy movement for " + MAX_FUZZY_MOVES + " turns");
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try bugging");
 //      Printer.print("current location: " + Cache.PerTurn.CURRENT_LOCATION);

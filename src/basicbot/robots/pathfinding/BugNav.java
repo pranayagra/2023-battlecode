@@ -2,6 +2,7 @@ package basicbot.robots.pathfinding;
 
 import basicbot.containers.CharSet;
 import basicbot.knowledge.Cache;
+import basicbot.utils.Printer;
 import battlecode.common.*;
 
 public class BugNav{
@@ -26,7 +27,12 @@ public class BugNav{
 
   static void setTarget(MapLocation newTarget) {
     //different target? ==> previous data does not help!
-    if (currTarget == null || !currTarget.equals(newTarget)) resetPathfinding();
+    if (currTarget == null || !currTarget.equals(newTarget)) {
+//      if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//        Printer.print("BUGNAV: Setting target to " + newTarget + " -- coming from current loc: " + Cache.PerTurn.CURRENT_LOCATION);
+//      }
+      resetPathfinding();
+    }
     currTarget = newTarget;
 //    Printer.print("BUGNAV: Setting target to " + newTarget + " -- coming from current loc: " + Cache.PerTurn.CURRENT_LOCATION);
   }
@@ -58,14 +64,39 @@ public class BugNav{
     MapLocation nextLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
     if (blockedLocations.contains(nextLoc)) return false;
     if (!rc.canSenseLocation(nextLoc)) return true; // don't know what's there, assume it's fine
-    MapInfo newLocInfo = rc.senseMapInfo(nextLoc);
-    Direction windCurrentDir = newLocInfo.getCurrentDirection();
-    if (!windCurrentDir.equals(dir.opposite())) return true; // wind is not blowing towards me
+    MapInfo nextLocInfo = rc.senseMapInfo(nextLoc);
+    Direction windCurrentDir = nextLocInfo.getCurrentDirection();
+    if (windCurrentDir == Direction.CENTER) return true; // no wind
     // check if it's the last movement before turn end
     int moveCD = Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER ? ((int) (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight() * GameConstants.CARRIER_MOVEMENT_SLOPE)) : Cache.Permanent.ROBOT_TYPE.movementCooldown;
-    int newMoveCD = rc.getMovementCooldownTurns() + ((int) (moveCD * newLocInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM)));
+    int newMoveCD = rc.getMovementCooldownTurns() + ((int) (moveCD * nextLocInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM)));
     if (newMoveCD < GameConstants.COOLDOWN_LIMIT) return true; // can move again
-    return false; // wind is blowing towards me and I can't move again
+    if (windCurrentDir == dir.opposite()) return false; // wind is blowing towards me and I can't move again
+    // wind is not blowing towards me
+    MapLocation withCurrentLoc = nextLoc.add(windCurrentDir);
+    if (blockedLocations.contains(withCurrentLoc)) return false; // wind blows me into a blocked location
+    return true; // haven't visited this location yet
+  }
+
+  private static boolean canMoveInDirWithBuggingCheck(Direction dir) throws GameActionException {
+//    Printer.print("BUGNAV: Checking if can move in direction " + dir);
+    if (!rc.canMove(dir)) return false;
+    MapLocation nextLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
+    if (blockedLocations.contains(nextLoc)) return false;
+    if (!rc.canSenseLocation(nextLoc)) return true; // don't know what's there, assume it's fine
+    MapInfo nextLocInfo = rc.senseMapInfo(nextLoc);
+    Direction windCurrentDir = nextLocInfo.getCurrentDirection();
+    if (windCurrentDir == Direction.CENTER) return true; // no wind
+    // check if it's the last movement before turn end
+    int moveCD = Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER ? ((int) (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight() * GameConstants.CARRIER_MOVEMENT_SLOPE)) : Cache.Permanent.ROBOT_TYPE.movementCooldown;
+    int newMoveCD = rc.getMovementCooldownTurns() + ((int) (moveCD * nextLocInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM)));
+    if (newMoveCD < GameConstants.COOLDOWN_LIMIT) return true; // can move again
+    if (windCurrentDir == dir.opposite()) return false; // wind is blowing towards me and I can't move again
+    // wind is not blowing towards me
+    MapLocation withCurrentLoc = nextLoc.add(windCurrentDir);
+    if (blockedLocations.contains(withCurrentLoc)) return false; // wind blows me into a blocked location
+    if (visited.contains(getCode(withCurrentLoc))) return false; // wind blows me into a location I've already visited
+    return true; // haven't visited this location yet
   }
 
   /**
@@ -73,16 +104,21 @@ public class BugNav{
    * @return true if we moved
    */
   static boolean tryBugging() throws GameActionException {
-//    Printer.print("BUGNAV: Trying to bug");
+//    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//      Printer.print("BUGNAV: Trying to bug");
+//    }
     //If I'm at a minimum distance to the target, I'm free!
     MapLocation myLoc = rc.getLocation();
     int d = myLoc.distanceSquaredTo(currTarget);
     if (d <= minDistToTarget) {
+//      if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//        Printer.print("BUGNAV: as close as been -> reset");
+//      }
       resetPathfinding();
 //      Printer.print("ERROR: should check done bugging first");
     }
 
-    char code = getCode();
+    char code = getCode(Cache.PerTurn.CURRENT_LOCATION);
 
     if (visited.contains(code)) resetPathfinding();
     visited.add(code);
@@ -93,7 +129,10 @@ public class BugNav{
     //If there's an obstacle I try to go around it [until I'm free] instead of going to the target directly
     Direction dir = myLoc.directionTo(currTarget);
     if (lastObstacleFound != null) dir = myLoc.directionTo(lastObstacleFound);
-    if (rc.canMove(dir)){
+    if (canMoveInDirWithBuggingCheck(dir)) {
+//      if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//        Printer.print("BUGNAV: can move -> reset");
+//      }
       resetPathfinding();
     }
 
@@ -101,7 +140,10 @@ public class BugNav{
     //Note that we have to try at most 16 times since we can switch orientation in the middle of the loop. (It can be done more efficiently)
 //    Direction startingDir = dir;
     for (int i = 16; --i >= 0;) {
-      if (canMoveInDirection(dir)) {
+      if (canMoveInDirWithBuggingCheck(dir)) {
+//        if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//          Printer.print("BUGNAV: can bug move -> move");
+//        }
         return pathing.move(dir);
       }
       MapLocation newLoc = myLoc.add(dir);
@@ -117,22 +159,25 @@ public class BugNav{
     }
 
 //    if (pathing.move(dir)) rc.move(dir);
-    return canMoveInDirection(dir) && pathing.move(dir);
+    return canMoveInDirWithBuggingCheck(dir) && pathing.move(dir);
   }
 
   //clear some of the previous data
-  static void resetPathfinding(){
+  static void resetPathfinding() {
+//    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//      Printer.print("BUGNAV: Resetting pathfinding");
+//    }
     lastObstacleFound = null;
     minDistToTarget = INF;
     visited.clear();
   }
 
-  static char getCode(){
+  static char getCode(MapLocation from){
 //    int x = rc.getLocation().x % MAX_MAP_SIZE;
 //    int y = rc.getLocation().y % MAX_MAP_SIZE;
-    Direction obstacleDir = Cache.PerTurn.CURRENT_LOCATION.directionTo(currTarget);
-    if (lastObstacleFound != null) obstacleDir = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastObstacleFound);
+    Direction obstacleDir = from.directionTo(currTarget);
+    if (lastObstacleFound != null) obstacleDir = from.directionTo(lastObstacleFound);
     int bit = rotateRight ? 1 : 0;
-    return (char) ((((((Cache.PerTurn.CURRENT_LOCATION.x << 6) | Cache.PerTurn.CURRENT_LOCATION.y) << 3) | obstacleDir.ordinal()) << 1) | bit);
+    return (char) ((((((from.x << 6) | from.y) << 3) | obstacleDir.ordinal()) << 1) | bit);
   }
 }
