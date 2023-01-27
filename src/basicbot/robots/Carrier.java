@@ -756,8 +756,14 @@ public class Carrier extends MobileRobot {
 //        if (!moved) break;
         int moveTrial = wellQueueTargetIndex;
         if (currentPathIndex < wellQueueTargetIndex || currentPathIndex == -1) {
-          while (moveTrial >= 0 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[moveTrial]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[moveTrial])))) {
-            // we can't move (adjacent + can move)
+          while (moveTrial >= 0
+              && (
+              !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[moveTrial])
+                  && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[moveTrial])))
+//                  || BugNav.blockedLocations.contains(wellQueueOrder[moveTrial])
+//                  || !windOk(wellQueueOrder[moveTrial], wellLocation)
+          )) {
+            // we can't move (adjacent + can move || blocked || wind is bad)
             moveTrial--;
           }
           if (moveTrial < 0) {
@@ -765,7 +771,13 @@ public class Carrier extends MobileRobot {
           }
         }
         if (currentPathIndex > wellQueueTargetIndex || currentPathIndex == -1) {
-          while (moveTrial < 9 && !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[moveTrial]) && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[moveTrial])))) {
+          while (moveTrial < 9
+              && (
+              !(Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellQueueOrder[moveTrial])
+                  && rc.canMove(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellQueueOrder[moveTrial])))
+//                  || BugNav.blockedLocations.contains(wellQueueOrder[moveTrial])
+//                  || !windOk(wellQueueOrder[moveTrial], wellLocation)
+          )) {
             // we can't move (adjacent + can move)
             moveTrial++;
           }
@@ -779,6 +791,18 @@ public class Carrier extends MobileRobot {
       }
     }
     return true;
+  }
+
+  private boolean windOk(MapLocation testLocation, MapLocation wellLocation) throws GameActionException {
+    if (!rc.canSenseLocation(testLocation)) return true; // can't sense, so assume it's ok
+    MapInfo testLocInfo = rc.senseMapInfo(testLocation);
+    Direction wind = testLocInfo.getCurrentDirection();
+    if (wind == Direction.CENTER) return true; // no wind
+    MapLocation next = testLocation.add(wind);
+    int moveCD = ((int) (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight() * GameConstants.CARRIER_MOVEMENT_SLOPE));
+    int newMoveCD = rc.getMovementCooldownTurns() + ((int) (moveCD * (rc.canSenseLocation(next) ? rc.senseMapInfo(next).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) : 1)));
+    if (newMoveCD < GameConstants.COOLDOWN_LIMIT) return true; // can move again
+    return next.isAdjacentTo(wellLocation);
   }
 
   /**
@@ -915,8 +939,8 @@ public class Carrier extends MobileRobot {
     if (BugNav.blockedLocations.contains(queuePosition)) return false; // blocked by a bugnav
     if (rc.canSenseLocation(queuePosition)
         && BugNav.blockedLocations.contains(
-            queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()
-            ))) return false; // pushed into a blocked location
+        queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()
+        ))) return false; // pushed into a blocked location
     return true;
   }
 
