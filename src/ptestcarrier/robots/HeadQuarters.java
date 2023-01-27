@@ -104,7 +104,7 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
 
     idxToWriteAt = 0;
     readAllSpawnLocations(); // read all locations that HQ spawned at (cleared by carrier on first turn)
@@ -689,7 +689,9 @@ public class HeadQuarters extends Robot {
   }
 
   private boolean createAnchors() throws GameActionException {
-    return buildAnchor(Anchor.ACCELERATING) || buildAnchor(Anchor.STANDARD);
+    boolean skipAnchor = false;
+    /*WORKFLOW_ONLY*///skipAnchor = true;
+    return skipAnchor || (buildAnchor(Anchor.ACCELERATING) || buildAnchor(Anchor.STANDARD));
   }
 
   private void determineTargetWell() throws GameActionException {
