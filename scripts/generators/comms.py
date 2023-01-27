@@ -111,14 +111,14 @@ SCHEMA = {
       **WELL_SCHEMA,
     }
   },
-  'elixir_well': {
-    'slots': 4,
-    'bits': {
-      **WELL_SCHEMA,
-    }
-  },
+  # 'elixir_well': {
+  #   'slots': 4,
+  #   'bits': {
+  #     **WELL_SCHEMA,
+  #   }
+  # },
   'enemy': {
-    'slots': 5,
+    'slots': 10,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,

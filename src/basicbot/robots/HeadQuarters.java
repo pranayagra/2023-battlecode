@@ -110,7 +110,7 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 50) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
     idxToWriteAt = 0;
     readAllSpawnLocations(); // read all locations that HQ spawned at (cleared by carrier on first turn)
 

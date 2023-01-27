@@ -1,6 +1,7 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
+import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.containers.HashSet;
@@ -23,7 +24,6 @@ public class CarrierNew extends MobileRobot {
 
     private static final int SET_WELL_PATH_DISTANCE = 2;//RobotType.CARRIER.actionRadiusSquared;
 
-
     private int turnsStuckApproachingWell;
     private final HashMap<MapLocation, Direction> wellApproachDirection;
     private final HashSet<MapLocation> blackListWells;
@@ -33,6 +33,9 @@ public class CarrierNew extends MobileRobot {
     private int emptierRobotsSeen;
     private int fullerRobotsSeen;
     private int roundsWaitingForQueueSpot;
+
+    private RobotInfo cachedLastEnemyForBroadcast;
+    private int cachedLastEnemyForBroadcastRound = -10;
 
     /*
     HQ BEHAVIOR
@@ -94,10 +97,6 @@ public class CarrierNew extends MobileRobot {
         blackListWells = new HashSet<>(8);
         wellQueueOrder = null;
         readHQTask();
-//        if (rc.getID() == 11401) {
-//            System.out.println("bytes used-0.5: " + Clock.getBytecodeNum());
-//        }
-//        Printer.print("CarrierNew: " + HQAssignedTask + " " + HQAssignedTaskLocation);
         if (HQAssignedTask == null) {
             assignRandomTask();
         }
@@ -373,6 +372,7 @@ public class CarrierNew extends MobileRobot {
         if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellMiningFrom, SET_WELL_PATH_DISTANCE)) return;
         if (rc.getWeight() >= 39) return;
 
+        // maybe get num spots available at mine instead of just trying
         if (!closeToTargetWell && Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellMiningFrom, 16)) {
             closeToTargetWell = true;
             roundNumWhenCloseToTarget = Cache.PerTurn.ROUND_NUM;
@@ -411,6 +411,7 @@ public class CarrierNew extends MobileRobot {
 
     private void fightEnemy() throws GameActionException {
         if (rc.getWeight() < 20) return;
+        if (rc.getHealth() >= 130) return;
         MapLocation locToAttack = null;
         int distance = Integer.MAX_VALUE;
         for (RobotInfo robotInfo : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
@@ -438,18 +439,48 @@ public class CarrierNew extends MobileRobot {
     }
 
     // todo: maybe some well blacklist thing if needed
+    private int healthLastRound = 150;
     private boolean enemyProtocol() throws GameActionException {
+
+        // currently fleeing and close to HQ, keep fleeing
+        if (fleeingCounter > 0) {
+            if (Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, closestHQLocation) <= 10) {
+                fleeingCounter = 6;
+            }
+        }
+
+        // currently fleeing and now next to HQ, transfer resources and stop fleeing
+        if (fleeingCounter > 0) {
+            if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(closestHQLocation, 2)) {
+                transferResourceToHQ(closestHQLocation);
+                fleeingCounter = 0;
+            }
+        }
+
+        // if there are enemies, flee!
         for (RobotInfo robotInfo : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
             if (robotInfo.type == RobotType.LAUNCHER || robotInfo.type == RobotType.DESTABILIZER) {
+                cachedLastEnemyForBroadcast = robotInfo;
+                cachedLastEnemyForBroadcastRound = Cache.PerTurn.ROUND_NUM;
                 fleeingCounter = 6;
+                closeToTargetWell = false; // not sure about this one
                 target = null;
                 break;
             }
         }
 
+
+//        if (fleeingCounter == 6) {
+//            // if I see an enemy but did not get attacked and I have friends nearby, do not run away
+//            if (rc.getHealth() >= healthLastRound && rc.getHealth() >= 80 && Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length > 0) {
+//                fleeingCounter = 0;
+//            }
+//        }
+
+        // not fleeing
         if (fleeingCounter <= 0) return false;
-        fightEnemy();
-        fleeFromEnemy();
+        fightEnemy(); // only fight if I have resources and I am not high on health
+        fleeFromEnemy(); //always flee if see enemy
         return true;
     }
 
@@ -486,10 +517,13 @@ public class CarrierNew extends MobileRobot {
 
     // call this method every round no matter what
     private void collectIfPossible() throws GameActionException {
-        WellInfo[] wellInfos = rc.senseNearbyWells(2);
-        if (wellInfos.length > 0) {
-            Printer.appendToIndicator(" collecting");
-            doWellCollection(wellInfos[0].getMapLocation());
+        if (wellMiningFrom != null && wellMiningFrom.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
+            doWellCollection(wellMiningFrom);
+        } else {
+            WellInfo[] wellInfos = rc.senseNearbyWells(2);
+            if (wellInfos.length > 0) {
+                doWellCollection(wellInfos[0].getMapLocation());
+            }
         }
     }
 
@@ -559,55 +593,48 @@ public class CarrierNew extends MobileRobot {
     private MapLocation closestHQLocation = null;
     @Override
     protected void runTurn() throws GameActionException {
-//        if (rc.getID() == 11401) {
-//            System.out.println("bytes used0: " + Clock.getBytecodeNum());
-//        }
         closestHQLocation = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-//        if (rc.getID() == 11401) {
-//            System.out.println("bytes used1: " + Clock.getBytecodeNum());
-//        }
-//        if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
         Printer.appendToIndicator("task=" + HQAssignedTask.collectionType + " miningFrom=" + wellMiningFrom);
 
         wellDataProtocol();
-
-//        if (rc.getID() == 11401) {
-//            System.out.println("bytes used1.5: " + Clock.getBytecodeNum());
-//        }
+        transferResourceToHQ(closestHQLocation);
 
         if (enemyProtocol()) {
             collectIfPossible();
-            return;
+        } else {
+            collectIfPossible();
+
+            if (rc.getWeight() >= 39 && rc.getAnchor() == null) returnToHQ();
+
+            if (depositingResources) {
+                transferResourceToHQ(closestHQLocation);
+                if (rc.getWeight() == 0 || rc.getAnchor() != null) depositingResources = false;
+            }
+
+            miningMicroMovement();
+
+            checkIfNewWellExists();
+
+            if (!depositingResources) {
+                if (wellMiningFrom == null) {
+                    randomExplore(true);
+                    rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, target, 255, 0, 0);
+                } else {
+                    moveToTargetWell();
+                }
+            }
+
+            collectIfPossible();
         }
 
-        collectIfPossible();
+        healthLastRound = rc.getHealth();
 
-        if (rc.getWeight() >= 39 && rc.getAnchor() == null) returnToHQ();
-
-        if (depositingResources) {
-            transferResourceToHQ(closestHQLocation);
-            if (rc.getWeight() == 0 || rc.getAnchor() != null) depositingResources = false;
-        }
-
-        miningMicroMovement();
-
-        checkIfNewWellExists();
-//        if (rc.getID() == 11401) {
-//            System.out.println("bytes used3: " + Clock.getBytecodeNum());
-//        }
-        if (!depositingResources) {
-            if (wellMiningFrom == null) {
-                randomExplore(true);
-                rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, target, 255, 0, 0);
-            } else {
-                moveToTargetWell();
+        if (cachedLastEnemyForBroadcast != null && (fleeingCounter > 0 || Cache.PerTurn.ROUND_NUM - cachedLastEnemyForBroadcastRound <= 6)) {
+            Printer.appendToIndicator(" comm_enemy");
+            if (rc.canWriteSharedArray(0, 0)) {
+                Communicator.writeEnemy(cachedLastEnemyForBroadcast);
             }
         }
-//        if (rc.getID() == 11401) {
-//            System.out.println("bytes used4: " + Clock.getBytecodeNum());
-//        }
-
-        collectIfPossible();
 
 
     }
