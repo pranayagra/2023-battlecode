@@ -3,7 +3,6 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharCharMap;
 import basicbot.containers.HashSet;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
@@ -221,17 +220,48 @@ public class Launcher extends MobileRobot {
   }
 
   /**
-   * computes the destination for this robot to move towards
+   * This gets the closest enemyHQLocation based on first vision, then comms.
+   * @return the closest enemyHQLocation. NULL if there are enemies nearby!
+   * @throws GameActionException
+   */
+  private MapLocation getClosestEnemyHQIfNoEnemies() throws GameActionException {
+    MapLocation closestEnemyHQ = null;
+    int distToClosestEnemyHQ = Integer.MAX_VALUE;
+    for (RobotInfo e : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (e.type != RobotType.HEADQUARTERS) {
+        return null;
+      }
+      int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(e.location);
+      if (dist < distToClosestEnemyHQ) {
+        closestEnemyHQ = e.location;
+        distToClosestEnemyHQ = dist;
+      }
+    }
+    if (closestEnemyHQ == null) return HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    return closestEnemyHQ;
+  }
+  /**
+   * computes the destination for this robot to move towards:
+   * run away from enemyHq if it is the only enemy
    * chase nearby enemies if needed
    * approach enemy closest to our HQ
    * do exploration in early game -- TODO: probably remove
    * do patrolling (visit hot spots in order)
-   * @return the destination to move towards
+   * @return the destination to move towards. Null if the action was handled inside :)
    * @throws GameActionException any exception while calculating destination
    */
   private MapLocation getDestination() throws GameActionException {
-    // if one of our friends got hurt, go to him
     MapLocation destination = null;
+    // If enemyHQ only enemy near us and we are in range, walk away from it.
+    MapLocation closestEnemyHQ = getClosestEnemyHQIfNoEnemies();
+    if (closestEnemyHQ != null && Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(closestEnemyHQ, RobotType.HEADQUARTERS.actionRadiusSquared)) {
+      rc.setIndicatorString("moving away from enemy HQ:" + closestEnemyHQ);
+      pathing.moveAwayFrom(closestEnemyHQ);
+      return null;
+    }
+
+    // if one of our friends got hurt, go to him
+
 //    destination = AttackMicro.updateAndGetInjuredAllyTarget();
     if (destination != null) {
       rc.setIndicatorString("going to injured ally: " + destination);

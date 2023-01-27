@@ -1,5 +1,7 @@
 package basicbot.robots.micro;
 
+import basicbot.communications.HqMetaInfo;
+import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.knowledge.Cache;
 import basicbot.utils.Utils;
@@ -28,6 +30,9 @@ public class AttackerFightingMicro {
   static double currentActionRadius;
   static boolean canAttack;
 
+  static int totalAllyArmyHealth;
+  static int totalEnemyArmyHealth;
+
 
   public static void init(RobotController rc, Pathing pathing) {
     AttackerFightingMicro.rc = rc;
@@ -41,7 +46,7 @@ public class AttackerFightingMicro {
     myVisionRange = Cache.Permanent.ROBOT_TYPE.visionRadiusSquared;
 
     //TODO: add HQ DPS here too
-    DPS[RobotType.LAUNCHER.ordinal()] = RobotType.LAUNCHER.damage * (4.0 * GameConstants.COOLDOWNS_PER_TURN / RobotType.LAUNCHER.actionCooldown);
+    DPS[RobotType.LAUNCHER.ordinal()] = RobotType.LAUNCHER.damage * 1.0 * GameConstants.COOLDOWNS_PER_TURN / RobotType.LAUNCHER.actionCooldown;
 //    DPS[RobotType.SAGE.ordinal()] = 9;
     visionRange[RobotType.LAUNCHER.ordinal()] = RobotType.LAUNCHER.visionRadiusSquared;
 //    rangeExtended[RobotType.SAGE.ordinal()] = 34;
@@ -61,7 +66,6 @@ public class AttackerFightingMicro {
     RobotInfo[] enemyRobots = Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS;
     if (enemyRobots.length == 0) return false;
     canAttack = rc.isActionReady();
-
     int uIndex = enemyRobots.length;
     while (uIndex-- > 0) {
       RobotInfo r = enemyRobots[uIndex];
@@ -71,16 +75,37 @@ public class AttackerFightingMicro {
           shouldMicro = true;
           break;
         case HEADQUARTERS:
-          if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(r.location, RobotType.HEADQUARTERS.actionRadiusSquared)) {
-            shouldMicro = true; // need to get out of here. current micro SHOULD walk out.
-          }
+          // HANDLED OUTSIDE OF MICRO
         default:
           break;
       }
     }
     if (!shouldMicro) return false;
+    // clear out blocked locations for enemyHQs
+    BugNav.blockedLocations.clear();
 
     shouldStayInRange = false;
+
+    totalAllyArmyHealth = 0;
+    for (RobotInfo ally : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      switch(ally.type) {
+        case LAUNCHER:
+          totalAllyArmyHealth += ally.health;
+          break;
+        default:
+          break;
+      }
+    }
+    totalEnemyArmyHealth = 0;
+    for (RobotInfo enemy : enemyRobots) {
+      switch(enemy.type) {
+        case LAUNCHER:
+          totalAllyArmyHealth += enemy.health;
+          break;
+        default:
+          break;
+      }
+    }
     // we should never stay in range if we have the choice right?
 //    if (!rc.isActionReady()) shouldStayInRange = true;
 //    if (severelyHurt) shouldStayInRange = true;
@@ -136,7 +161,8 @@ public class AttackerFightingMicro {
         }
       }
       int t = enemy.type.ordinal();
-      currentDPS = DPS[t] / ((int) (rc.senseMapInfo(enemy.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * enemy.type.actionCooldown));
+      currentDPS = DPS[t] / ((int) (rc.senseMapInfo(enemy.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM)));
+      if (enemy.type == RobotType.HEADQUARTERS) currentDPS = RobotType.HEADQUARTERS.damage;
       if (currentDPS <= 0) continue;
       //if (danger && Robot.comm.isEnemyTerritory(unit.getLocation())) currentDPS*=1.5;
       currentVisionRange = visionRange[t];
@@ -164,7 +190,8 @@ public class AttackerFightingMicro {
 
     for (RobotInfo friendly : friendlyRobots) {
       if (Clock.getBytecodesLeft() < MicroConstants.MAX_MICRO_BYTECODE_REMAINING) break;
-      currentDPS = DPS[friendly.type.ordinal()] / ((int) (rc.senseMapInfo(friendly.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM) * friendly.type.actionCooldown));
+      currentDPS = DPS[friendly.type.ordinal()] / ((int) (rc.senseMapInfo(friendly.location).getCooldownMultiplier(Cache.Permanent.OUR_TEAM)));
+//      System.out.println(currentDPS);
       if (currentDPS <= 0) continue;
       microInfo[0].updateForAlly(friendly);
       microInfo[1].updateForAlly(friendly);
@@ -257,7 +284,7 @@ public class AttackerFightingMicro {
 
     /**
      *
-     * @param enemy the enemy
+     * @param enemy the enemy. THIS CAN BE HQ
      * @param closestAllyToEnemy the closest ally (NOT SELF) to the enemy. NULLABLE
      */
     void updateForEnemy(RobotInfo enemy, RobotInfo closestAllyToEnemy) {
@@ -268,7 +295,7 @@ public class AttackerFightingMicro {
         canAttackAlly = true;
       }
       int dist = enemy.location.distanceSquaredTo(location);
-      if (dist < distToClosestEnemy) {
+      if (dist < distToClosestEnemy && enemy.type != RobotType.HEADQUARTERS) {
         distToClosestEnemy = dist;
         closestEnemyLocation = enemy.location;
       }
@@ -306,10 +333,29 @@ public class AttackerFightingMicro {
      */
     double score() {
       if (!canMove) return -1 * Double.MAX_VALUE;
-//      if (alliesTargeting > enemiesTargeting) // you want to go in
-      return netOutgoingDPS;
+
+      double score = netOutgoingDPS;
+//      if (bigWinning()) score += 100.0 / distToClosestEnemy;
+//      if (bigLosing()) {
+//        if (distToClosestEnemy > RobotType.LAUNCHER.visionRadiusSquared) {
+//          score += 100;
+//
+//        }
+//        score += 5 * distToClosestEnemy;
+//        // incentivize moving towards closest ally HQ
+//
+//        int distToAllyHq = HqMetaInfo.getClosestHqLocation(location).distanceSquaredTo(location);
+//        score -= (0.01) * distToAllyHq;
+//      }
+      return score;
 //      if (enemiesTargeting > alliesTargeting) return 1;
 //      return 2;
+    }
+    boolean bigWinning() {
+      return totalAllyArmyHealth > MicroConstants.BIG_WIN_HEALTH_MULTIPLIER * totalEnemyArmyHealth;
+    }
+    boolean bigLosing() {
+      return totalAllyArmyHealth < MicroConstants.BIG_LOSE_HEALTH_MULTIPLIER * totalEnemyArmyHealth;
     }
 
     boolean inRange() {
