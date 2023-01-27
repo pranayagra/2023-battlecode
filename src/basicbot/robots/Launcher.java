@@ -66,9 +66,9 @@ public class Launcher extends MobileRobot {
     }
     if (rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION)) {
       switch (++turnsInCloud) {
-        case 1: case 2: case 3:
-          MIN_GROUP_SIZE_TO_MOVE = 2;
-          break;
+//        case 1: case 2: case 3:
+//          MIN_GROUP_SIZE_TO_MOVE = 2;
+//          break;
         default:
           MIN_GROUP_SIZE_TO_MOVE = 1;
           break;
