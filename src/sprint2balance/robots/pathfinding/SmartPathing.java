@@ -26,10 +26,13 @@ public class SmartPathing extends Pathing {
 //    if (interestingTilesCounter <= 2) {
 //      return sp.cautiousGreedyMove(target);
 //    }
-    sp.updateDestination(target);
+    if (target.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
+      return sp.cautiousGreedyMove(target);
+    }
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       return sp.cautiousGreedyMove(target);
     }
+    sp.updateDestination(target);
     return sp.pathToDestination();
   }
 

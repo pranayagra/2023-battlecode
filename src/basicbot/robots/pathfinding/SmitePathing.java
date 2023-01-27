@@ -81,7 +81,7 @@ public class SmitePathing {
         || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED // too many robots nearby, just bug
     ) {
       doBuggingTurns += 5;
-      return BugNav.tryBugging();
+      return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
     }
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
     if (doBuggingTurns > 0) {
@@ -89,6 +89,7 @@ public class SmitePathing {
       if (!BugNav.checkDoneBugging()) {
         doBuggingTurns--;
         if (BugNav.tryBugging()) {
+          addVisited(Cache.PerTurn.CURRENT_LOCATION);
           if (BugNav.checkDoneBugging()) {
             doBuggingTurns = 0;
           }
@@ -132,7 +133,7 @@ public class SmitePathing {
 //      Printer.print("current location: " + Cache.PerTurn.CURRENT_LOCATION);
       doBuggingTurns = 2;
 //      BugNav.setTarget(target);
-      return BugNav.tryBugging();
+      return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
     } else {
       return smiteMove(dir);
       // rc.setIndicatorDot(rc.getLocation(), 255, 255, 255);
@@ -253,6 +254,10 @@ public class SmitePathing {
   private void addVisited(MapLocation loc) {
     int bit = loc.x + 60 * loc.y;
     tracker[bit >>> 5] |= 1 << (31 - bit & 31);
+  }
+  private boolean markVisitedAndRetTrue(MapLocation loc) {
+    addVisited(loc);
+    return true;
   }
 
 //  private void addFuzzyVisited(MapLocation loc) {

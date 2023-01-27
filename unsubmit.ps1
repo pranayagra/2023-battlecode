@@ -40,5 +40,6 @@ Get-ChildItem $finalDst *.java -recurse |
         Write-Output "Replace $finalDst/$_"
         $c = ($_ | Get-Content)
         $c = $c -replace "$dstSrcPkg","$dstName"
+        $c = $c -replace "/*BASICBOT_ONLY*/","/*BASICBOT_ONLY*///"
         $c | Set-Content $_.FullName
     }

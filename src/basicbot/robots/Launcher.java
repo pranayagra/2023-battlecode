@@ -76,6 +76,7 @@ public class Launcher extends MobileRobot {
     } else {
       turnsInCloud = 0;
     }
+    MIN_GROUP_SIZE_TO_MOVE = 1;
 
     //TODO: refactor this out
     updateEnemyStateInformation();
@@ -128,7 +129,7 @@ public class Launcher extends MobileRobot {
     } else {
       MapLocation target = getDestination();
       if (target != null) {
-        rc.setIndicatorDot(target, 0, 0, 255);
+        /*BASICBOT_ONLY*/rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
       }
     }
@@ -252,6 +253,7 @@ public class Launcher extends MobileRobot {
         if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination, destination.distanceSquaredTo(closestHq)*4)) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
+          rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 0, 0);
           return destination;
         }
 //        return destination;
@@ -401,7 +403,7 @@ public class Launcher extends MobileRobot {
         return patrolTarget; //closestLinePoint != null ? closestLinePoint : patrolTarget;
       } else { // i'm the closest
         rc.setIndicatorString("advance clump -> " + currentTask.type.name + "@" + currentTask.targetLocation + "via-" + patrolTarget + " - turns@target:" + currentTask.numTurnsNearTarget);
-        return myLocation; //adjacentAllyLaunchers >= (MIN_GROUP_SIZE_TO_MOVE - 1)*0.75 ? patrolTarget : myLocation;
+        return MIN_GROUP_SIZE_TO_MOVE == 1 ? patrolTarget : myLocation; //adjacentAllyLaunchers >= (MIN_GROUP_SIZE_TO_MOVE - 1)*0.75 ? patrolTarget : myLocation;
       }
 //      return patrolTarget;
     }
@@ -568,6 +570,7 @@ public class Launcher extends MobileRobot {
             }
             WellInfo well = rc.senseWell(targetLocation);
             if (well == null) {
+              Printer.print("ERROR: expected enemy well is not a well " + targetLocation, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
               RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
               break;
             }
@@ -684,7 +687,7 @@ public class Launcher extends MobileRobot {
           Printer.print("Failed to select patrol target for type: " + type);
         }
       }
-      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
   }
