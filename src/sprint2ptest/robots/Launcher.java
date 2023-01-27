@@ -1,22 +1,22 @@
-package basicbot.robots;
+package sprint2ptest.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharCharMap;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import sprint2ptest.communications.CommsHandler;
+import sprint2ptest.communications.Communicator;
+import sprint2ptest.communications.HqMetaInfo;
+import sprint2ptest.containers.CharCharMap;
+import sprint2ptest.containers.HashSet;
+import sprint2ptest.knowledge.Cache;
+import sprint2ptest.knowledge.RunningMemory;
+import sprint2ptest.robots.micro.AttackMicro;
+import sprint2ptest.robots.micro.AttackerFightingMicro;
+import sprint2ptest.utils.Constants;
+import sprint2ptest.utils.Printer;
+import sprint2ptest.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
-  private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
+  private static final int MIN_GROUP_SIZE_TO_MOVE = 4; // min group size to move out
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
   private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
@@ -37,8 +37,6 @@ public class Launcher extends MobileRobot {
   private boolean carrierInAttackRange;
   private MapLocation lastAttackedLocation;
 
-  private int turnsInCloud;
-
 
   public Launcher(RobotController rc) throws GameActionException {
     super(rc);
@@ -48,7 +46,6 @@ public class Launcher extends MobileRobot {
     launcherTaskStack = new LauncherTask[MAX_LAUNCHER_TASKS];
     launcherTaskStackPointer = -1;
     addLauncherTask(setupInitialLauncherTask());
-    turnsInCloud = 0;
   }
 
   private void resetVisited() {
@@ -58,24 +55,6 @@ public class Launcher extends MobileRobot {
   @Override
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
-    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
-    if (manaIncome > 4) {
-      MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
-    } else {
-      MIN_GROUP_SIZE_TO_MOVE = 3;
-    }
-    if (rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION)) {
-      switch (++turnsInCloud) {
-        case 1: case 2: case 3:
-          MIN_GROUP_SIZE_TO_MOVE = 2;
-          break;
-        default:
-          MIN_GROUP_SIZE_TO_MOVE = 1;
-          break;
-      }
-    } else {
-      turnsInCloud = 0;
-    }
 
     //TODO: refactor this out
     updateEnemyStateInformation();
@@ -85,9 +64,10 @@ public class Launcher extends MobileRobot {
         // attack carrier in action radius and disable moving
         // TODO: let's consider moving forwards?
         MapLocation locationToAttack = bestCarrierInAction();
-        if (attack(locationToAttack)) {
-          return;
+        if (rc.canAttack(locationToAttack)) {
+          rc.attack(locationToAttack);
         }
+        return;
       } else if (carrierInVision) {
         // move towards
         Direction direction = bestCarrierInVision();
@@ -96,9 +76,10 @@ public class Launcher extends MobileRobot {
             updateEnemyStateInformation();
             if (!launcherInVision && carrierInAttackRange) {
               MapLocation locationToAttack = bestCarrierInAction();
-              if (attack(locationToAttack)) {
-                return;
+              if (rc.canAttack(locationToAttack)) {
+                rc.attack(locationToAttack);
               }
+              return;
             }
           }
         }
@@ -140,7 +121,7 @@ public class Launcher extends MobileRobot {
     MapLocation bestCarrierLocationToAttack = null;
     Direction bestDirection = null;
     int bestScore = Integer.MIN_VALUE;
-    int myDamage = Cache.Permanent.ROBOT_TYPE.damage;
+    int myDamage = rc.getType().damage;
     for (Direction dir : Utils.directions) {
       if (!rc.canMove(dir)) continue;
       MapLocation newLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
@@ -230,12 +211,11 @@ public class Launcher extends MobileRobot {
    */
   private MapLocation getDestination() throws GameActionException {
     // if one of our friends got hurt, go to him
-    MapLocation destination = null;
-//    destination = AttackMicro.updateAndGetInjuredAllyTarget();
-    if (destination != null) {
-      rc.setIndicatorString("going to injured ally: " + destination);
-      return destination;
-    }
+    MapLocation destination;// = AttackMicro.updateAndGetInjuredAllyTarget();
+//    if (destination != null) {
+//      rc.setIndicatorString("going to injured ally: " + destination);
+//      return destination;
+//    }
 
     // immediately adjacent location to consider -> will chase a valid enemy if necessary
     destination = AttackMicro.getBestMovementPosition();
@@ -774,7 +754,7 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any issues with moving
    */
   private boolean attemptMoveTowards(MapLocation target) throws GameActionException {
-    return (Cache.PerTurn.ROUND_NUM % 2 == 0)
+    return (Cache.PerTurn.ROUND_NUM % 3 != 0)
         && pathing.moveTowards(target);
   }
 
@@ -792,10 +772,10 @@ public class Launcher extends MobileRobot {
       lastAttackedLocation = bestAttackTarget;
       return attack(bestAttackTarget);
     }
-//    return false;
-    boolean attacked = bestAttackTarget != null && attack(bestAttackTarget);
-    if (onlyAttackers) return attacked;
-    return attemptCloudAttack();
+    return false;
+//    boolean attacked = bestAttackTarget != null && attack(bestAttackTarget);
+//    if (onlyAttackers) return attacked;
+//    return attemptCloudAttack();
   }
 
 
@@ -809,26 +789,16 @@ public class Launcher extends MobileRobot {
   }
 
   private boolean attemptCloudAttack() throws GameActionException {
-    MapLocation[] clouds = rc.senseNearbyCloudLocations(Cache.Permanent.ACTION_RADIUS_SQUARED);
-    for (int i = clouds.length; --i >= 0;) {
-      MapLocation loc = clouds[i];
-      if (rc.canAttack(loc) && Utils.rng.nextBoolean()) {
-        rc.attack(loc);
-        return true;
+    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
+    for (int i = -cells; i <= cells; ++i) {
+      for (int j = -cells; j <= cells; ++j) {
+        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
+        if (rc.canAttack(loc)) {
+          rc.attack(loc);
+          return true;
+        }
       }
     }
-    return clouds.length > 0 && attack(clouds[0]);
-//    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
-//    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
-//    for (int i = -cells; i <= cells; ++i) {
-//      for (int j = -cells; j <= cells; ++j) {
-//        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
-//        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
-//          rc.attack(loc);
-//          return true;
-//        }
-//      }
-//    }
-//    return false;
+    return false;
   }
 }

@@ -1,13 +1,12 @@
-package basicbot.robots;
+package ptestlauncher.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import ptestlauncher.communications.CommsHandler;
+import ptestlauncher.communications.Communicator;
+import ptestlauncher.communications.HqMetaInfo;
+import ptestlauncher.knowledge.Cache;
+import ptestlauncher.knowledge.RunningMemory;
+import ptestlauncher.utils.Constants;
+import ptestlauncher.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
@@ -93,11 +92,11 @@ public class HeadQuarters extends Robot {
 
     determineRole();
   }
-//move on even turns, skip 1 turn
+
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();

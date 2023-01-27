@@ -1,13 +1,12 @@
-package basicbot.robots;
+package sprint2ptest.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import sprint2ptest.communications.CommsHandler;
+import sprint2ptest.communications.Communicator;
+import sprint2ptest.communications.HqMetaInfo;
+import sprint2ptest.knowledge.Cache;
+import sprint2ptest.knowledge.RunningMemory;
+import sprint2ptest.utils.Constants;
+import sprint2ptest.utils.Utils;
 import battlecode.common.*;
 
 public class HeadQuarters extends Robot {
@@ -93,11 +92,11 @@ public class HeadQuarters extends Robot {
 
     determineRole();
   }
-//move on even turns, skip 1 turn
+
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 800) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();

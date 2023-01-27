@@ -1,27 +1,27 @@
-package basicbot.robots;
+package ptestlauncher.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharCharMap;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import ptestlauncher.communications.CommsHandler;
+import ptestlauncher.communications.Communicator;
+import ptestlauncher.communications.HqMetaInfo;
+import ptestlauncher.containers.CharCharMap;
+import ptestlauncher.containers.HashSet;
+import ptestlauncher.knowledge.Cache;
+import ptestlauncher.knowledge.RunningMemory;
+import ptestlauncher.robots.micro.AttackMicro;
+import ptestlauncher.robots.micro.AttackerFightingMicro;
+import ptestlauncher.utils.Constants;
+import ptestlauncher.utils.Printer;
+import ptestlauncher.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
-  private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
+  private static int MIN_GROUP_SIZE_TO_MOVE = 0; // min group size to move out TODO: done hacky
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
-  private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
-  private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
-  private static final int TURNS_AT_HOT_SPOT = 10;
-  private static final int TURNS_AT_FIGHT = 3;
+  private static final int TURNS_AT_TARGET = 1; // how long to delay at each patrol target
+  private static final int MIN_HOT_SPOT_GROUP_SIZE = 1; // min group size to move to hot spot
+  private static final int TURNS_AT_HOT_SPOT = 1;
+  private static final int TURNS_AT_FIGHT = 1;
   private static final int MAX_LAUNCHER_TASKS = 10;
 
   private int numTurnsWaitingForFriends = 0;
@@ -38,6 +38,8 @@ public class Launcher extends MobileRobot {
   private MapLocation lastAttackedLocation;
 
   private int turnsInCloud;
+
+  private int lastRoundSawEnemyLauncher = -5;
 
 
   public Launcher(RobotController rc) throws GameActionException {
@@ -58,24 +60,6 @@ public class Launcher extends MobileRobot {
   @Override
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
-    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
-    if (manaIncome > 4) {
-      MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
-    } else {
-      MIN_GROUP_SIZE_TO_MOVE = 3;
-    }
-    if (rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION)) {
-      switch (++turnsInCloud) {
-        case 1: case 2: case 3:
-          MIN_GROUP_SIZE_TO_MOVE = 2;
-          break;
-        default:
-          MIN_GROUP_SIZE_TO_MOVE = 1;
-          break;
-      }
-    } else {
-      turnsInCloud = 0;
-    }
 
     //TODO: refactor this out
     updateEnemyStateInformation();
@@ -105,15 +89,37 @@ public class Launcher extends MobileRobot {
       }
     }
 
-    tryAttack(true);
+    for (RobotInfo robots : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      if (robots.type == RobotType.LAUNCHER) {
+        lastRoundSawEnemyLauncher = Cache.PerTurn.ROUND_NUM;
+        break;
+      }
+    }
 
-    int maxTaskChanges = 5;
-    while (currentTask.update() && maxTaskChanges-- > 0) {
-      popLauncherTask();
+    // move towards friend if recently saw enemy
+    if (rc.isMovementReady() && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 && Cache.PerTurn.ROUND_NUM - lastRoundSawEnemyLauncher <= 2) {
+      // recently saw enemy and currently no enemies, move to friend or stay still
+      int closestFriendDistance = Integer.MAX_VALUE;
+      MapLocation closestFriend = null;
+      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+        if (robot.type == RobotType.LAUNCHER) {
+          int distance = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(robot.location);
+          if (!robot.location.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION) && distance < closestFriendDistance) {
+            closestFriendDistance = distance;
+            closestFriend = robot.location;
+          }
+        }
+      }
+      if (closestFriend != null) {
+        pathing.moveTowards(closestFriend);
+      }
+      rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 0, 0, 0);
+      tryAttack(true);
+      tryAttack(false);
+      return;
     }
-    if (maxTaskChanges <= 0) {
-      Printer.print("Launcher task stack looping too much");
-    }
+
+    tryAttack(true);
 
     // do micro -- returns true if we did micro -> should not do exploration/patrolling behavior
     boolean didAnyMicro = false;
@@ -122,11 +128,10 @@ public class Launcher extends MobileRobot {
       rc.setIndicatorString("did micro");
       tryAttack(false);
     }
-    if (didAnyMicro) {
-      currentTask.numTurnsNearTarget = 0;
-      addFightTask(lastAttackedLocation != null ? lastAttackedLocation : Cache.PerTurn.CURRENT_LOCATION);
-    } else {
-      MapLocation target = getDestination();
+    if (!didAnyMicro) {
+//      MapLocation target = getDestination();
+      MapLocation target = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+
       if (target != null) {
         rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
@@ -809,26 +814,17 @@ public class Launcher extends MobileRobot {
   }
 
   private boolean attemptCloudAttack() throws GameActionException {
-    MapLocation[] clouds = rc.senseNearbyCloudLocations(Cache.Permanent.ACTION_RADIUS_SQUARED);
-    for (int i = clouds.length; --i >= 0;) {
-      MapLocation loc = clouds[i];
-      if (rc.canAttack(loc) && Utils.rng.nextBoolean()) {
-        rc.attack(loc);
-        return true;
+    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
+    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
+    for (int i = -cells; i <= cells; ++i) {
+      for (int j = -cells; j <= cells; ++j) {
+        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
+        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
+          rc.attack(loc);
+          return true;
+        }
       }
     }
-    return clouds.length > 0 && attack(clouds[0]);
-//    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
-//    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
-//    for (int i = -cells; i <= cells; ++i) {
-//      for (int j = -cells; j <= cells; ++j) {
-//        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
-//        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
-//          rc.attack(loc);
-//          return true;
-//        }
-//      }
-//    }
-//    return false;
+    return false;
   }
 }

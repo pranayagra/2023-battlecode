@@ -1,11 +1,10 @@
-package basicbot.knowledge;
+package sprint2ptest.knowledge;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import sprint2ptest.communications.CommsHandler;
+import sprint2ptest.communications.Communicator;
+import sprint2ptest.communications.HqMetaInfo;
+import sprint2ptest.utils.Global;
+import sprint2ptest.utils.Utils;
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -66,7 +65,6 @@ public class RunningMemory {
         symmetryInfo |= NOT_VERT_MASK;
         notVerticalSymmetry = true;
     }
-//    Printer.print("AYO symmetry updated! (not " + symmetryToEliminate + ") -- known=" + knownSymmetry + " guessed=" + guessedSymmetry);
     knownSymmetry = SYMMETRY_KNOWN_MAP[symmetryInfo];
     guessedSymmetry = knownSymmetry != null ? knownSymmetry : SYMMETRY_GUESS_MAP[symmetryInfo];
     HqMetaInfo.recomputeEnemyHqLocations();

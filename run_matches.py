@@ -15,7 +15,7 @@ emojiMap = {
 errors = []
 currentBot = 'basicbot'
 
-bots = ['fleebetter']
+bots = ['plaunchertest']
 # bots = ['spawnorderg']
 botsSet = set(bots)
 customMaps = ['TestFarWell', 'TestFarWell2', 'zzBuggyForest', 'zzConcentricEvil', 'zzCornerTrouble', 'zzDuels', 'zzHighwayToHell', 'zzItsATrap', 'zzMinimalism', 'zzOverload', 'zzRingAroundTheRosie', 'zzzHyperRush']
