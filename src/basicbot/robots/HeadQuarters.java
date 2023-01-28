@@ -56,6 +56,10 @@ public class HeadQuarters extends Robot {
   private static int prevMana = 0;
   private static int prevElixir = 0;
 
+  // budgeting for anchor forcing
+  private static int adamantiumToSave;
+  private static int manaToSave;
+
   private int spawnIdx = 0;
   private SpawnType[] spawnOrder;
 
@@ -82,7 +86,7 @@ public class HeadQuarters extends Robot {
       spawnOrder = spawnOrderEnemyHQHere;
     }
 
-    spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);;
+    spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);
 
     checkedEndangeredWellsCounter = 2;
 //    if (Cache.Permanent.MAP_AREA <= 20*20) {
@@ -91,6 +95,112 @@ public class HeadQuarters extends Robot {
     foundEndangeredWells = true;
 
     determineRole();
+  }
+
+  //move on even turns, skip 1 turn
+  @Override
+  protected void runTurn() throws GameActionException {
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+    if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
+      Communicator.MetaInfo.reinitForHQ();
+      updateWellExploration();
+      unknown_symmetry: if (RunningMemory.knownSymmetry == null) {
+//      do {
+//        prev = RunningMemory.knownSymmetry;
+        for (MapLocation myHQ : HqMetaInfo.hqLocations) {
+          MapLocation enemyHQ;
+          if (!RunningMemory.notRotationalSymmetry) {
+            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
+            if (rc.canSenseLocation(enemyHQ)) {
+//            Printer.print("Checking for enemy HQ at " + enemyHQ);
+              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
+              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL);
+              }
+            }
+          }
+          if (!RunningMemory.notHorizontalSymmetry) {
+            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
+            if (rc.canSenseLocation(enemyHQ)) {
+//            Printer.print("Checking for enemy HQ at " + enemyHQ);
+              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
+              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL);
+              }
+            }
+          }
+          if (!RunningMemory.notVerticalSymmetry) {
+            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
+            if (rc.canSenseLocation(enemyHQ)) {
+//            Printer.print("Checking for enemy HQ at " + enemyHQ);
+              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
+              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL);
+              }
+            }
+          }
+        }
+//      } while (prev != RunningMemory.knownSymmetry);
+        if (RunningMemory.knownSymmetry == null) {
+          updateSymmetryComms();
+        }
+      }
+    }
+    setDefaultIndicatorString();
+//    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
+    Communicator.clearEnemyComms();
+    handleIncome();
+
+//    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
+
+    // spawn order
+    // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)
+    // if map size <40x40, do CAD CM CM CM L L L
+    // if map size >=40x40, do CAD CAD CM CM L L L
+    // then control ratio AD:M = 1:4
+
+    // give each HQ just spawned location + 4 bits, and then look at all and check 4 bits
+
+    // TODO: switch to more launchers if we detect endangered wells
+    if (!foundEndangeredWells) {
+      if (--checkedEndangeredWellsCounter <= 0) {
+//        Printer.print("HQ Checking for endangered wells");
+        MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
+        MapLocation mostEndangeredWell = endangeredWellPair[0];
+        MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
+        if (mostEndangeredWell == null) {
+          return;
+        }
+        int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
+        if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
+//          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
+//          Printer.print("HQ found endangered wells -- switching to more launchers");
+          foundEndangeredWells = true;
+//          spawnOrder = spawnOrderEndangeredWells;
+//          spawnIdx = 0;
+        } else {
+          checkedEndangeredWellsCounter = 1;
+        }
+      }
+    }
+
+    boolean spawned;
+    do {
+      if (spawnIdx < spawnOrder.length) {
+        spawned = forceSpawnOrder();
+      } else {
+        spawned = normalSpawnOrder();
+      }
+    } while (spawned && rc.isActionReady());
+    // store the resources at the end of the turn
+    prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
+    prevMana = rc.getResourceAmount(ResourceType.MANA);
+    prevElixir = rc.getResourceAmount(ResourceType.ELIXIR);
+
+    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
+    /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
+    /*WORKFLOW_ONLY*///}
   }
 
 
@@ -285,115 +395,16 @@ public class HeadQuarters extends Robot {
     return closest;
   }
 
-//move on even turns, skip 1 turn
-  @Override
-  protected void runTurn() throws GameActionException {
-    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
-    if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
-      Communicator.MetaInfo.reinitForHQ();
-      updateWellExploration();
-      unknown_symmetry: if (RunningMemory.knownSymmetry == null) {
-//      do {
-//        prev = RunningMemory.knownSymmetry;
-        for (MapLocation myHQ : HqMetaInfo.hqLocations) {
-          MapLocation enemyHQ;
-          if (!RunningMemory.notRotationalSymmetry) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL);
-              }
-            }
-          }
-          if (!RunningMemory.notHorizontalSymmetry) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL);
-              }
-            }
-          }
-          if (!RunningMemory.notVerticalSymmetry) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL);
-              }
-            }
-          }
-        }
-//      } while (prev != RunningMemory.knownSymmetry);
-        if (RunningMemory.knownSymmetry == null) {
-          updateSymmetryComms();
-        }
-      }
-    }
-//    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
-    Communicator.clearEnemyComms();
-    handleIncome();
-
-//    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
-
-    // spawn order
-    // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)
-    // if map size <40x40, do CAD CM CM CM L L L
-    // if map size >=40x40, do CAD CAD CM CM L L L
-    // then control ratio AD:M = 1:4
-
-    // give each HQ just spawned location + 4 bits, and then look at all and check 4 bits
-
-    // TODO: switch to more launchers if we detect endangered wells
-    if (!foundEndangeredWells) {
-      if (--checkedEndangeredWellsCounter <= 0) {
-//        Printer.print("HQ Checking for endangered wells");
-        MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
-        MapLocation mostEndangeredWell = endangeredWellPair[0];
-        MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
-        if (mostEndangeredWell == null) {
-          return;
-        }
-        int mostEndangeredDist = mostEndangeredWell.distanceSquaredTo(mostEndangeredEnemyWell);
-        if (mostEndangeredDist <= Constants.ENDANGERED_WELL_DIST) {
-//          Printer.print("HQ found endangered wells! " + mostEndangeredWell + " - " + mostEndangeredEnemyWell + " dist:" + mostEndangeredDist);
-//          Printer.print("HQ found endangered wells -- switching to more launchers");
-          foundEndangeredWells = true;
-//          spawnOrder = spawnOrderEndangeredWells;
-//          spawnIdx = 0;
-        } else {
-          checkedEndangeredWellsCounter = 1;
-        }
-      }
-    }
-
-    boolean spawned;
-    do {
-      if (spawnIdx < spawnOrder.length) {
-        spawned = forceSpawnOrder();
-      } else {
-        spawned = normalSpawnOrder();
-      }
-    } while (spawned && rc.isActionReady());
-    // store the resources at the end of the turn
-    prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
-    prevMana = rc.getResourceAmount(ResourceType.MANA);
-    prevElixir = rc.getResourceAmount(ResourceType.ELIXIR);
-
-    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
-    /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
-    /*WORKFLOW_ONLY*///}
-  }
-
   private void lastHQClearCommInformation() {
 
   }
 
+  private void setDefaultIndicatorString() throws GameActionException {
+    String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
+    indString += ";kSymm:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
+    rc.setIndicatorString(indString);
+
+  }
   /**
    * Handles the resource income information. Does the following actions:
    * - Calculates income based on prevAdamantium, prevElixir, prevMana
@@ -424,7 +435,6 @@ public class HeadQuarters extends Robot {
     elixirIncomeHistory[ind] = newElixir;
 
 
-    rc.setIndicatorString("Income: A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID));
 
     // comm the results / 40
     int max = 31; // based on 5 bits for comms
@@ -507,13 +517,18 @@ public class HeadQuarters extends Robot {
       return false;
     }
 
+    adamantiumToSave = 0;
+    manaToSave = 0;
     if (Cache.PerTurn.ROUND_NUM >= 500 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
       // consider anchor spawn
       if (createAnchors()) {
         numAnchorsMade++;
         return true;
       }
-      return false;
+      // can't afford, just reserve some resources
+//      System.out.println(Anchor.STANDARD.adamantiumCost);
+      adamantiumToSave = Anchor.STANDARD.adamantiumCost;
+      manaToSave = Anchor.STANDARD.manaCost;
     }
 
     if (canAfford(RobotType.LAUNCHER)) {
@@ -522,6 +537,7 @@ public class HeadQuarters extends Robot {
         return true;
       }
     }
+
     if (canAfford(RobotType.CARRIER)) {
       SpawnType nextSpawn = carrierSpawnOrder[carrierSpawnOrderIdx];
       MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
@@ -690,22 +706,55 @@ public class HeadQuarters extends Robot {
     }
   }
 
+  /**
+   * Respects state variables adamantiumToSave and manaToSave (only for anchors)
+   * @param type
+   * @return
+   */
   private boolean canAfford(RobotType type) {
     for (ResourceType rType : ResourceType.values()) {
-      if (rType == ResourceType.NO_RESOURCE)
-        continue;
-      if (rc.getResourceAmount(rType) < type.getBuildCost(rType)) {
+      if (rType == ResourceType.NO_RESOURCE) continue;
+      if (type.getBuildCost(rType) == 0) continue;
+      int budget = rc.getResourceAmount(rType);
+      switch (rType) {
+        case ADAMANTIUM:
+          budget -= adamantiumToSave;
+          break;
+        case MANA:
+          budget -= manaToSave;
+          break;
+        default:
+          break;
+      }
+      if (budget < type.getBuildCost(rType)) {
         return false;
       }
     }
     return true;
   }
 
+  /**
+   * Respects state variables adamantiumToSave and manaToSave
+   * @param anchorType
+   * @return
+   */
   private boolean canAfford(Anchor anchorType) {
     for (ResourceType rType : ResourceType.values()) {
-      if (rType == ResourceType.NO_RESOURCE)
-        continue;
-      if (rc.getResourceAmount(rType) < anchorType.getBuildCost(rType)) {
+      if (rType == ResourceType.NO_RESOURCE) continue;
+      if (anchorType.getBuildCost(rType) == 0) continue;
+
+      int budget = rc.getResourceAmount(rType);
+      switch (rType) {
+        case ADAMANTIUM:
+          budget -= adamantiumToSave;
+          break;
+        case MANA:
+          budget -= manaToSave;
+          break;
+        default:
+          break;
+      }
+      if (budget < anchorType.getBuildCost(rType)) {
         return false;
       }
     }
