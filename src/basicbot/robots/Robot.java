@@ -2,6 +2,7 @@ package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
+import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Memory;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
@@ -378,8 +379,6 @@ public abstract class Robot {
     }
 //    if (Cache.PerTurn.ROUND_NUM > MAX_TURNS_FIGURE_SYMMETRY) return;
 
-    // TODO: actually do the computation
-//    int visionRadiusSq = Cache.Permanent.VISION_RADIUS_SQUARED;
     int midlineThreshold = Cache.Permanent.VISION_RADIUS_FLOOR / 2;
     MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
     int myX = myLoc.x;
@@ -412,6 +411,10 @@ public abstract class Robot {
         }
       }
     }
+    if (RunningMemory.knownSymmetry != null) {
+      if (RunningMemory.symmetryInfoDirty) RunningMemory.broadcastSymmetry();
+      return;
+    }
     // if Horizontal not ruled out (flipX, vertical midline)
     if (!RunningMemory.notHorizontalSymmetry) { // could be horizontal
       // check if x is near the middle
@@ -438,6 +441,10 @@ public abstract class Robot {
         }
       }
     }
+    if (RunningMemory.knownSymmetry != null) {
+      if (RunningMemory.symmetryInfoDirty) RunningMemory.broadcastSymmetry();
+      return;
+    }
     // if Rotational not ruled out (rotXY, near center)
     if (!RunningMemory.notRotationalSymmetry) { // could be rotational
       // check if near the center
@@ -457,6 +464,44 @@ public abstract class Robot {
         if (checkFailsSymmetry(test1, test2, Utils.MapSymmetry.ROTATIONAL)) {
           RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL); // eliminate Rotational symmetry
           break nearCenter;
+        }
+      }
+    }
+    if (RunningMemory.knownSymmetry != null) {
+      if (RunningMemory.symmetryInfoDirty) RunningMemory.broadcastSymmetry();
+      return;
+    }
+    // check for enemy HQ
+    for (MapLocation myHQ : HqMetaInfo.hqLocations) {
+      MapLocation enemyHQ;
+      if (!RunningMemory.notRotationalSymmetry) {
+        enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
+        if (rc.canSenseLocation(enemyHQ)) {
+//            Printer.print("Checking for enemy HQ at " + enemyHQ);
+          RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
+          if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+            RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL);
+          }
+        }
+      }
+      if (!RunningMemory.notHorizontalSymmetry) {
+        enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
+        if (rc.canSenseLocation(enemyHQ)) {
+//            Printer.print("Checking for enemy HQ at " + enemyHQ);
+          RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
+          if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+            RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL);
+          }
+        }
+      }
+      if (!RunningMemory.notVerticalSymmetry) {
+        enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
+        if (rc.canSenseLocation(enemyHQ)) {
+//            Printer.print("Checking for enemy HQ at " + enemyHQ);
+          RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
+          if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
+            RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL);
+          }
         }
       }
     }

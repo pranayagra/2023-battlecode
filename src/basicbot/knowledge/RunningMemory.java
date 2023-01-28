@@ -53,6 +53,10 @@ public class RunningMemory {
   public static void markInvalidSymmetry(Utils.MapSymmetry symmetryToEliminate) throws GameActionException {
 //    RunningMemory.symmetryInfo = symmetryInfo;
 //    RunningMemory.symmetryInfoDirty = true;
+    if (knownSymmetry != null) {
+      Printer.print("ERROR: trying to mark invalid symmetry (" + symmetryToEliminate + ") when already known!" + knownSymmetry);
+      return;
+    }
     switch (symmetryToEliminate) {
       case ROTATIONAL:
         symmetryInfo |= NOT_ROT_MASK;
@@ -81,15 +85,16 @@ public class RunningMemory {
    * @throws GameActionException
    */
   public static boolean updateSymmetry() throws GameActionException {
-    if (knownSymmetry != null) return false;
     int newSymmetryInfo = CommsHandler.readMapSymmetry();
     if (newSymmetryInfo == symmetryInfo) return false;
+    Utils.MapSymmetry newKnownSymmetry = SYMMETRY_KNOWN_MAP[newSymmetryInfo];
+//    if (knownSymmetry != null && knownSymmetry == newKnownSymmetry) return false;
     symmetryInfo = newSymmetryInfo;
-    knownSymmetry = SYMMETRY_KNOWN_MAP[symmetryInfo];
-    notHorizontalSymmetry = (symmetryInfo & NOT_HORIZ_MASK) != 0;
-    notVerticalSymmetry = (symmetryInfo & NOT_VERT_MASK) != 0;
-    notRotationalSymmetry = (symmetryInfo & NOT_ROT_MASK) != 0;
-    guessedSymmetry = knownSymmetry != null ? knownSymmetry : SYMMETRY_GUESS_MAP[symmetryInfo];
+    knownSymmetry = newKnownSymmetry;
+    notHorizontalSymmetry = (newSymmetryInfo & NOT_HORIZ_MASK) != 0;
+    notVerticalSymmetry = (newSymmetryInfo & NOT_VERT_MASK) != 0;
+    notRotationalSymmetry = (newSymmetryInfo & NOT_ROT_MASK) != 0;
+    guessedSymmetry = newKnownSymmetry != null ? newKnownSymmetry : SYMMETRY_GUESS_MAP[newSymmetryInfo];
     return true;
   }
 

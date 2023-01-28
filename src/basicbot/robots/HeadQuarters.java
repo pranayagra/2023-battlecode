@@ -128,62 +128,21 @@ public class HeadQuarters extends Robot {
     }
   }
 
-//move on even turns, skip 1 turn
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
 //    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
-    islandHqProtocol();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       updateWellExploration();
-      unknown_symmetry: if (RunningMemory.knownSymmetry == null) {
-//      do {
-//        prev = RunningMemory.knownSymmetry;
-        for (MapLocation myHQ : HqMetaInfo.hqLocations) {
-          MapLocation enemyHQ;
-          if (!RunningMemory.notRotationalSymmetry) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.ROTATIONAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.ROTATIONAL);
-              }
-            }
-          }
-          if (!RunningMemory.notHorizontalSymmetry) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.HORIZONTAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.HORIZONTAL);
-              }
-            }
-          }
-          if (!RunningMemory.notVerticalSymmetry) {
-            enemyHQ = Utils.applySymmetry(myHQ, Utils.MapSymmetry.VERTICAL);
-            if (rc.canSenseLocation(enemyHQ)) {
-//            Printer.print("Checking for enemy HQ at " + enemyHQ);
-              RobotInfo robot = rc.senseRobotAtLocation(enemyHQ);
-              if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-                RunningMemory.markInvalidSymmetry(Utils.MapSymmetry.VERTICAL);
-              }
-            }
-          }
-        }
-//      } while (prev != RunningMemory.knownSymmetry);
-        if (RunningMemory.knownSymmetry == null) {
-          updateSymmetryComms();
-        }
-      }
+      updateSymmetryComms();
     }
-//    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
+
     Communicator.clearEnemyComms();
     handleIncome();
 
-//    if (Cache.PerTurn.ROUND_NUM == ) rc.resign();
+    islandHqProtocol();
+
 
     // spawn order
     // if map size <20x20, do CM CM CM CAD L L L (technically should do L CM L CM L CM AD)

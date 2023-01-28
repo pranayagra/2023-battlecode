@@ -605,7 +605,7 @@ public class Launcher extends MobileRobot {
             }
             WellInfo well = rc.senseWell(targetLocation);
             if (well == null) {
-              Printer.print("ERROR: expected enemy well is not a well " + targetLocation, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
+//              Printer.print("ERROR: expected enemy well is not a well " + targetLocation, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
               RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
               break;
             }
