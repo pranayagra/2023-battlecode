@@ -6,7 +6,7 @@ import simplelaunchermacro.utils.Cache;
 import simplelaunchermacro.utils.Utils;
 import battlecode.common.*;
 
-/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
+/*WORKFLOW_ONLY*///import simplelaunchermacro.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private int hqID;

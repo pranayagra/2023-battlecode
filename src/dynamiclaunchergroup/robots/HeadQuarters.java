@@ -9,7 +9,7 @@ import dynamiclaunchergroup.utils.Constants;
 import dynamiclaunchergroup.utils.Utils;
 import battlecode.common.*;
 
-/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
+/*WORKFLOW_ONLY*///import dynamiclaunchergroup.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
