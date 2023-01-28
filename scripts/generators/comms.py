@@ -97,8 +97,32 @@ OLD_SCHEMA = {
       **WELL_SCHEMA,
     }
   },
+  'island_info': {
+    'slots': 1,
+    'bits': {
+      'loc': LOCATION_BITS,
+      'owner': 2,
+      'round_num': 11,
+      'island_id': 6,
+      #'size': 2,
+    }
+  },
+  'next_island_to_claim': { # maybe change to all neutral islands rotating
+    'slots': 1,
+    'bits': {
+      'loc': LOCATION_BITS,
+    }
+  },
+  'my_islands': {
+    'slots': 1,
+    'bits': {
+      'loc': LOCATION_BITS,
+      'round_num': 11,
+      'island_id': 6,
+    }
+  },
   'enemy': {
-    'slots': 26,
+    'slots': 23,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,
@@ -187,7 +211,7 @@ PTESTCARRIER_SCHEMA = {
   # },
 }
 
-SCHEMA = PTESTCARRIER_SCHEMA
+SCHEMA = OLD_SCHEMA
 
 def is_suffix_special(attr: str) -> bool:
   return any(attr.endswith(suffix) for suffix in SPECIAL_ATTR_SUFFIXES)
