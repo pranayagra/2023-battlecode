@@ -234,10 +234,6 @@ public class HeadQuarters extends Robot {
     /*WORKFLOW_ONLY*///}
   }
 
-  private void lastHQClearCommInformation() {
-
-  }
-
   private void setDefaultIndicatorString() throws GameActionException {
     String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
     indString += ";kSymm:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
