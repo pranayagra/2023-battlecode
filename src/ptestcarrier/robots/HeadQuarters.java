@@ -12,6 +12,7 @@ import battlecode.common.*;
 import java.util.HashMap;
 
 
+/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;

@@ -7,6 +7,7 @@ import spawnorder.utils.Printer;
 import spawnorder.utils.Utils;
 import battlecode.common.*;
 
+/*WORKFLOW_ONLY*///import spawnorder.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;

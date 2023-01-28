@@ -39,7 +39,7 @@ Get-ChildItem $finalDst *.java -recurse |
     Foreach-Object {
         Write-Output "Replace $finalDst/$_"
         $c = ($_ | Get-Content)
-        $c = $c -creplace "/*BASICBOT_ONLY*/","/*BASICBOT_ONLY*///"
+        $c = $c -creplace "/\*BASICBOT_ONLY\*/","/*BASICBOT_ONLY*///"
         $c = $c -creplace "$dstSrcPkg","$dstName"
         $c | Set-Content $_.FullName
     }

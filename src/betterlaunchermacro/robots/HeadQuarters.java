@@ -6,6 +6,7 @@ import betterlaunchermacro.utils.Cache;
 import betterlaunchermacro.utils.Utils;
 import battlecode.common.*;
 
+/*WORKFLOW_ONLY*///import betterlaunchermacro.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private int hqID;

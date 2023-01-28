@@ -9,6 +9,7 @@ import ptestlauncher.utils.Constants;
 import ptestlauncher.utils.Utils;
 import battlecode.common.*;
 
+/*WORKFLOW_ONLY*///import ptestlauncher.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;

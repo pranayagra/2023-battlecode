@@ -263,7 +263,6 @@ public class Launcher extends MobileRobot {
     }
 
     // if one of our friends got hurt, go to him
-
 //    destination = AttackMicro.updateAndGetInjuredAllyTarget();
     if (destination != null) {
       rc.setIndicatorString("going to injured ally: " + destination);
@@ -284,12 +283,12 @@ public class Launcher extends MobileRobot {
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(destination);
         if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(destination,
             Math.max(
-                destination.distanceSquaredTo(closestHq)*4,
+                destination.distanceSquaredTo(closestHq)*2,
                 200
             ))) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
+          /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;

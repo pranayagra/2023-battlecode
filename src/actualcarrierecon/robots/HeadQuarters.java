@@ -5,6 +5,7 @@ import actualcarrierecon.utils.Cache;
 import actualcarrierecon.utils.Utils;
 import battlecode.common.*;
 
+/*WORKFLOW_ONLY*///import actualcarrierecon.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private int hqID;

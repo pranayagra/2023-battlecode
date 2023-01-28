@@ -6,6 +6,7 @@ import launchercomms.utils.Cache;
 import launchercomms.utils.Utils;
 import battlecode.common.*;
 
+/*WORKFLOW_ONLY*///import launchercomms.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;

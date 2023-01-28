@@ -5,6 +5,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 
+/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   public HeadQuarters(RobotController rc) throws GameActionException {

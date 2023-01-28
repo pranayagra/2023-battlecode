@@ -5,6 +5,7 @@ import fastpathing.utils.Cache;
 import fastpathing.utils.Utils;
 import battlecode.common.*;
 
+/*WORKFLOW_ONLY*///import fastpathing.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private int hqID;
