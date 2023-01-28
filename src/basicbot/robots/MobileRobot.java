@@ -1,5 +1,6 @@
 package basicbot.robots;
 
+import basicbot.communications.CommsHandler;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;

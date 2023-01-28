@@ -138,6 +138,34 @@ public class Launcher extends MobileRobot {
     tryAttack(false);
   }
 
+  // ISLAND STUFF
+  private void healingProtocol() throws GameActionException {
+    //todo: not complete
+    if (Cache.PerTurn.HEALTH < RobotType.LAUNCHER.health * 0.5) {
+      IslandInfo islandInfo = getClosestFriendlyIsland();
+      if (islandInfo != null) {
+        MapLocation islandLocation = islandInfo.islandLocation;
+        pathing.moveTowards(islandLocation);
+      }
+    }
+  }
+
+  private IslandInfo getClosestFriendlyIsland() {
+    int closestDist = Integer.MAX_VALUE;
+    IslandInfo closest = null;
+    for (int i = 0; i < 36; ++i) {
+      IslandInfo islandInfo = getIslandInformation(i);
+      if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
+        int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = islandInfo;
+        }
+      }
+    }
+    return closest;
+  }
+
   private Direction bestCarrierInVision() {
     MapLocation bestCarrierLocationToAttack = null;
     Direction bestDirection = null;

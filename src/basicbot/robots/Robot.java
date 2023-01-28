@@ -1,5 +1,6 @@
 package basicbot.robots;
 
+import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.knowledge.Memory;
 import basicbot.knowledge.RunningMemory;
@@ -166,6 +167,11 @@ public abstract class Robot {
 
     commNearbyEnemies();
 
+    // if mobile unit,
+    if (Cache.Permanent.ROBOT_TYPE != RobotType.HEADQUARTERS) {
+      islandMobileBotsProtocol();
+    }
+
     if (++turnCount != rc.getRoundNum() - Cache.Permanent.ROUND_SPAWNED) { // took too much bytecode
       rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,0,255); // MAGENTA IF RAN OUT OF BYTECODE
 //      Printer.print(Cache.Permanent.ROBOT_TYPE + " ran out of bytecode! Overused: " + Clock.getBytecodeNum() + " bytecode");
@@ -203,6 +209,144 @@ public abstract class Robot {
     updateSymmetryComms();
     updateWellExploration();
     updateEnemyHQAvoidance();
+  }
+
+  // ID => [loc, roundNum, owner]
+  class IslandInfo {
+    public MapLocation islandLocation;
+    public int islandId;
+    public int roundNum;
+    public Team islandTeam;
+
+    public IslandInfo(MapLocation islandLocation, int islandId, int roundNum, Team islandTeam) {
+      this.islandLocation = islandLocation;
+      this.islandId = islandId;
+      this.roundNum = roundNum;
+      this.islandTeam = islandTeam;
+    }
+  }
+
+  protected int teamToInt(Team t) {
+    if (t == Cache.Permanent.OUR_TEAM) return 1;
+    if (t == Cache.Permanent.OPPONENT_TEAM) return 2;
+    return 0;
+  }
+
+  protected Team intToTeam(int i) {
+    if (i == 1) return Cache.Permanent.OUR_TEAM;
+    if (i == 2) return Cache.Permanent.OPPONENT_TEAM;
+    return Team.NEUTRAL;
+  }
+
+  protected HeadQuarters.IslandInfo[] globalIslandInfo = new HeadQuarters.IslandInfo[36];
+  protected int globalIslandInfoIterator = 0;
+
+  protected HeadQuarters.IslandInfo[] localIslandInfo = new HeadQuarters.IslandInfo[36];
+
+  private void observeIslandsNearby() throws GameActionException {
+    int[] islandIds = rc.senseNearbyIslands();
+    for (int islandId : islandIds) {
+      if (localIslandInfo[islandId] != null) {
+        localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
+        localIslandInfo[islandId].islandTeam = rc.senseTeamOccupyingIsland(islandId);
+      } else {
+        Team team = rc.senseTeamOccupyingIsland(islandId);
+        MapLocation islandLocation = rc.senseNearbyIslandLocations(islandId)[0];
+        localIslandInfo[islandId] = new HeadQuarters.IslandInfo(islandLocation, islandId, Cache.PerTurn.ROUND_NUM, team);
+      }
+    }
+  }
+
+  // call this protocol!
+  protected void islandMobileBotsProtocol() throws GameActionException {
+    updateIslandInfoMemoryFromComms();
+    observeIslandsNearby();
+    commIslandInformation();
+  }
+
+  // lazy comming (even if roundNum is oudated, as long as team is the same, do not comm!)
+  private void commIslandInformation() throws GameActionException {
+    if (!rc.canWriteSharedArray(0, 0)) return;
+    if (CommsHandler.readIslandInfoExists()) { // someone just wrote some new info to the array, can I replace it?
+      // need to read and see if we have more updated info or not
+      int islandID = CommsHandler.readIslandInfoIslandId();
+      HeadQuarters.IslandInfo localInfo = localIslandInfo[islandID];
+      if (localInfo == null) return;
+      int roundNum = CommsHandler.readIslandInfoRoundNum();
+      Team team = intToTeam(CommsHandler.readIslandInfoOwner());
+      if (team != localInfo.islandTeam && roundNum < localInfo.roundNum) {
+        // we have more updated info, so we need to overwrite
+        globalIslandInfo[islandID] = localInfo;
+        int newTeam = teamToInt(localInfo.islandTeam);
+        CommsHandler.writeIslandInfoOwner(newTeam);
+        CommsHandler.writeIslandInfoRoundNum(localInfo.roundNum);
+        // do not need to write location or ID (both are the same)
+      }
+      return;
+    }
+
+    for (int i = 0; i < 36; ++i) {
+      HeadQuarters.IslandInfo globalInfo = globalIslandInfo[i];
+      HeadQuarters.IslandInfo localInfo = localIslandInfo[i];
+      if (localInfo != null) {
+        if (globalInfo == null || (globalInfo.islandTeam != localInfo.islandTeam && globalInfo.roundNum < localInfo.roundNum)) {
+          // we have more updated info, so we need to overwrite
+          globalIslandInfo[i] = localInfo; //do I need to new here / reference issue?
+          int newTeam = teamToInt(localInfo.islandTeam);
+          CommsHandler.writeIslandInfoOwner(newTeam);
+          CommsHandler.writeIslandInfoRoundNum(localInfo.roundNum);
+          CommsHandler.writeIslandInfoLocation(localInfo.islandLocation);
+          CommsHandler.writeIslandInfoIslandId(localInfo.islandId);
+          return;
+        }
+      }
+    }
+  }
+
+  protected void updateIslandInfoMemoryFromComms() throws GameActionException {
+    if (CommsHandler.readIslandInfoExists()) {
+      MapLocation location = CommsHandler.readIslandInfoLocation();
+      int roundNum = CommsHandler.readIslandInfoRoundNum();
+      Team team = intToTeam(CommsHandler.readIslandInfoOwner());
+      int islandId = CommsHandler.readIslandInfoIslandId();
+
+      if (globalIslandInfo[islandId] == null) {
+        globalIslandInfo[islandId] = new HeadQuarters.IslandInfo(location, islandId, roundNum, team);
+      } else if (globalIslandInfo[islandId].roundNum < roundNum) {
+        globalIslandInfo[islandId].roundNum = roundNum;
+        globalIslandInfo[islandId].islandTeam = team;
+      }
+    }
+    if (CommsHandler.readMyIslandsExists()) {
+      MapLocation location = CommsHandler.readMyIslandsLocation();
+      int roundNum = CommsHandler.readMyIslandsRoundNum();
+      Team team = Cache.Permanent.OUR_TEAM;
+      int islandId = CommsHandler.readMyIslandsIslandId();
+
+      if (globalIslandInfo[islandId] == null) {
+        globalIslandInfo[islandId] = new HeadQuarters.IslandInfo(location, islandId, roundNum, team);
+      } else if (globalIslandInfo[islandId].roundNum < roundNum) {
+        globalIslandInfo[islandId].roundNum = roundNum;
+        globalIslandInfo[islandId].islandTeam = team;
+      }
+    }
+  }
+
+  protected IslandInfo getIslandInformation(int id) {
+    IslandInfo globalInfo = globalIslandInfo[id];
+    IslandInfo localInfo = localIslandInfo[id];
+
+    if (globalInfo != null && localInfo != null) {
+      if (globalInfo.roundNum > localInfo.roundNum) {
+        return globalInfo;
+      } else {
+        return localInfo;
+      }
+    } else if (globalInfo != null) {
+      return globalInfo;
+    } else {
+      return localInfo;
+    }
   }
 
   /**
