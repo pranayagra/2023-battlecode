@@ -56,6 +56,10 @@ public class HeadQuarters extends Robot {
   private static int prevMana = 0;
   private static int prevElixir = 0;
 
+  // budgeting for anchor forcing
+  private static int adamantiumToSave;
+  private static int manaToSave;
+
   private int spawnIdx = 0;
   private SpawnType[] spawnOrder;
 
@@ -82,7 +86,7 @@ public class HeadQuarters extends Robot {
       spawnOrder = spawnOrderEnemyHQHere;
     }
 
-    spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);;
+    spawnLocations = rc.getAllLocationsWithinRadiusSquared(Cache.PerTurn.CURRENT_LOCATION, RobotType.LAUNCHER.actionRadiusSquared);
 
     checkedEndangeredWellsCounter = 2;
 //    if (Cache.Permanent.MAP_AREA <= 20*20) {
@@ -234,6 +238,12 @@ public class HeadQuarters extends Robot {
 
   }
 
+  private void setDefaultIndicatorString() throws GameActionException {
+    String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
+    indString += ";kSymm:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
+    rc.setIndicatorString(indString);
+
+  }
   /**
    * Handles the resource income information. Does the following actions:
    * - Calculates income based on prevAdamantium, prevElixir, prevMana
@@ -264,7 +274,6 @@ public class HeadQuarters extends Robot {
     elixirIncomeHistory[ind] = newElixir;
 
 
-    rc.setIndicatorString("Income: A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID));
 
     // comm the results / 40
     int max = 31; // based on 5 bits for comms
@@ -347,13 +356,18 @@ public class HeadQuarters extends Robot {
       return false;
     }
 
+    adamantiumToSave = 0;
+    manaToSave = 0;
     if (Cache.PerTurn.ROUND_NUM >= 500 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
       // consider anchor spawn
       if (createAnchors()) {
         numAnchorsMade++;
         return true;
       }
-      return false;
+      // can't afford, just reserve some resources
+//      System.out.println(Anchor.STANDARD.adamantiumCost);
+      adamantiumToSave = Anchor.STANDARD.adamantiumCost;
+      manaToSave = Anchor.STANDARD.manaCost;
     }
 
     if (canAfford(RobotType.LAUNCHER)) {
@@ -362,6 +376,7 @@ public class HeadQuarters extends Robot {
         return true;
       }
     }
+
     if (canAfford(RobotType.CARRIER)) {
       SpawnType nextSpawn = carrierSpawnOrder[carrierSpawnOrderIdx];
       MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
@@ -530,22 +545,55 @@ public class HeadQuarters extends Robot {
     }
   }
 
+  /**
+   * Respects state variables adamantiumToSave and manaToSave (only for anchors)
+   * @param type
+   * @return
+   */
   private boolean canAfford(RobotType type) {
     for (ResourceType rType : ResourceType.values()) {
-      if (rType == ResourceType.NO_RESOURCE)
-        continue;
-      if (rc.getResourceAmount(rType) < type.getBuildCost(rType)) {
+      if (rType == ResourceType.NO_RESOURCE) continue;
+      if (type.getBuildCost(rType) == 0) continue;
+      int budget = rc.getResourceAmount(rType);
+      switch (rType) {
+        case ADAMANTIUM:
+          budget -= adamantiumToSave;
+          break;
+        case MANA:
+          budget -= manaToSave;
+          break;
+        default:
+          break;
+      }
+      if (budget < type.getBuildCost(rType)) {
         return false;
       }
     }
     return true;
   }
 
+  /**
+   * Respects state variables adamantiumToSave and manaToSave
+   * @param anchorType
+   * @return
+   */
   private boolean canAfford(Anchor anchorType) {
     for (ResourceType rType : ResourceType.values()) {
-      if (rType == ResourceType.NO_RESOURCE)
-        continue;
-      if (rc.getResourceAmount(rType) < anchorType.getBuildCost(rType)) {
+      if (rType == ResourceType.NO_RESOURCE) continue;
+      if (anchorType.getBuildCost(rType) == 0) continue;
+
+      int budget = rc.getResourceAmount(rType);
+      switch (rType) {
+        case ADAMANTIUM:
+          budget -= adamantiumToSave;
+          break;
+        case MANA:
+          budget -= manaToSave;
+          break;
+        default:
+          break;
+      }
+      if (budget < anchorType.getBuildCost(rType)) {
         return false;
       }
     }
