@@ -289,7 +289,7 @@ public class Launcher extends MobileRobot {
             ))) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
+//          rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;
@@ -723,7 +723,7 @@ public class Launcher extends MobileRobot {
           Printer.print("Failed to select patrol target for type: " + type);
         }
       }
-      /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
   }
