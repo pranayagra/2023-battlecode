@@ -522,7 +522,7 @@ public class Carrier extends MobileRobot {
         if (wellEntryUndetermined) {
           rc.setIndicatorString("couldn't find well entry for: " + wellLocation);
           wellEntryPoint = wellQueueOrder[0];
-          Printer.print("couldn't find well entry for: " + wellLocation, "well queue: " + Arrays.toString(wellQueueOrder));
+//          Printer.print("couldn't find well entry for: " + wellLocation, "well queue: " + Arrays.toString(wellQueueOrder));
           return false;
         }
 //        Printer.print("well queue: " + Arrays.toString(wellQueueOrder), "from direction: " + wellApproachDirection.get(wellLocation));
