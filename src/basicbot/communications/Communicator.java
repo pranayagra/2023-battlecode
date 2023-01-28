@@ -1,7 +1,10 @@
 package basicbot.communications;
 
+import basicbot.containers.CharSet;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
+import basicbot.knowledge.WellData;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -56,6 +59,8 @@ public class Communicator {
   }
 
   public static CommsHandler commsHandler;
+  // stores the locations of wells that have been upgraded
+  public static CharSet upgradedWellLocations = new CharSet();
 
   private Communicator() throws GameActionException {}
   public static void init(RobotController rc) throws GameActionException {
@@ -63,31 +68,72 @@ public class Communicator {
     MetaInfo.init();
   }
 
+  //TODO: large - rewrite wells to cycle and every carrier updates their runningMemory turn by turn.
   /**
-   * puts a well into the next free slot within the comms buffer for wells of that type
+   * puts a well into the next free slot within the comms buffer for wells of that type.
+   * If well is elixir, checks to remove the well from the adamantium or mana buffer.
    * @param well the well info to broadcast
    * @return true if the information was successfully broadcast (or already in comms)
    * @throws GameActionException if any issues with reading/writing to comms
    */
-  public static boolean writeNextWell(WellInfo well) throws GameActionException {
-    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(well.getResourceType());
+  public static boolean writeNextWell(WellData well) throws GameActionException {
+
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(well.type);
+    if (well.type == ResourceType.ELIXIR) {
+      if (!upgradedWellLocations.contains(well.loc)) {
+        upgradedWellLocations.add(well.loc);
+        removeWellAtLocation(well.loc, ResourceType.ADAMANTIUM);
+        removeWellAtLocation(well.loc, ResourceType.MANA);
+
+      }
+    } else {
+      // check that this well is already not upgraded
+      if (upgradedWellLocations.contains(well.loc)) return true;
+    }
+
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (!writer.readWellExists(i)) {
-        writer.writeWellLocation(i, well.getMapLocation());
-        writer.writeWellUpgraded(i, well.isUpgraded());
-//        Printer.print("Published new well! " + well.getMapLocation());
+        writer.writeWellLocation(i, well.loc);
+        writer.writeWellUpgraded(i, well.isUpgraded);
+        writer.writeWellCapacity(i, well.capacity);
+        Printer.print("Published new well! " + well.loc + "capacity:"+well.capacity);
         return true;
-      } else if (writer.readWellLocation(i).equals(well.getMapLocation())) {
-        if (writer.readWellUpgraded(i) != well.isUpgraded()) {
-          writer.writeWellUpgraded(i, well.isUpgraded());
-          return true;
+      }
+      if (writer.readWellLocation(i).equals(well.loc)) {
+        if (writer.readWellUpgraded(i) != well.isUpgraded) {
+          writer.writeWellUpgraded(i, well.isUpgraded);
         }
+        if (writer.readWellCapacity(i) < well.capacity) {
+          writer.writeWellCapacity(i, well.capacity);
+          Printer.print("Updated well:" + well.loc + "capacity:"+well.capacity);
+
+        }
+
         return true;
 //      } else {
 //        Printer.print("Well already exists in comms: " + writer.readWellLocation(i));
       }
     }
 //    Printer.print("Failed to write well " + well);
+    return false;
+  }
+
+  /**
+   * Removes well at location from comms. Used for when AD or MANA -> ELIXIR.
+   * @param wellLocation
+   * @param type
+   * @return true if removed. False if not.
+   */
+  private static boolean removeWellAtLocation(MapLocation wellLocation, ResourceType type) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(type);
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      if (writer.readWellLocation(i).equals(wellLocation)) {
+        // delete the well
+        writer.writeWellLocation(i, CommsHandler.NONEXISTENT_MAP_LOC);
+        return true;
+      }
+    }
     return false;
   }
 
@@ -104,6 +150,25 @@ public class Communicator {
           closest = wellLocation;
         }
       }
+    }
+    return closest;
+  }
+
+  // this is actually just written in carrier since it depends on so many of carriers state variables.
+  public static MapLocation getClosestUnsaturatedWellLocation(MapLocation fromHere, ResourceType resourceType) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    MapLocation closest = null;
+    int closestDist = Integer.MAX_VALUE;
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
+      MapLocation wellLocation = writer.readWellLocation(i);
+      int dist = fromHere.distanceSquaredTo(wellLocation);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = wellLocation;
+      }
+
     }
     return closest;
   }

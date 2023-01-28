@@ -5,8 +5,10 @@ import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Memory;
 import basicbot.knowledge.RunningMemory;
+import basicbot.knowledge.WellData;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
+import basicbot.robots.micro.CarrierWellMicro;
 import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.knowledge.Cache;
@@ -52,6 +54,7 @@ public abstract class Robot {
     pathing = Pathing.create(rc);
     AttackerFightingMicro.init(rc, pathing);
     AttackMicro.init(rc);
+    CarrierWellMicro.init();
 
     rc.setIndicatorString("Just spawned!");
     turnCount = -1;
@@ -126,6 +129,7 @@ public abstract class Robot {
   }
 
   protected void die() {
+    Printer.submitPrint();
     Clock.yield();
     Clock.yield();
     rc.resign();
@@ -155,7 +159,9 @@ public abstract class Robot {
 
     MapLocation initial = Cache.PerTurn.CURRENT_LOCATION;
 
+//    Printer.print("" + Cache.PerTurn.ROUNDS_ALIVE);
     if (Cache.PerTurn.ROUND_NUM < 20 && Cache.PerTurn.ROUNDS_ALIVE == 0) {
+//      Printer.print("hi");
       initialWellExploration();
     }
 
@@ -210,6 +216,14 @@ public abstract class Robot {
     updateSymmetryComms();
     updateWellExploration();
     updateEnemyHQAvoidance();
+    // write to comms
+    broadcastMemoryToComms();
+
+  }
+
+  protected void broadcastMemoryToComms() throws GameActionException {
+    int wellsBroadcast = RunningMemory.broadcastMemorizedWells();
+
   }
 
   // ID => [loc, roundNum, owner]
@@ -357,11 +371,11 @@ public abstract class Robot {
   protected void updateEnemyHQAvoidance() throws GameActionException {
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
       if (robot.type != RobotType.HEADQUARTERS) continue;
-      // TODO: optimize me lol that's alotta bytecode
       if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(robot.location, RobotType.HEADQUARTERS.actionRadiusSquared)) {
         BugNav.blockedLocations.clear();
       }
       int distToBlock = Math.min(RobotType.HEADQUARTERS.actionRadiusSquared, Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(robot.location) - 1);
+      // TODO: optimize me lol that's alotta bytecode
       for (MapLocation loc : rc.getAllLocationsWithinRadiusSquared(robot.location, distToBlock)) {
         if (!BugNav.blockedLocations.contains(loc)) BugNav.blockedLocations.add(loc);
       }
@@ -540,6 +554,8 @@ public abstract class Robot {
     knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ELIXIR);
     boolean needElixir = knownWellLoc == null;
     if (!needAd && !needMana && !needElixir) return;
+//    Printer.print("yeet");
+
 //    if (needAd || needMana) {
 //      Printer.print("Early game checking for wells: needAd=" + needAd + ", needMana=" + needMana);
 //    }
@@ -548,21 +564,21 @@ public abstract class Robot {
         case ADAMANTIUM:
           if (needAd) {
             needAd = false;
-            RunningMemory.publishWell(wellInfo);
+            publishWellData(wellInfo);
 //            Printer.print("Early game well publishing: Ad @ " + wellInfo.getMapLocation());
           }
           break;
         case MANA:
           if (needMana) {
             needMana = false;
-            RunningMemory.publishWell(wellInfo);
+            publishWellData(wellInfo);
 //            Printer.print("Early game well publishing: Mana @ " + wellInfo.getMapLocation());
           }
           break;
         case ELIXIR:
           if (needElixir) {
             needElixir = false;
-            RunningMemory.publishWell(wellInfo);
+            publishWellData(wellInfo);
 //            Printer.print("Early game well publishing: Elixir @ " + wellInfo.getMapLocation());
           }
           break;
@@ -581,22 +597,31 @@ public abstract class Robot {
     if (Clock.getBytecodesLeft() < 200) return;
     int wellsPublished = 0;
     for (WellInfo well : rc.senseNearbyWells()) {
-      if (RunningMemory.publishWell(well)) {
+      if (publishWellData(well)) {
         wellsPublished++;
       }
     }
-//    if (wellsPublished > 0) {
-//      Printer.print("Found " + wellsPublished + " new wells");
-//    }
-//    if (Clock.getBytecodesLeft() < 200) return;
-//    int count = RunningMemory.wellCount;
-//    Utils.startByteCodeCounting("broadcast-" + count + "-wells");
-    int wellsBroadcast = RunningMemory.broadcastMemorizedWells();
-//    Utils.finishByteCodeCounting("broadcast-" + count + "-wells");
-//    if (wellsBroadcast > 0) {
-//      Printer.print("Broadcasted " + wellsBroadcast + " wells");
-//    }
   }
+
+  /**
+   * Converts wellInfo to wellData
+   */
+  private boolean publishWellData(WellInfo wellInfo) throws GameActionException{
+    // see all locations around well
+    MapLocation wellLoc = wellInfo.getMapLocation();
+    int capacity = 0;
+    for (Direction dir : Utils.directionsNine) {
+      MapLocation loc = wellLoc.add(dir);
+      int visionRadiusSq = Cache.PerTurn.IS_IN_CLOUD ? GameConstants.CLOUD_VISION_RADIUS_SQUARED : Cache.Permanent.VISION_RADIUS_SQUARED;
+
+      if (!loc.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, visionRadiusSq)) continue;
+      if (CarrierWellMicro.isValidStaticQueuePosition(wellLoc, loc)) {
+        capacity++;
+      }
+    }
+    return RunningMemory.publishWell(new WellData(wellInfo, capacity));
+  }
+
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {
     WellInfo[] wells = Global.rc.senseNearbyWells(type);

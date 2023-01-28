@@ -59,6 +59,8 @@ METAINFO = {
 WELL_SCHEMA = {
   'loc': LOCATION_BITS,
   'upgraded_bool': BOOL_BITS,
+  'capacity': 4, # TODO: optimize to 3 bits... this is currently from 0 - 8. Not sure how to make it 1-9 lol
+  'current_workers': 4,
 }
 
 MAIN_SCHEMA = {
@@ -122,7 +124,7 @@ MAIN_SCHEMA = {
     }
   },
   'enemy': {
-    'slots': 23,
+    'slots': 19,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,

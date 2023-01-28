@@ -7,9 +7,11 @@ import basicbot.containers.HashMap;
 import basicbot.containers.HashSet;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.CarrierEnemyProtocol;
+import basicbot.robots.micro.CarrierWellMicro;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
 import basicbot.robots.pathfinding.BugNav;
+import basicbot.utils.Global;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -766,7 +768,7 @@ public class Carrier extends MobileRobot {
         maxFillSpot--;
       }
       MapLocation queueTarget = wellQueueOrder[testSpot];
-      if (queueTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || isValidQueuePosition(currentTask.targetWell, queueTarget)) {
+      if (queueTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || CarrierWellMicro.isValidQueuePosition(currentTask.targetWell, queueTarget)) {
         // we can move to the target (or already there)
         wellQueueTargetIndex = testSpot;
         roundsWaitingForQueueSpot = 0;
@@ -777,7 +779,7 @@ public class Carrier extends MobileRobot {
     }
     while (maxFillSpot >= 0) {
       MapLocation queueTarget = wellQueueOrder[maxFillSpot];
-      if (queueTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || isValidQueuePosition(currentTask.targetWell, queueTarget)) {
+      if (queueTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || CarrierWellMicro.isValidQueuePosition(currentTask.targetWell, queueTarget)) {
         // we can move to the target (or already there)
         wellQueueTargetIndex = maxFillSpot;
         roundsWaitingForQueueSpot = 0;
@@ -789,7 +791,7 @@ public class Carrier extends MobileRobot {
     }
 //    while (minFillSpot < 9) {
 //      MapLocation queueTarget = wellQueueOrder[minFillSpot];
-//      if (queueTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || isValidQueuePosition(currentTask.targetWell, queueTarget)) {
+//      if (queueTarget.equals(Cache.PerTurn.CURRENT_LOCATION) || CarrierWellMicro.isValidQueuePosition(currentTask.targetWell, queueTarget)) {
 //        // we can move to the target (or already there)
 //        wellQueueTargetIndex = minFillSpot;
 //        roundsWaitingForQueueSpot = 0;
@@ -821,32 +823,9 @@ public class Carrier extends MobileRobot {
   }
 
   /**
-   * checks if a certain position is a valid queueing spot for the given well location
-   * should be passable and not a robot?
-   * ASSUMES adjacency
-   * @param wellLocation the well location
-   * @param queuePosition the position to check
-   * @return true if the position is valid
-   * @throws GameActionException
-   */
-  private boolean isValidQueuePosition(MapLocation wellLocation, MapLocation queuePosition) throws GameActionException {
-    local_checks: {
-      if (!rc.canSenseLocation(queuePosition)) break local_checks; // assume it is valid if can't sense
-      if (rc.canSenseRobotAtLocation(queuePosition)) return false; // blocked by a robot
-      MapInfo mapInfo = rc.senseMapInfo(queuePosition);
-      if (!mapInfo.isPassable()) return false; // isn't passable
-      if (!queuePosition.add(mapInfo.getCurrentDirection()).isAdjacentTo(wellLocation)) return false; // gets blown away
-    }
-    if (BugNav.blockedLocations.contains(queuePosition)) return false; // blocked by a bugnav
-    if (rc.canSenseLocation(queuePosition)
-        && BugNav.blockedLocations.contains(
-        queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()
-        ))) return false; // pushed into a blocked location
-    return true;
-  }
-
-  /**
    * will figure out the next best well to go to (respects blackListWells)
+   * avoids saturated wells.
+   * Sets alot of state variables.
    * @param resourceType the well type to look for
    * @param toAvoid a map location to exclude from the search
    * @throws GameActionException any issues duirng search (comms, sensing)
@@ -854,22 +833,33 @@ public class Carrier extends MobileRobot {
   private void findNewWell(ResourceType resourceType, MapLocation toAvoid) throws GameActionException {
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     MapLocation closestWellLocation = null;
+    if (rc.canWriteSharedArray(0,0) && currentTask.targetWellIndexToDecrement != -1) {
+      writer.writeWellCurrentWorkers(currentTask.targetWellIndexToDecrement, Math.max(writer.readWellCurrentWorkers(currentTask.targetWellIndexToDecrement) - 1 , 0));
+    }
     int closestDist = Integer.MAX_VALUE;
+    int closestWellInd = -1;
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
-      if (!writer.readWellExists(i)) break;
+      if (!writer.readWellExists(i)) continue;
       MapLocation wellLocation = writer.readWellLocation(i);
-      if (!wellLocation.equals(toAvoid) && !blackListWells.contains(wellLocation)) {
-        if (CarrierEnemyProtocol.lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
-          continue;
-        }
-        int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestWellLocation = wellLocation;
-        }
+      if (wellLocation.equals(toAvoid) || blackListWells.contains(wellLocation)) continue;
+      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
+      if (CarrierEnemyProtocol.lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
+        continue;
+      }
+
+      int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestWellLocation = wellLocation;
+        closestWellInd = i;
       }
     }
     currentTask.targetWell = closestWellLocation;
+    if (rc.canWriteSharedArray(0,0) && currentTask.targetWellIndexToDecrement != -1) {
+      writer.writeWellCurrentWorkers(currentTask.targetWellIndexToDecrement,
+          writer.readWellCurrentWorkers(currentTask.targetWellIndexToDecrement) + 1);
+      currentTask.targetWellIndexToDecrement = closestWellInd;
+    }
     this.turnsStuckApproachingWell = 0;
 
     this.wellQueueOrder = null;
@@ -995,6 +985,8 @@ public class Carrier extends MobileRobot {
 
     public MapLocation targetHQLoc;
     public MapLocation targetWell;
+    // index in public comms array - TODO: this can be handled with a map in Communicator potentially
+    public int targetWellIndexToDecrement = -1;
     final public ResourceType collectionType;
     public MapLocation targetIsland;
     public int turnsRunning;
@@ -1029,6 +1021,12 @@ public class Carrier extends MobileRobot {
         case FETCH_ADAMANTIUM:
         case FETCH_MANA:
         case FETCH_ELIXIR:
+          if (Global.rc.canWriteSharedArray(0,0) && targetWellIndexToDecrement != -1) {
+            CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(collectionType);
+            writer.writeWellCurrentWorkers(
+                targetWellIndexToDecrement, Math.max(writer.readWellCurrentWorkers(targetWellIndexToDecrement) - 1 , 0));
+            targetWellIndexToDecrement = -1;
+          }
           targetWell = null;
           break;
         case DELIVER_RSS_HOME:
