@@ -5,7 +5,7 @@ import wellcircling.utils.Cache;
 import wellcircling.utils.Utils;
 import battlecode.common.*;
 
-/**///import basicbot.utils.Printer;
+/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private int hqID;

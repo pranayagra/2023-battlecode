@@ -8,7 +8,7 @@ import battlecode.common.*;
 
 import static battlecode.common.GameActionExceptionType.NOT_ENOUGH_RESOURCE;
 
-/**///import basicbot.utils.Printer;
+/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   public final int hqID;
