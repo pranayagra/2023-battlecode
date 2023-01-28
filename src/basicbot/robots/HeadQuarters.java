@@ -134,8 +134,7 @@ public class HeadQuarters extends Robot {
 //    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
-      updateWellExploration();
-      updateSymmetryComms();
+      afterTurnWhenMoved();
     }
 
     Communicator.clearEnemyComms();

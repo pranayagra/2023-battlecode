@@ -61,7 +61,7 @@ WELL_SCHEMA = {
   'upgraded_bool': BOOL_BITS,
 }
 
-OLD_SCHEMA = {
+MAIN_SCHEMA = {
   '': {
     'slots': 1,
     'bits': {key: value['bits'] for key,value in METAINFO.items()}
@@ -128,14 +128,6 @@ OLD_SCHEMA = {
       'even_loc': LOCATION_BITS,
     }
   },
-  # 'attack_pod': {
-  #   'slots': 10,
-  #   'bits': {
-  #     'amp_alive_bool': BOOL_BITS,
-  #     'amp_loc': LOCATION_BITS,
-  #     'launcher_registry': 6,
-  #   }
-  # },
 }
 
 PTESTCARRIER_SCHEMA = {
@@ -211,7 +203,7 @@ PTESTCARRIER_SCHEMA = {
   # },
 }
 
-SCHEMA = OLD_SCHEMA
+SCHEMA = MAIN_SCHEMA
 
 def is_suffix_special(attr: str) -> bool:
   return any(attr.endswith(suffix) for suffix in SPECIAL_ATTR_SUFFIXES)
