@@ -104,8 +104,7 @@ public class SmitePathing {
     }
 
     // if i'm adjacent to my destination and it is unoccupied / not high rubble, move there
-    if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(target)) { // TODO: maybe use adjacentTo if bytecode ok?
-      // TODO: also check if not cloud/current (smite checks against high rubble)
+    if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(target)) {
       Direction toTarget = Cache.PerTurn.CURRENT_LOCATION.directionTo(target);
       if (BugNav.canMoveInDirection(toTarget)) {
         return smiteMove(toTarget);

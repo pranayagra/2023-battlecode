@@ -59,9 +59,11 @@ METAINFO = {
 WELL_SCHEMA = {
   'loc': LOCATION_BITS,
   'upgraded_bool': BOOL_BITS,
+  'capacity': 4, # TODO: optimize to 3 bits... this is currently from 0 - 8. Not sure how to make it 1-9 lol
+  'current_workers': 4,
 }
 
-OLD_SCHEMA = {
+MAIN_SCHEMA = {
   '': {
     'slots': 1,
     'bits': {key: value['bits'] for key,value in METAINFO.items()}
@@ -122,20 +124,12 @@ OLD_SCHEMA = {
     }
   },
   'enemy': {
-    'slots': 23,
+    'slots': 19,
     'bits': {
       'odd_loc': LOCATION_BITS,
       'even_loc': LOCATION_BITS,
     }
   },
-  # 'attack_pod': {
-  #   'slots': 10,
-  #   'bits': {
-  #     'amp_alive_bool': BOOL_BITS,
-  #     'amp_loc': LOCATION_BITS,
-  #     'launcher_registry': 6,
-  #   }
-  # },
 }
 
 PTESTCARRIER_SCHEMA = {
@@ -211,7 +205,7 @@ PTESTCARRIER_SCHEMA = {
   # },
 }
 
-SCHEMA = OLD_SCHEMA
+SCHEMA = MAIN_SCHEMA
 
 def is_suffix_special(attr: str) -> bool:
   return any(attr.endswith(suffix) for suffix in SPECIAL_ATTR_SUFFIXES)

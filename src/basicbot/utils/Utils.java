@@ -123,6 +123,7 @@ public class Utils {
     }
   }
 
+
   public static MapLocation randomMapLocation() { return new MapLocation(randomMapLocationX(), randomMapLocationY());}
 
   public static int randomMapLocationX() { return rng.nextInt(Cache.Permanent.MAP_WIDTH);}

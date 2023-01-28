@@ -167,6 +167,7 @@ public class Cache {
     public static MapLocation CURRENT_LOCATION;
     public static MapLocation PREVIOUS_LOCATION;
     public static int ROUND_LAST_MOVED;
+    public static boolean IS_IN_CLOUD;
 
     public static final int[] GLOBAL_VISITED_LOCS = new int[113];
     //        public static int LEVEL;
@@ -197,6 +198,7 @@ public class Cache {
       PerTurn.ALL_NEARBY_ROBOTS = Global.rc.senseNearbyRobots();
       PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OUR_TEAM);
       PerTurn.ALL_NEARBY_ENEMY_ROBOTS = Global.rc.senseNearbyRobots(-1, Permanent.OPPONENT_TEAM);
+      PerTurn.IS_IN_CLOUD = Global.rc.senseCloud(PerTurn.CURRENT_LOCATION);
 //            PerTurn.NEARBY_LEAD_MIN_2 = Global.rc.senseNearbyLocationsWithLead(-1, 2);
     }
 
