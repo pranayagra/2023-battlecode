@@ -1,16 +1,16 @@
-package basicbot.robots;
+package maybebigeconfix.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import maybebigeconfix.communications.CommsHandler;
+import maybebigeconfix.communications.Communicator;
+import maybebigeconfix.communications.HqMetaInfo;
+import maybebigeconfix.containers.HashSet;
+import maybebigeconfix.knowledge.Cache;
+import maybebigeconfix.knowledge.RunningMemory;
+import maybebigeconfix.robots.micro.AttackMicro;
+import maybebigeconfix.robots.micro.AttackerFightingMicro;
+import maybebigeconfix.utils.Constants;
+import maybebigeconfix.utils.Printer;
+import maybebigeconfix.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
@@ -130,7 +130,7 @@ public class Launcher extends MobileRobot {
     } else {
       MapLocation target = getDestination();
       if (target != null) {
-        /*BASICBOT_ONLY*/rc.setIndicatorDot(target, 0, 0, 255);
+        /*BASICBOT_ONLY*///rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
       }
     }
@@ -288,7 +288,7 @@ public class Launcher extends MobileRobot {
             ))) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
+          /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;
@@ -722,7 +722,7 @@ public class Launcher extends MobileRobot {
           Printer.print("Failed to select patrol target for type: " + type);
         }
       }
-      /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
   }
