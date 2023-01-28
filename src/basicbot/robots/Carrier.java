@@ -30,6 +30,7 @@ public class Carrier extends MobileRobot {
   private static final int MIN_TURN_TO_EXPLORE = 30;
 
   CarrierTask currentTask;
+  ResourceType incrementedResource;
   CarrierTask forcedNextTask;
   CarrierTask HQAssignedTask;
 
@@ -128,8 +129,31 @@ public class Carrier extends MobileRobot {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) {
       return CarrierTask.DELIVER_RSS_HOME;
     }
+
+    final int MAX_INCOME = 31;
+
     MapLocation closestHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
     int closestHQID = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
+
+    // reduce the last incremented
+    if (incrementedResource != null && rc.canWriteSharedArray(0, 0)) {
+      // decrement
+      switch (incrementedResource) {
+        case ADAMANTIUM:
+          CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.max(CommsHandler.readOurHqAdamantiumIncome(closestHQID) - 1, 0));
+          break;
+        case MANA:
+          CommsHandler.writeOurHqManaIncome(closestHQID, Math.max(CommsHandler.readOurHqManaIncome(closestHQID) - 1, 0));
+          break;
+        case ELIXIR:
+          CommsHandler.writeOurHqElixirIncome(closestHQID, Math.max(CommsHandler.readOurHqElixirIncome(closestHQID) - 1, 0));
+          break;
+      }
+      incrementedResource = null;
+    }
+
+
+
     RobotInfo closestHQ = rc.canSenseRobotAtLocation(closestHQLoc) ? rc.senseRobotAtLocation(closestHQLoc) : null;
     if (closestHQ != null && closestHQ.getTotalAnchors() > 0) {
       return CarrierTask.ANCHOR_ISLAND;
@@ -164,19 +188,22 @@ public class Carrier extends MobileRobot {
 //     END RSS AROUND ME APPROACH ====
 
 
-    final int MAX_INCOME = 31;
 
     if (HQAssignedTask != null) {
       if (rc.canWriteSharedArray(0, 0)) {
         switch (HQAssignedTask) {
           case FETCH_ADAMANTIUM:
             CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(CommsHandler.readOurHqAdamantiumIncome(closestHQID) + 1, MAX_INCOME));
+            incrementedResource = ResourceType.ADAMANTIUM;
             break;
           case FETCH_MANA:
             CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(CommsHandler.readOurHqManaIncome(closestHQID) + 1, MAX_INCOME));
+            incrementedResource = ResourceType.MANA;
+
             break;
           case FETCH_ELIXIR:
             CommsHandler.writeOurHqElixirIncome(closestHQID, Math.min(CommsHandler.readOurHqElixirIncome(closestHQID) + 1, MAX_INCOME));
+            incrementedResource = ResourceType.ELIXIR;
             break;
         }
       }
@@ -205,26 +232,39 @@ public class Carrier extends MobileRobot {
     if (closestEnemy != null && closestEnemy.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < 100) {
       manaWeighting *= 20;
     }
+    //TODO: fix naming of income. this is now semantically the # of carriers out getting that resource type.
     // TODO: check for existence of Elixir wells
-    if ((40 * adamantiumIncome) / 100 > 9) {
+//    if ((40 * adamantiumIncome) / 100 > 9) {
+    if (adamantiumIncome > 8) {
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
+        incrementedResource = ResourceType.MANA;
       }
-      HQAssignedTask = CarrierTask.FETCH_MANA;
+
+//      HQAssignedTask = CarrierTask.FETCH_MANA;
       return CarrierTask.FETCH_MANA;
     }
+
     if (manaWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
+//      System.out.println("hi");
       if (rc.canWriteSharedArray(0, 0)) {
         CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
+        incrementedResource = ResourceType.ADAMANTIUM;
+//        System.out.println("bye");
       }
-      HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
+//      HQAssignedTask = CarrierTask.FETCH_ADAMANTIUM;
       return CarrierTask.FETCH_ADAMANTIUM;
     }
-    if (rc.canWriteSharedArray(0, 0)) {
 
-      CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
+//    System.out.println("hi");
+
+    if (rc.canWriteSharedArray(0, 0)) {
+      CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
+      incrementedResource = ResourceType.MANA;
+//      System.out.println("bye");
+
     }
-    HQAssignedTask = CarrierTask.FETCH_MANA;
+//    HQAssignedTask = CarrierTask.FETCH_MANA;
     return CarrierTask.FETCH_MANA;
 
 
@@ -267,7 +307,7 @@ public class Carrier extends MobileRobot {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveAwayFrom(lastEnemyLocation)) {}
+      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveAwayFrom(lastEnemyLocation)) {} // TODO: maybe this should be move towards closest ally
 //      if (cachedLastEnemyForBroadcast != null) { // we need to broadcast this enemy
 //        forcedNextTask = CarrierTask.DELIVER_RSS_HOME;
 //        resetTask();
@@ -509,11 +549,16 @@ public class Carrier extends MobileRobot {
     if(!approachWell(currentTask.targetWell)) {
       blackListWells.add(currentTask.targetWell);
       switch(currentTask) {
+        // currently, keep same rss. Before was to change.
         case FETCH_ADAMANTIUM:
-          forcedNextTask = CarrierTask.FETCH_MANA;
+//          forcedNextTask = CarrierTask.FETCH_MANA;
+          forcedNextTask = CarrierTask.FETCH_ADAMANTIUM;
+
         default: // TODO: check if elixir well exists and cycle to that
         case FETCH_MANA:
-          forcedNextTask = CarrierTask.FETCH_ADAMANTIUM;
+//          forcedNextTask = CarrierTask.FETCH_ADAMANTIUM;
+          forcedNextTask = CarrierTask.FETCH_MANA;
+
       }
       return true;
     }

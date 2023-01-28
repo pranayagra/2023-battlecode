@@ -221,17 +221,21 @@ public class HeadQuarters extends Robot {
     adamantiumIncome += newAd - adamantiumIncomeHistory[ind];
     manaIncome += newMana - manaIncomeHistory[ind];
     elixirIncome += newElixir - elixirIncomeHistory[ind];
-    rc.setIndicatorString("Income: A:"+adamantiumIncome+" M:" + manaIncome + " E:" + elixirIncome);
+//    rc.setIndicatorString("Income: A:"+adamantiumIncome+" M:" + manaIncome + " E:" + elixirIncome);
     // update the history
     adamantiumIncomeHistory[ind] = newAd;
     manaIncomeHistory[ind] = newMana;
     elixirIncomeHistory[ind] = newElixir;
 
+
+    rc.setIndicatorString("Income: A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID));
+
     // comm the results / 40
     int max = 31; // based on 5 bits for comms
-    CommsHandler.writeOurHqAdamantiumIncome(this.hqID, Math.min((adamantiumIncome / 40), max));
-    CommsHandler.writeOurHqManaIncome(this.hqID, Math.min((manaIncome / 40), max));
-    CommsHandler.writeOurHqElixirIncome(this.hqID, Math.min((elixirIncome / 40), max));
+    // disabled currently - allow carriers to write and subtract. Altho no way to handle dead carriers...
+//    CommsHandler.writeOurHqAdamantiumIncome(this.hqID, Math.min((adamantiumIncome / 40), max));
+//    CommsHandler.writeOurHqManaIncome(this.hqID, Math.min((manaIncome / 40), max));
+//    CommsHandler.writeOurHqElixirIncome(this.hqID, Math.min((elixirIncome / 40), max));
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
     /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
     /*WORKFLOW_ONLY*///}
