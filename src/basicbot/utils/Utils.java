@@ -1,16 +1,13 @@
 package basicbot.utils;
 
 import basicbot.knowledge.Cache;
-import battlecode.common.Clock;
-import battlecode.common.Direction;
-import battlecode.common.MapLocation;
+import battlecode.common.*;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 public class Utils {
-
 
   public enum MapSymmetry {
     ROTATIONAL,
@@ -328,6 +325,12 @@ public class Utils {
     int y = location.y - (location.y % Cache.Permanent.CHUNK_HEIGHT);
     return new MapLocation(x + Cache.Permanent.CHUNK_WIDTH / 2, y + Cache.Permanent.CHUNK_HEIGHT / 2);
   }
+
+
+  public static int getInvWeight(RobotInfo ri) {
+    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() * GameConstants.ANCHOR_WEIGHT));
+  }
+
 
   /*
 
