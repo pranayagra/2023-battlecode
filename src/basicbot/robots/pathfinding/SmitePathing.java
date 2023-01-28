@@ -79,7 +79,7 @@ public class SmitePathing {
         || Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
         || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED // too many robots nearby, just bug
     ) {
-      doBuggingTurns += 2;
+//      doBuggingTurns += 2;
       return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
     }
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move

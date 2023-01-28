@@ -100,6 +100,13 @@ public abstract class Robot {
         e.printStackTrace();
         rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
         if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) die();
+      } catch (AssertionError e) {
+        // some assertion failed
+        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " AssertionError");
+        Printer.submitPrint();
+        e.printStackTrace();
+        rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
+        if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) die();
       } finally {
         // end turn - make code wait until next turn
         if (!dontYield) Clock.yield();
@@ -107,8 +114,8 @@ public abstract class Robot {
           if (Clock.getBytecodesLeft() < 0.8 * Cache.Permanent.ROBOT_TYPE.bytecodeLimit) { // if don't have 80% of limit, still yield
             dontYield = false;
             Clock.yield();
-//                    } else {
-//                      System.out.println("Skipping turn yeild!!");
+//          } else {
+//            System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + "Skipping turn yeild!!");
           }
         }
       }

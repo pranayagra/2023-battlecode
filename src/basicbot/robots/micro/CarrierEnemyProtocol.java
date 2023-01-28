@@ -1,5 +1,6 @@
 package basicbot.robots.micro;
 
+import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.robots.Carrier;
 import basicbot.robots.pathfinding.Pathing;
@@ -47,18 +48,27 @@ public class CarrierEnemyProtocol {
       }
       updateLastEnemy();
     }
+    MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    if (fleeingCounter > 0) {
+      if (Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, closestHQ) <= MicroConstants.CARRIER_DIST_TO_HQ_TO_RUN_HOME) {
+        fleeingCounter = 6;
+      }
+    }
     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveAwayFrom(lastEnemyLocation)) {}
+      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveTowards(closestHQ)) {}
 //      if (cachedLastEnemyForBroadcast != null) { // we need to broadcast this enemy
 //        forcedNextTask = CarrierTask.DELIVER_RSS_HOME;
 //        resetTask();
 //      }
-      return true;
+      if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(closestHQ)) {
+        carrier.transferAllResources(closestHQ);
+        fleeingCounter = 0;
+      }
     }
-    return false;
+    return fleeingCounter > 0;
   }
 
 

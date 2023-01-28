@@ -312,7 +312,6 @@ public class HeadQuarters extends Robot {
 
     if (Cache.PerTurn.ROUND_NUM >= 500 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
       // consider anchor spawn
-      rc.setIndicatorString("Build anchor");
       if (createAnchors()) {
         numAnchorsMade++;
         return true;
@@ -331,7 +330,14 @@ public class HeadQuarters extends Robot {
       MapLocation preferredSpawnLocation = getPreferredCarrierSpawnLocation(nextSpawn);
       if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
         carrierSpawnOrderIdx = (carrierSpawnOrderIdx + 1) % carrierSpawnOrder.length;
-        if (spawnAmplifierCooldown > 0) spawnAmplifierCooldown -= 2;
+        spawnAmplifierCooldown -= 2;
+        return true;
+      }
+    }
+
+    if (canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
+      if (createAnchors()) {
+        numAnchorsMade++;
         return true;
       }
     }
