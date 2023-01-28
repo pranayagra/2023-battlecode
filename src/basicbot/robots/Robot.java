@@ -85,7 +85,7 @@ public abstract class Robot {
       // Try/catch blocks stop unhandled exceptions, which cause your robot to explode.
       try {
         this.runTurnWrapper();
-//                Printer.cleanPrint();
+        if (Printer.indicator.toString().length() > 0) rc.setIndicatorString(Printer.indicator.toString());
         Printer.submitPrint();
       } catch (GameActionException e) {
         // something illegal in the Battlecode world
@@ -224,6 +224,22 @@ public abstract class Robot {
       this.roundNum = roundNum;
       this.islandTeam = islandTeam;
     }
+
+    public IslandInfo(IslandInfo other) {
+      this.islandLocation = other.islandLocation;
+      this.islandId = other.islandId;
+      this.roundNum = other.roundNum;
+      this.islandTeam = other.islandTeam;
+    }
+
+    public String toString() {
+      return "IslandInfo{" +
+          "islandLocation=" + islandLocation +
+          ", islandId=" + islandId +
+          ", roundNum=" + roundNum +
+          ", islandTeam=" + islandTeam +
+          '}';
+    }
   }
 
   protected int teamToInt(Team t) {
@@ -238,10 +254,9 @@ public abstract class Robot {
     return Team.NEUTRAL;
   }
 
-  protected HeadQuarters.IslandInfo[] globalIslandInfo = new HeadQuarters.IslandInfo[36];
-  protected int globalIslandInfoIterator = 0;
+  protected IslandInfo[] globalIslandInfo = new IslandInfo[36];
 
-  protected HeadQuarters.IslandInfo[] localIslandInfo = new HeadQuarters.IslandInfo[36];
+  protected IslandInfo[] localIslandInfo = new IslandInfo[36];
 
   private void observeIslandsNearby() throws GameActionException {
     int[] islandIds = rc.senseNearbyIslands();
@@ -252,31 +267,40 @@ public abstract class Robot {
       } else {
         Team team = rc.senseTeamOccupyingIsland(islandId);
         MapLocation islandLocation = rc.senseNearbyIslandLocations(islandId)[0];
-        localIslandInfo[islandId] = new HeadQuarters.IslandInfo(islandLocation, islandId, Cache.PerTurn.ROUND_NUM, team);
+        localIslandInfo[islandId] = new IslandInfo(islandLocation, islandId, Cache.PerTurn.ROUND_NUM, team);
       }
     }
   }
 
-  // call this protocol!
+  private void debugIslandComms() {
+    if (Cache.PerTurn.ROUND_NUM % 20 == 0) {
+      for (int i = 0; i < 36; ++i) {
+        Printer.print("island " + i + " " + globalIslandInfo[i] + " " + localIslandInfo[i]);
+      }
+    }
+  }
+
   protected void islandMobileBotsProtocol() throws GameActionException {
     updateIslandInfoMemoryFromComms();
     observeIslandsNearby();
     commIslandInformation();
+//    debugIslandComms();
   }
 
   // lazy comming (even if roundNum is oudated, as long as team is the same, do not comm!)
   private void commIslandInformation() throws GameActionException {
-    if (!rc.canWriteSharedArray(0, 0)) return;
+    if (!rc.canWriteSharedArray(0, 0) || Cache.PerTurn.ROUND_NUM % 2 == 0) return;
     if (CommsHandler.readIslandInfoExists()) { // someone just wrote some new info to the array, can I replace it?
       // need to read and see if we have more updated info or not
       int islandID = CommsHandler.readIslandInfoIslandId();
-      HeadQuarters.IslandInfo localInfo = localIslandInfo[islandID];
+      IslandInfo localInfo = localIslandInfo[islandID];
       if (localInfo == null) return;
       int roundNum = CommsHandler.readIslandInfoRoundNum();
       Team team = intToTeam(CommsHandler.readIslandInfoOwner());
       if (team != localInfo.islandTeam && roundNum < localInfo.roundNum) {
         // we have more updated info, so we need to overwrite
-        globalIslandInfo[islandID] = localInfo;
+//        Printer.print("overwriting island " + islandID + ", global=" + globalIslandInfo[islandID] + " local=" + localInfo);
+        globalIslandInfo[islandID] = new IslandInfo(localInfo);
         int newTeam = teamToInt(localInfo.islandTeam);
         CommsHandler.writeIslandInfoOwner(newTeam);
         CommsHandler.writeIslandInfoRoundNum(localInfo.roundNum);
@@ -286,12 +310,13 @@ public abstract class Robot {
     }
 
     for (int i = 0; i < 36; ++i) {
-      HeadQuarters.IslandInfo globalInfo = globalIslandInfo[i];
-      HeadQuarters.IslandInfo localInfo = localIslandInfo[i];
+      IslandInfo globalInfo = globalIslandInfo[i];
+      IslandInfo localInfo = localIslandInfo[i];
       if (localInfo != null) {
         if (globalInfo == null || (globalInfo.islandTeam != localInfo.islandTeam && globalInfo.roundNum < localInfo.roundNum)) {
           // we have more updated info, so we need to overwrite
-          globalIslandInfo[i] = localInfo; //do I need to new here / reference issue?
+//          Printer.print("overwriting island " + i + ", global=" + globalIslandInfo[i] + " local=" + localInfo);
+          globalIslandInfo[i] = new IslandInfo(localInfo); //do I need to new here / reference issue?
           int newTeam = teamToInt(localInfo.islandTeam);
           CommsHandler.writeIslandInfoOwner(newTeam);
           CommsHandler.writeIslandInfoRoundNum(localInfo.roundNum);
@@ -309,9 +334,9 @@ public abstract class Robot {
       int roundNum = CommsHandler.readIslandInfoRoundNum();
       Team team = intToTeam(CommsHandler.readIslandInfoOwner());
       int islandId = CommsHandler.readIslandInfoIslandId();
-
+//      if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS) Printer.print("read any island info " + location + " " + roundNum + " " + team + " " + islandId);
       if (globalIslandInfo[islandId] == null) {
-        globalIslandInfo[islandId] = new HeadQuarters.IslandInfo(location, islandId, roundNum, team);
+        globalIslandInfo[islandId] = new IslandInfo(location, islandId, roundNum, team);
       } else if (globalIslandInfo[islandId].roundNum < roundNum) {
         globalIslandInfo[islandId].roundNum = roundNum;
         globalIslandInfo[islandId].islandTeam = team;
@@ -322,9 +347,10 @@ public abstract class Robot {
       int roundNum = CommsHandler.readMyIslandsRoundNum();
       Team team = Cache.Permanent.OUR_TEAM;
       int islandId = CommsHandler.readMyIslandsIslandId();
+//      if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS) Printer.print("read my island info " + location + " " + roundNum + " " + team + " " + islandId);
 
       if (globalIslandInfo[islandId] == null) {
-        globalIslandInfo[islandId] = new HeadQuarters.IslandInfo(location, islandId, roundNum, team);
+        globalIslandInfo[islandId] = new IslandInfo(location, islandId, roundNum, team);
       } else if (globalIslandInfo[islandId].roundNum < roundNum) {
         globalIslandInfo[islandId].roundNum = roundNum;
         globalIslandInfo[islandId].islandTeam = team;

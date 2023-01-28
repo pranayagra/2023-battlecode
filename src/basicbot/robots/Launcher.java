@@ -143,6 +143,7 @@ public class Launcher extends MobileRobot {
     //todo: not complete
     if (Cache.PerTurn.HEALTH < RobotType.LAUNCHER.health * 0.5) {
       IslandInfo islandInfo = getClosestFriendlyIsland();
+//      Printer.print("island info: " + islandInfo);
       if (islandInfo != null) {
         MapLocation islandLocation = islandInfo.islandLocation;
         pathing.moveTowards(islandLocation);

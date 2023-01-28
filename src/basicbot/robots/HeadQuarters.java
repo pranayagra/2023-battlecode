@@ -7,6 +7,7 @@ import basicbot.containers.CharSet;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Constants;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -104,23 +105,25 @@ public class HeadQuarters extends Robot {
   }
 
   private void clearIslandInfo() throws GameActionException {
-    if (this.hqID + 1 == HqMetaInfo.hqCount) {
+    if (this.hqID + 1 == HqMetaInfo.hqCount && Cache.PerTurn.ROUND_NUM % 2 == 1) {
       CommsHandler.writeIslandInfoLocation(CommsHandler.NONEXISTENT_MAP_LOC);
     }
   }
 
+  protected int globalIslandInfoIterator = 0;
   private void rotateMyOwnedIslands() throws GameActionException {
     if (this.hqID + 1 == HqMetaInfo.hqCount) {
       int tries = 36;
       while (tries-- > 0) {
         IslandInfo islandInfo = globalIslandInfo[globalIslandInfoIterator];
+        globalIslandInfoIterator = (globalIslandInfoIterator + 1) % 36;
         if (islandInfo != null) {
           if (islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
             CommsHandler.writeMyIslandsLocation(islandInfo.islandLocation);
             CommsHandler.writeMyIslandsRoundNum(islandInfo.roundNum);
             CommsHandler.writeMyIslandsIslandId(islandInfo.islandId);
+//            Printer.print("rotating island " + islandInfo);
 //            CommsHandler.writeMyIslandsTeam(teamToInt(islandInfo.islandTeam)); // not needed since we only rotate owned team islands
-            globalIslandInfoIterator = (globalIslandInfoIterator + 1) % 36;
             return;
           }
         }
@@ -132,7 +135,7 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 600) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 300) rc.resign();
     islandHqProtocol();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
