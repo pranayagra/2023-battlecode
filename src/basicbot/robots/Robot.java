@@ -533,10 +533,6 @@ public abstract class Robot {
   }
 
 
-  protected static int getInvWeight(RobotInfo ri) {
-    return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() * GameConstants.ANCHOR_WEIGHT));
-  }
-
   protected void becomeDoNothingBot() {
     while (true) Clock.yield();
   }

@@ -6,6 +6,7 @@ import basicbot.communications.HqMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.containers.HashSet;
 import basicbot.knowledge.RunningMemory;
+import basicbot.robots.micro.CarrierEnemyProtocol;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
 import basicbot.robots.pathfinding.BugNav;
@@ -24,7 +25,6 @@ public class Carrier extends MobileRobot {
   private static final int MAX_TURNS_STUCK = 3;
   private static final int MAX_ROUNDS_WAIT_FOR_WELL_PATH = 2;
   private static final int MIN_SPOTS_LEFT_FROM_CARRIERS_FILLING_IN_FRONT = 1;
-  private static final int TURNS_TO_FLEE = 4;
   private static final int MAX_SCOUT_TURNS = 50;
   private static final int MAX_TURNS_TO_LOOK_FOR_WELL = 10;
   private static final int MIN_TURN_TO_EXPLORE = 30;
@@ -48,13 +48,9 @@ public class Carrier extends MobileRobot {
   private int roundsWaitingForQueueSpot;
 
 
-  int fleeingCounter;
-  MapLocation lastEnemyLocation;
-  int lastEnemyLocationRound;
-  private RobotInfo cachedLastEnemyForBroadcast;
-
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
+    CarrierEnemyProtocol.init(this);
     wellApproachDirection = new HashMap<>(3);
     blackListWells = new HashSet<>(8);
     wellQueueOrder = null;
@@ -283,189 +279,24 @@ public class Carrier extends MobileRobot {
 //    }
 //    if (Cache.PerTurn.ROUND_NUM >= 10) rc.resign();
 
-    if (enemyExists()) {
-      RobotInfo enemyToAttack = enemyToAttackIfWorth();
-      if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
-//        Printer.print("enemyToAttack - " + enemyToAttack);
-      if (enemyToAttack != null && rc.isActionReady()) {
-        // todo: attack it!
-        if (rc.canAttack(enemyToAttack.location)) {
-//            Printer.print("it can attack w/o moving");
-          rc.attack(enemyToAttack.location);
-        } else {
-          // move and then attack
-          pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
-//            Printer.print("moved to attack... " + rc.canAttack(enemyToAttack.location), "loc=" + enemyToAttack.location, "canAct=" + rc.canActLocation(enemyToAttack.location), "robInfo=" + rc.senseRobotAtLocation(enemyToAttack.location));
-          if (rc.canAttack(enemyToAttack.location)) {
-            rc.attack(enemyToAttack.location);
-          }
-        }
-      }
-      updateLastEnemy();
-    }
-    if (fleeingCounter > 0) {
-      // run from lastEnemyLocation
-//      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
-//      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveAwayFrom(lastEnemyLocation)) {} // TODO: maybe this should be move towards closest ally
-//      if (cachedLastEnemyForBroadcast != null) { // we need to broadcast this enemy
-//        forcedNextTask = CarrierTask.DELIVER_RSS_HOME;
-//        resetTask();
-//      }
-    }
+    CarrierEnemyProtocol.doProtocol();
 
     // run the current task until we fail to complete it (incomplete -> finish on next turn/later)
     while (currentTask != null && currentTask.execute(this)) {
       resetTask();
     }
 
-    do_broadcast: if (cachedLastEnemyForBroadcast != null) {
+    do_broadcast: if (CarrierEnemyProtocol.cachedLastEnemyForBroadcast != null) {
       for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(cachedLastEnemyForBroadcast.location, friendlyRobot.type.actionRadiusSquared)) {
-          cachedLastEnemyForBroadcast = null;
+        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(CarrierEnemyProtocol.cachedLastEnemyForBroadcast.location, friendlyRobot.type.actionRadiusSquared)) {
+          CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
           break do_broadcast;
         }
       }
       if (rc.canWriteSharedArray(0,0)) {
-        Communicator.writeEnemy(cachedLastEnemyForBroadcast);
-        cachedLastEnemyForBroadcast = null;
+        Communicator.writeEnemy(CarrierEnemyProtocol.cachedLastEnemyForBroadcast);
+        CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
       }
-    }
-  }
-
-  /*
-  CARRIER BEHAVIOR AGAINST OPPONENT
-  1) if we can kill it effectively, kill it
-  2) if we cannot kill it
-    2.1) attempt to run away. if we are going die (or maybe easy health is <= 7)
-  * */
-
-  private boolean enemyExists() throws GameActionException {
-    return Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0;
-  }
-
-  private RobotInfo enemyToAttackIfWorth() throws GameActionException {
-//    Printer.print("enemyToAttackIfWorth()");
-    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA) + rc.getResourceAmount(ResourceType.ELIXIR) + (rc.getAnchor() != null ? 40 : 0));
-    if (myInvSize <= 4) {
-//      Printer.print("null bc invSize <= 4");
-      return null;
-    }
-
-    // if enemy launcher, consider attacking 1) closest
-    RobotInfo bestEnemyToAttack = null;
-    int bestValue = 0;
-
-    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      RobotType type = enemyRobot.type;
-      if (type == RobotType.HEADQUARTERS) continue;
-      int costToBuild = type.buildCostAdamantium + type.buildCostMana + type.buildCostElixir;
-      int carryingResourceValue = getInvWeight(enemyRobot);
-      int enemyValue = costToBuild + carryingResourceValue;
-      //todo: maybe make if-statement always true for launchers depending on if we have launchers or not
-      if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
-        // determine if we have enough to attack it...
-        int totalDmg = 0;
-        totalDmg += myInvSize * GameConstants.CARRIER_DAMAGE_FACTOR;
-        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); //assume this returns this robot as well
-        for (RobotInfo friendlyRobot : robotInfos) {
-          //todo: maybe dont consider launchers in dmg calculation here
-          totalDmg += (getInvWeight(friendlyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR) + friendlyRobot.type.damage;
-        }
-
-//        Printer.print("enemy location: " + enemyRobot.location + " we deal: " + totalDmg);
-        // todo: consider allowing only launcher to attack or smth?
-        if (totalDmg > enemyRobot.health) { // we can kill it
-          if (bestEnemyToAttack == null || enemyValue > bestValue || (enemyValue == bestValue && bestEnemyToAttack.health < enemyRobot.health)) {
-            bestEnemyToAttack = enemyRobot;
-            bestValue = enemyValue;
-          }
-        }
-      }
-    }
-//    Printer.print("bestEnemyToAttack=" + bestEnemyToAttack + ", value=" + bestValue);
-    return bestEnemyToAttack;
-    //todo: perform the attack here?
-  }
-
-  private RobotInfo attackEnemyIfCannotRun() throws GameActionException {
-//    Printer.print("attackEnemyIfCannotRun()");
-    int myInvSize = rc.getWeight();
-    if (myInvSize <= 4) {
-//      Printer.print("null bc invSize <= 4");
-      return null;
-    }
-
-    // sum damage based on how many enemies can currently attack me (this bot must be within action radius of enemy's bot)
-    int enemyDamage = 0;
-    RobotInfo enemyToAttack = null;
-//    int numMoves = numMoves();
-    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (enemyRobot.type == RobotType.HEADQUARTERS) continue;
-      if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, enemyRobot.type.actionRadiusSquared)) {
-        enemyDamage += getInvWeight(enemyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR + enemyRobot.type.damage;
-      }
-      if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, rc.getType().actionRadiusSquared)) { // todo: need to consider movement here
-        if (enemyToAttack == null || (enemyToAttack.type != RobotType.LAUNCHER && enemyRobot.type == RobotType.LAUNCHER))
-          enemyToAttack = enemyRobot;
-      }
-    }
-
-    if (enemyToAttack == null) {
-//      Printer.print("enemyToAttack=null" + ", enemies can deal: " + enemyDamage);
-    } else {
-//      Printer.print("enemyToAttack loc:" + enemyToAttack.location + ", enemies can deal: " + enemyDamage);
-    }
-
-    if (enemyDamage > rc.getHealth() - 1) {
-//      Printer.print("attack bc no option!!");
-      return enemyToAttack;
-    }
-//    Printer.print("I not die, return null");
-    return null;
-  }
-
-  private void updateLastEnemy() {
-    // get nearest enemy
-    // set fleeing to 6
-    // todo: consider whether or not to run away from enemy carriers
-    RobotInfo nearestCombatEnemy = null;
-    int myDistanceToNearestEnemy = Integer.MAX_VALUE;
-    for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (enemyRobot.type == RobotType.LAUNCHER) {
-        int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(enemyRobot.location);
-        if (dist < myDistanceToNearestEnemy) {
-          nearestCombatEnemy = enemyRobot;
-          myDistanceToNearestEnemy = dist;
-        }
-      }
-    }
-//    Printer.print("updateLastEnemy()");
-    if (nearestCombatEnemy != null) {
-      lastEnemyLocation = nearestCombatEnemy.location;
-      lastEnemyLocationRound = rc.getRoundNum();
-      fleeingCounter = TURNS_TO_FLEE;
-      // check if we need to cache the enemy for broadcasting (only if no friendly launchers nearby)
-      cachedLastEnemyForBroadcast = nearestCombatEnemy;
-      for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        if (friendlyRobot.type == RobotType.LAUNCHER) {
-          int distToEnemy = friendlyRobot.location.distanceSquaredTo(lastEnemyLocation);
-          if (distToEnemy <= myDistanceToNearestEnemy) {
-            cachedLastEnemyForBroadcast = null;
-            fleeingCounter--;
-//            break;
-          } else if (distToEnemy <= friendlyRobot.type.actionRadiusSquared) {
-            cachedLastEnemyForBroadcast = null;
-//            fleeingCounter--;
-          }
-//          break;
-        }
-      }
-      if (cachedLastEnemyForBroadcast == null) { // we found friends nearby
-        fleeingCounter /= 2;
-      }
-    } else {
-      fleeingCounter = 0;
     }
   }
 
@@ -502,17 +333,17 @@ public class Carrier extends MobileRobot {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
     no_well: if (currentTask.targetWell == null
         || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
-        || (lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
-      if ((lastEnemyLocation != null && currentTask.targetWell != null && currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 8)) {
+        || (CarrierEnemyProtocol.lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 8)) {
+      if ((CarrierEnemyProtocol.lastEnemyLocation != null && currentTask.targetWell != null && currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 8)) {
         findNewWell(currentTask.collectionType, currentTask.targetWell);
       } else {
         findNewWell(currentTask.collectionType, null);
       }
       if (currentTask.targetWell != null) break no_well;
 //      boolean foundWell = currentTask.targetWell != null;
-//      if (foundWell && lastEnemyLocation != null) {
-//        int roundsSinceLastEnemy = rc.getRoundNum() - lastEnemyLocationRound;
-//        boolean nearEnemy = currentTask.targetWell.isWithinDistanceSquared(lastEnemyLocation, 26) && roundsSinceLastEnemy <= 8;
+//      if (foundWell && CarrierEnemyProtocol.lastEnemyLocation != null) {
+//        int roundsSinceLastEnemy = rc.getRoundNum() - CarrierEnemyProtocol.lastEnemyLocationRound;
+//        boolean nearEnemy = currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && roundsSinceLastEnemy <= 8;
 //        if (nearEnemy) foundWell = false;
 //      }
 //      if (foundWell) break no_well;
@@ -712,7 +543,7 @@ public class Carrier extends MobileRobot {
         int numCarriersFarFromFull = 0;
         for (RobotInfo friendly : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
           if (friendly.type == RobotType.CARRIER && friendly.location.isAdjacentTo(wellLocation)) {
-            int friendlyAmount = getInvWeight(friendly);
+            int friendlyAmount = Utils.getInvWeight(friendly);
             if (friendlyAmount < FAR_FROM_FULL_CAPACITY) {
               numCarriersFarFromFull++;
             }
@@ -870,7 +701,7 @@ public class Carrier extends MobileRobot {
     int myAmount = rc.getWeight();
     for (RobotInfo friendly : rc.senseNearbyRobots(wellLocation, Utils.DSQ_2by2, Cache.Permanent.OUR_TEAM)) {
       if (friendly.type == RobotType.CARRIER) {
-        int friendlyAmount = getInvWeight(friendly);
+        int friendlyAmount = Utils.getInvWeight(friendly);
         if (friendlyAmount == myAmount) {
           if (friendly.ID < Cache.Permanent.ID) {
             newEmptierSeen++;
@@ -1003,7 +834,7 @@ public class Carrier extends MobileRobot {
       if (!writer.readWellExists(i)) break;
       MapLocation wellLocation = writer.readWellLocation(i);
       if (!wellLocation.equals(toAvoid) && !blackListWells.contains(wellLocation)) {
-        if (lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - lastEnemyLocationRound <= 7) {
+        if (CarrierEnemyProtocol.lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
           continue;
         }
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);

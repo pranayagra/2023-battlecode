@@ -6,7 +6,6 @@ import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
 import basicbot.utils.Constants;
-import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -600,7 +599,7 @@ public class HeadQuarters extends Robot {
       if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
         int emptyCarrierCount = 0;
         for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-          if (robot.type == RobotType.CARRIER && getInvWeight(robot) == 0) {
+          if (robot.type == RobotType.CARRIER && Utils.getInvWeight(robot) == 0) {
             emptyCarrierCount++;
           }
         }
