@@ -82,7 +82,7 @@ public class Launcher extends MobileRobot {
     } else {
       turnsInCloud = 0;
     }
-    if (Cache.PerTurn.ROUND_NUM < 1000) {
+    if (Cache.PerTurn.ROUND_NUM < 100) {
       MIN_GROUP_SIZE_TO_MOVE = 1;
     }
 

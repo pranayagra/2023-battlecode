@@ -293,10 +293,7 @@ public class HeadQuarters extends Robot {
 
   private MapLocation getPreferredCarrierSpawnLocation(SpawnType nextSpawn) throws GameActionException {
     MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, nextSpawn.getResourceType());
-    if (closestWellLocation == null) {
-      closestWellLocation = Utils.randomMapLocation();
-    }
-    return closestWellLocation;
+    return closestWellLocation == null ? Utils.randomMapLocation() : closestWellLocation;
   }
 
   /**
@@ -424,17 +421,20 @@ public class HeadQuarters extends Robot {
     Direction dirToWell = Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell);
     MapLocation goal = Cache.PerTurn.CURRENT_LOCATION.translate(dirToWell.dx * 4, dirToWell.dy * 4);
     MapLocation toSpawn = goal;
-    while (!buildRobotAtOrAround(RobotType.CARRIER, toSpawn) && toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2) {
-//      rc.setIndicatorString("Attempted spawn at " + toSpawn);
+    do {
+      if (buildRobotAtOrAround(RobotType.CARRIER, toSpawn)) {
+        return true;
+      }
+      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
       if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
         Direction dir = Utils.randomDirection();
         goal = goal.add(dir).add(dir);
         toSpawn = goal;
       }
-      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
-    }
-    return true;
+//      rc.setIndicatorString("Attempted spawn at " + toSpawn);
+    } while (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2);
+    return false;
   }
 
   private boolean spawnLauncherTowardsEnemyHQ() throws GameActionException {
@@ -653,60 +653,6 @@ public class HeadQuarters extends Robot {
             case LAUNCHER: return 3;
         }
         throw new RuntimeException("unknown spawn type: " + this);
-    }
-  }
-
-  private void oldSpawnCode() throws GameActionException {
-    if (Cache.PerTurn.ROUND_NUM >= 100 && Cache.PerTurn.ROUND_NUM % 200 <= 20) {
-      this.role = HQRole.BUILD_ANCHORS;
-    }
-    if (Cache.PerTurn.ROUND_NUM >= 1000 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
-      rc.setIndicatorString("Build anchor");
-      if (createAnchors()) {
-        numAnchorsMade++;
-      }
-      return;
-    }
-    make_carriers: if (this.role == HQRole.MAKE_CARRIERS || canAfford(RobotType.CARRIER)) {
-      if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 10) {
-        int emptyCarrierCount = 0;
-        for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-          if (robot.type == RobotType.CARRIER && Utils.getInvWeight(robot) == 0) {
-            emptyCarrierCount++;
-          }
-        }
-        if (emptyCarrierCount >= 15) {
-          break make_carriers;
-        }
-      }
-      if (this.closestWell != null) {
-        rc.setIndicatorString("Spawn towards closest: " + this.closestWell.getMapLocation());
-        if (spawnCarrierTowardsWell(this.closestWell)) {
-//          testCount++;
-//          if (testCount >= 10) {
-//            becomeDoNothingBot();
-//          }
-        }
-      } else if (this.targetWell != null) {
-//        rc.disintegrate();
-        rc.setIndicatorString("Spawn towards target: " + this.targetWell);
-        spawnCarrierTowardsWell(this.targetWell);
-      } else {
-//        rc.disintegrate();
-        rc.setIndicatorString("Find target well");
-        determineTargetWell();
-      }
-    }
-    if (this.role == HQRole.MAKE_LAUNCHERS || canAfford(RobotType.LAUNCHER)) {
-      rc.setIndicatorString("Spawn towards enemy");
-      spawnLauncherTowardsEnemyHQ();
-    }
-    if (this.role == HQRole.BUILD_ANCHORS || canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
-      rc.setIndicatorString("Build anchor");
-      if (createAnchors()) {
-        numAnchorsMade++;
-        determineRole();
-      }
     }
   }
 }
