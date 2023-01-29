@@ -14,7 +14,7 @@ import battlecode.common.*;
 /*WORKFLOW_ONLY*///import basicbot.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
-  private static final int NUM_FORCED_LATE_GAME_ANCHORS = 3;
+  private static int NUM_FORCED_LATE_GAME_ANCHORS = 3;
   private static final int INCOME_MOVING_AVERAGE_WINDOW_SIZE = 100;
 
   private int hqID;
@@ -415,36 +415,15 @@ public class HeadQuarters extends Robot {
 
     adamantiumToSave = 0;
     manaToSave = 0;
-    int numCommLaunchers = CommsHandler.readNumLaunchers();
-    if (numCommLaunchers >= 10 && Cache.PerTurn.ROUND_NUM >= 300 && numAnchorsMade < 1) {
-      if (createAnchors()) {
-        numAnchorsMade++;
-        spawned = true;
-      }
-      adamantiumToSave = Anchor.STANDARD.adamantiumCost;
-      manaToSave = Anchor.STANDARD.manaCost;
-    }
-
-    int numAnchorsToMake = 1 + (Cache.PerTurn.ROUND_NUM - 400) / 150;
-    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= numAnchorsToMake && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
-      // consider anchor spawn
-      if (numCommLaunchers >= 10) {
-        if (createAnchors()) {
-          numAnchorsMade++;
-          spawned = true;
-        }
-        adamantiumToSave = Anchor.STANDARD.adamantiumCost;
-        manaToSave = Anchor.STANDARD.manaCost;
-      }
-    }
-
-    numAnchorsToMake = Math.max(1, 4 + (Cache.PerTurn.ROUND_NUM - 1200) / 100);
-    if (Cache.PerTurn.ROUND_NUM >= 1250 && numAnchorsMade <= numAnchorsToMake && numAnchorsMade <= 15) {
+    if (Cache.PerTurn.ROUND_NUM > 1500 && Cache.PerTurn.ROUND_NUM % 50 == 0) NUM_FORCED_LATE_GAME_ANCHORS++;
+    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
       // consider anchor spawn
       if (createAnchors()) {
         numAnchorsMade++;
         spawned = true;
       }
+      // can't afford, just reserve some resources
+//      System.out.println(Anchor.STANDARD.adamantiumCost);
       adamantiumToSave = Anchor.STANDARD.adamantiumCost;
       manaToSave = Anchor.STANDARD.manaCost;
     }
