@@ -98,7 +98,7 @@ public class Communicator {
         }
         if (writer.readWellCapacity(i) < well.capacity) {
           writer.writeWellCapacitySet(i, well.capacity);
-          /*BASICBOT_ONLY*/Printer.print("Updated well:" + well.loc + "capacity:"+well.capacity);
+          /*BASICBOT_ONLY*///Printer.print("Updated well:" + well.loc + "capacity:"+well.capacity);
         }
         return true;
 //      } else {
