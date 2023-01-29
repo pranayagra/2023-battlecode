@@ -40,6 +40,9 @@ public class Carrier extends MobileRobot {
 
 
   private int turnsStuckApproachingWell;
+
+  private int closestDistToWell;
+  private int turnsSinceCloseToWell;
 //  private final Direction[] directions_storage = new Direction[8];
   private final HashMap<MapLocation, Direction> wellApproachDirection;
   private final CharSet blackListWells;
@@ -54,7 +57,6 @@ public class Carrier extends MobileRobot {
 
   public static int targetWellIndexToDecrement = -1;
   private static ResourceType targetWellTypeToDecrement;
-
 
 
   public Carrier(RobotController rc) throws GameActionException {
@@ -340,6 +342,11 @@ public class Carrier extends MobileRobot {
     if (rc.getWeight() == 0) {
       return true;
     }
+    MapLocation closestHqLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    int distToClosestHq = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(closestHqLoc);
+    if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(currentTask.targetHQLoc, (int) (distToClosestHq*1.25))) {
+      currentTask.targetHQLoc = closestHqLoc;
+    }
     rc.setIndicatorString("Deliver rss home: " + currentTask.targetHQLoc);
     if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(currentTask.targetHQLoc)) {
       pathing.moveTowards(currentTask.targetHQLoc);
@@ -415,7 +422,7 @@ public class Carrier extends MobileRobot {
       if (currentTask.targetWell != null) break no_well;
       MapLocation wellLoc = exploreUntilFoundWell(resourceType);
       if (wellLoc != null) {
-        currentTask.targetWell = wellLoc;
+        setWell(wellLoc);
         break no_well;
       }
       if (currentTask.turnsRunning > MAX_TURNS_TO_LOOK_FOR_WELL) {
@@ -500,7 +507,7 @@ public class Carrier extends MobileRobot {
 //      if (currentTask.targetIsland == null) {
       currentTask.targetIsland = findIslandLocationToClaim();
 //      }
-      if (currentTask.targetIsland != null && currentTask.turnsRunning > Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, currentTask.targetIsland.islandLocation) * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+      if (currentTask.targetIsland != null && currentTask.turnsRunning > Math.max(50, Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, currentTask.targetIsland.islandLocation) * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
         forcedNextTask = CarrierTask.ANCHOR_ISLAND;
         return true;
       }
@@ -546,6 +553,20 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException any issues with sensing/moving
    */
   private boolean approachWell(MapLocation wellLocation) throws GameActionException {
+    if (rc.getWeight() <= 4) {
+      int distToWell = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, wellLocation);
+      if (distToWell < closestDistToWell) {
+        closestDistToWell = distToWell;
+        turnsSinceCloseToWell = 0;
+      } else if (distToWell >= 4) {
+        if (++turnsSinceCloseToWell >= Math.max(100, closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
+          // we've been stuck for a while, give up
+          /*BASICBOT_ONLY*/Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
+          findNewWell(currentTask.collectionType, wellLocation);
+//          return false;
+        }
+      }
+    }
     if (wellQueueOrder == null) {
       rc.setIndicatorString("no well queue cycle -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
 //      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, wellLocation, 0, 255, 0);
@@ -941,7 +962,6 @@ public class Carrier extends MobileRobot {
         closestWellInd = i;
       }
     }
-    currentTask.targetWell = closestWellLocation;
     if (rc.canWriteSharedArray(0,0)) {
       writer.writeWellCurrentWorkersIncrement(closestWellInd);
       targetWellIndexToDecrement = closestWellInd;
@@ -949,7 +969,16 @@ public class Carrier extends MobileRobot {
 //    } else if (closestWellLocation != null){
 //      Printer.print("Could not increment!!" + closestWellLocation + resourceType);
     }
+
+    setWell(closestWellLocation);
+  }
+
+  private void setWell(MapLocation wellLocation) {
+    currentTask.targetWell = wellLocation;
+
     this.turnsStuckApproachingWell = 0;
+    this.closestDistToWell = wellLocation != null ? Utils.maxSingleAxisDist(wellLocation, Cache.PerTurn.CURRENT_LOCATION) : Integer.MAX_VALUE;
+    this.turnsSinceCloseToWell = 0;
 
     this.wellQueueOrder = null;
     this.wellEntryPoint = null;
@@ -961,13 +990,13 @@ public class Carrier extends MobileRobot {
 
     this.roundsWaitingForQueueSpot = 0;
 
-    if (closestWellLocation != null) {
+    if (wellLocation != null) {
       Direction dirBackFromWell;// = closestWellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-      MapLocation targetHQ = HqMetaInfo.getClosestHqLocation(closestWellLocation);
-      if (targetHQ != null && targetHQ.isWithinDistanceSquared(closestWellLocation, RobotType.HEADQUARTERS.visionRadiusSquared)) {
+      MapLocation targetHQ = HqMetaInfo.getClosestHqLocation(wellLocation);
+      if (targetHQ != null && targetHQ.isWithinDistanceSquared(wellLocation, RobotType.HEADQUARTERS.visionRadiusSquared)) {
 //        Printer.print("close to HQ, use hq dir - hq=" + targetHQ + " -- well=" + closestWellLocation + " -- dir=" + closestWellLocation.directionTo(targetHQ));
-        dirBackFromWell = closestWellLocation.directionTo(targetHQ);
-        this.wellApproachDirection.put(closestWellLocation, dirBackFromWell);
+        dirBackFromWell = wellLocation.directionTo(targetHQ);
+        this.wellApproachDirection.put(wellLocation, dirBackFromWell);
       }
     }
   }

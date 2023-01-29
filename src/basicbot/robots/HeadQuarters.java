@@ -189,14 +189,28 @@ public class HeadQuarters extends Robot {
       }
     }
 
-    boolean spawned;
-    do {
-      if (spawnIdx < spawnOrder.length) {
-        spawned = forceSpawnOrder();
+    boolean baseOverWhelmed = baseOverWhelmed();
+    if (!baseOverWhelmed) {
+      int neededLauncherBombSize = neededLauncherBombSize();
+      if (neededLauncherBombSize > 0) {
+        rc.setIndicatorString("need bomb=" + neededLauncherBombSize + "-mana:" + rc.getResourceAmount(ResourceType.MANA) + "-cost:" + RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize);
+        boolean canLauncherBomb = rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize;
+        if (canLauncherBomb) {
+          spawnLauncherBomb(Math.min(neededLauncherBombSize, 5));
+        }
       } else {
-        spawned = normalSpawnOrder();
+        boolean spawned;
+        do {
+          if (spawnIdx < spawnOrder.length) {
+            spawned = forceSpawnOrder();
+          } else {
+            spawned = normalSpawnOrder();
+          }
+        } while (spawned && rc.isActionReady());
       }
-    } while (spawned && rc.isActionReady());
+    } else {
+      rc.setIndicatorString("base overwhelmed");
+    }
     // store the resources at the end of the turn
     prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
     prevMana = rc.getResourceAmount(ResourceType.MANA);
@@ -205,6 +219,93 @@ public class HeadQuarters extends Robot {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM % 250 == 249) {
     /*WORKFLOW_ONLY*///  Printer.print("HQ" + Cache.PerTurn.ROUND_NUM + Cache.Permanent.OUR_TEAM + hqID + " (" + totalSpawns + ")");
     /*WORKFLOW_ONLY*///}
+  }
+
+  private void spawnLauncherBomb(int bombSize) throws GameActionException {
+    int enemyX = 0;
+    int enemyY = 0;
+    int enemyCount = 0;
+    for (RobotInfo enemy : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      switch (enemy.type) {
+        case LAUNCHER:
+        case DESTABILIZER:
+        case BOOSTER:
+          enemyX += enemy.location.x;
+          enemyY += enemy.location.y;
+          enemyCount++;
+      }
+    }
+    MapLocation enemyCentroid;
+    if (enemyCount > 0) {
+      enemyX /= enemyCount;
+      enemyY /= enemyCount;
+      enemyCentroid = new MapLocation(enemyX, enemyY);
+      Direction toSelf = enemyCentroid.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+      enemyCentroid = enemyCentroid.translate(4 * toSelf.dx, 4 * toSelf.dy);
+    } else {
+      enemyCentroid = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+      if (enemyCentroid == null) {
+        enemyCentroid = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        if (enemyCentroid.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 70)) {
+          Direction toSelf = enemyCentroid.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+          enemyCentroid = enemyCentroid.translate(4 * toSelf.dx, 4 * toSelf.dy);
+        }
+      } else {
+        Direction toSelf = enemyCentroid.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+        enemyCentroid = enemyCentroid.translate(4 * toSelf.dx, 4 * toSelf.dy);
+      }
+    }
+    while (bombSize > 0 && Clock.getBytecodesLeft() > spawnLocations.length * 20) {
+      if (spawnLauncherTowardsLocation(enemyCentroid)) {
+        bombSize--;
+      }
+    }
+    if (bombSize > 0) {
+      for (int i = spawnLocations.length; --i >= 0;) {
+        MapLocation spawnLocation = spawnLocations[i];
+        if (buildRobot(RobotType.LAUNCHER, spawnLocation)) {
+          if (--bombSize == 0) {
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * determines if we need a launcher bomb
+   * @return the size of the bomb needed
+   */
+  private int neededLauncherBombSize() {
+    int enemyOffensiveCount = 0;
+    for (RobotInfo enemy : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+      switch (enemy.type) {
+        case LAUNCHER:
+        case DESTABILIZER:
+        case BOOSTER:
+          enemyOffensiveCount++;
+          break;
+      }
+    }
+    int friendlyOffensiveCount = 0;
+    for (RobotInfo friendly : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      switch (friendly.type) {
+        case LAUNCHER:
+        case DESTABILIZER:
+        case BOOSTER:
+          friendlyOffensiveCount++;
+          break;
+      }
+    }
+    int deficit = enemyOffensiveCount - friendlyOffensiveCount;
+    if (deficit < 5) {
+      return 0;
+    }
+    return (int) (deficit * 0.75);
+  }
+
+  private boolean baseOverWhelmed() {
+    return (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length - Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length) > 30;
   }
 
   private void setDefaultIndicatorString() throws GameActionException {
@@ -454,13 +555,23 @@ public class HeadQuarters extends Robot {
 
   private boolean spawnLauncherTowardsEnemyHQ() throws GameActionException {
     MapLocation goal = Utils.applySymmetry(Cache.PerTurn.CURRENT_LOCATION, Utils.MapSymmetry.ROTATIONAL);
-    MapLocation toSpawn = goal;
 //    Printer.print("Spawning launcher towards enemy HQ - " + goal);
 
+    return spawnLauncherTowardsLocation(goal);
+  }
+
+  /**
+   * Spawns a launcher towards the given location
+   * @param goal
+   * @return
+   * @throws GameActionException
+   */
+  private boolean spawnLauncherTowardsLocation(MapLocation goal) throws GameActionException {
     MapLocation bestSpawnLocation = null;
     int bestMoveDistance = Integer.MAX_VALUE;
     int bestEucDistance = Integer.MAX_VALUE;
-    for (MapLocation spawnLocation : spawnLocations) {
+    for (int i = spawnLocations.length; --i >= 0;) {
+      MapLocation spawnLocation = spawnLocations[i];
       if (rc.canBuildRobot(RobotType.LAUNCHER, spawnLocation)) {
         int moveDistance = Utils.maxSingleAxisDist(spawnLocation, goal);
         int euclideanDistance = spawnLocation.distanceSquaredTo(goal);
