@@ -91,7 +91,6 @@ public class AttackMicro {
     return type == RobotType.LAUNCHER || type == RobotType.DESTABILIZER;
   }
 
-
   private static int moveTowardsFriendCounter;
   private static MapLocation moveTowardsFriendTarget;
 

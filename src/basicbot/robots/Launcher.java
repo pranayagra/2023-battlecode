@@ -22,11 +22,11 @@ public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
   private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
-  private static final int TURNS_AT_TARGET = 5; // how long to delay at each patrol target
-  private static final int TURNS_AT_WELL = 1; // how long to delay at each patrol target
+  private static final int TURNS_AT_TARGET = 8; // how long to delay at each patrol target
+  private static final int TURNS_AT_WELL = 3; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
   private static final int TURNS_AT_HOT_SPOT = 7;
-  private static final int TURNS_AT_HOT_WELL = 2;
+  private static final int TURNS_AT_HOT_WELL = TURNS_AT_WELL * 3 / 2;
   private static final int TURNS_AT_FIGHT = 3;
   private static final int MAX_LAUNCHER_TASKS = 10;
 
@@ -1022,13 +1022,15 @@ public class Launcher extends MobileRobot {
 
   private boolean attemptCloudAttack() throws GameActionException {
     if (!rc.isActionReady()) return false;
-    if (lastAttackedLocation != null && attack(lastAttackedLocation)) return true;
+    if (lastAttackedLocation != null && (!rc.canSenseLocation(lastAttackedLocation) || (rc.canSenseRobotAtLocation(lastAttackedLocation) && rc.senseRobotAtLocation(lastAttackedLocation).team == Cache.Permanent.OPPONENT_TEAM)) && attack(lastAttackedLocation)) return true;
     if (!rc.isActionReady()) return false;
-    if (lastEnemyLocation != null && attack(lastEnemyLocation)) return true;
+    if (lastEnemyLocation != null && (!rc.canSenseLocation(lastEnemyLocation) || (rc.canSenseRobotAtLocation(lastEnemyLocation) && rc.senseRobotAtLocation(lastEnemyLocation).team == Cache.Permanent.OPPONENT_TEAM)) && attack(lastEnemyLocation)) return true;
+    if (!rc.isActionReady()) return false;
 
-    if (!rc.isActionReady()) return false;
     if (Cache.PerTurn.IS_IN_CLOUD) {
-      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION));
+      MapLocation targetEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+      if (targetEnemy == null) targetEnemy = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(targetEnemy);
       MapLocation target = Cache.PerTurn.CURRENT_LOCATION.add(toEnemy);
       while (target.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
         target = target.add(toEnemy);
@@ -1053,7 +1055,7 @@ public class Launcher extends MobileRobot {
     int bestCloudDist = Integer.MAX_VALUE;
     for (int i = clouds.length; --i >= 0;) {
       MapLocation loc = clouds[i];
-      if (rc.canSenseLocation(loc)) continue;
+      if (rc.canSenseLocation(loc) && (!rc.canSenseRobotAtLocation(loc) || rc.senseRobotAtLocation(loc).team == Cache.Permanent.OPPONENT_TEAM)) continue;
       if (rc.canAttack(loc)) {
         int dist = closeTo.distanceSquaredTo(loc);
         if (dist < bestCloudDist) {
