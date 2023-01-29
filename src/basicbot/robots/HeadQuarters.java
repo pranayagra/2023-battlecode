@@ -145,7 +145,7 @@ public class HeadQuarters extends Robot {
     }
 
     if (this.hqID + 1 == HqMetaInfo.hqCount) {
-      printDebugInfo();
+//      printDebugInfo();
       CommsHandler.writeNumLaunchersReset();
       CommsHandler.writeNumAmpsReset();
     }
