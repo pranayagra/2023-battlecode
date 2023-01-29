@@ -959,8 +959,10 @@ public class Carrier extends MobileRobot {
               }
             }
           }
-          islandToClaim = new IslandInfo(closestUnclaimedIsland, closestIslandID, Cache.PerTurn.ROUND_NUM, Team.NEUTRAL);
-          break;
+          if (closestUnclaimedIsland != null) {
+            islandToClaim = new IslandInfo(closestUnclaimedIsland, closestIslandID, Cache.PerTurn.ROUND_NUM, Team.NEUTRAL);
+            break;
+          }
         }
       }
     }
