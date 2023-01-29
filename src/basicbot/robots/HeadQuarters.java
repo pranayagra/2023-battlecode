@@ -434,7 +434,7 @@ public class HeadQuarters extends Robot {
       }
 //      rc.setIndicatorString("Attempted spawn at " + toSpawn);
     } while (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2);
-    return false;
+    return buildRobotAtOrAround(RobotType.CARRIER, Cache.PerTurn.CURRENT_LOCATION);
   }
 
   private boolean spawnLauncherTowardsEnemyHQ() throws GameActionException {
