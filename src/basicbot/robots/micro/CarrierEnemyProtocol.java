@@ -51,14 +51,14 @@ public class CarrierEnemyProtocol {
     MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
     if (fleeingCounter > 0) {
       if (Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, closestHQ) <= MicroConstants.CARRIER_DIST_TO_HQ_TO_RUN_HOME) {
-        fleeingCounter = 6;
+        fleeingCounter = MicroConstants.CARRIER_TURNS_TO_FLEE;
       }
     }
     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      while (--fleeingCounter >= 0 && rc.isMovementReady() && pathing.moveTowards(closestHQ)) {}
+      while (rc.isMovementReady() && pathing.moveTowards(closestHQ) && --fleeingCounter >= 0) {}
 //      if (cachedLastEnemyForBroadcast != null) { // we need to broadcast this enemy
 //        forcedNextTask = CarrierTask.DELIVER_RSS_HOME;
 //        resetTask();
@@ -171,7 +171,7 @@ public class CarrierEnemyProtocol {
     RobotInfo nearestCombatEnemy = null;
     int myDistanceToNearestEnemy = Integer.MAX_VALUE;
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (enemyRobot.type == RobotType.LAUNCHER) {
+      if (enemyRobot.type == RobotType.LAUNCHER || enemyRobot.type == RobotType.DESTABILIZER) {
         int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(enemyRobot.location);
         if (dist < myDistanceToNearestEnemy) {
           nearestCombatEnemy = enemyRobot;
@@ -190,21 +190,18 @@ public class CarrierEnemyProtocol {
         if (friendlyRobot.type == RobotType.LAUNCHER) {
           int distToEnemy = friendlyRobot.location.distanceSquaredTo(lastEnemyLocation);
           if (distToEnemy <= myDistanceToNearestEnemy) {
-            cachedLastEnemyForBroadcast = null;
+//            cachedLastEnemyForBroadcast = null;
             fleeingCounter--;
 //            break;
           } else if (distToEnemy <= friendlyRobot.type.actionRadiusSquared) {
-            cachedLastEnemyForBroadcast = null;
-//            fleeingCounter--;
+//            cachedLastEnemyForBroadcast = null;
           }
 //          break;
         }
       }
-      if (cachedLastEnemyForBroadcast == null) { // we found friends nearby
-        fleeingCounter /= 2;
-      }
-    } else {
-      fleeingCounter = 0;
+//      if (cachedLastEnemyForBroadcast == null) { // we found friends nearby
+//        fleeingCounter /= 2;
+//      }
     }
   }
 
