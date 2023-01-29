@@ -95,8 +95,8 @@ public class AttackMicro {
   private static int moveTowardsFriendCounter;
   private static MapLocation moveTowardsFriendTarget;
 
-  private static CharCharMap lastRoundFriendsHealth = new CharCharMap();
-  private static CharCharMap lastRoundFriendsLocation = new CharCharMap();
+  private static final CharCharMap lastRoundFriendsHealth = new CharCharMap();
+  private static final CharCharMap lastRoundFriendsLocation = new CharCharMap();
   private static int healthLastRound;
   public static MapLocation updateAndGetInjuredAllyTarget() {
     if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 && Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length > 0 && moveTowardsFriendCounter == 0) {
@@ -173,12 +173,16 @@ public class AttackMicro {
     RobotType type;
     int health;
     boolean isAttacker;
+    boolean canKill;
+    boolean isManaCarrier;
     public MapLocation mloc;
     private final int distanceToSelf;
 
     public boolean isBetterThan(AttackCandidate t){
       if (t == null) return true;
       if (isAttacker != t.isAttacker) return isAttacker;
+      if (canKill != t.canKill) return canKill;
+      if (type == RobotType.CARRIER && t.type == RobotType.CARRIER && isManaCarrier != t.isManaCarrier) return isManaCarrier;
       if (health != t.health) return health < t.health;
       if (distanceToSelf != t.distanceToSelf) return distanceToSelf < t.distanceToSelf;
       return true;
@@ -189,6 +193,8 @@ public class AttackMicro {
       health = r.health;
       mloc = r.location;
       isAttacker = isAttacker(type);
+      canKill = health < Cache.Permanent.ROBOT_TYPE.damage;
+      isManaCarrier = type == RobotType.CARRIER && r.getResourceAmount(ResourceType.MANA) > 0;
       distanceToSelf = mloc.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
     }
   }
