@@ -76,6 +76,20 @@ public class LinkedList<T> {
         size = 0;
     }
 
+    public T get(int i) {
+        Node<T> node = head;
+        for (int j = 0; j < i; j++) {
+            node = node.next;
+            if (node == null) {
+                return null;
+            }
+        }
+        if (node != null) {
+            return node.val;
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder();

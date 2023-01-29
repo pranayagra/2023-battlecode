@@ -1,5 +1,6 @@
 package basicbot.robots;
 
+import basicbot.containers.LinkedList;
 import basicbot.robots.micro.MicroConstants;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
@@ -16,9 +17,6 @@ import basicbot.utils.Constants;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
@@ -189,7 +187,8 @@ public class Launcher extends MobileRobot {
 
     MapLocation closestFriend = closestNonAdjIslandFriend();
 
-    List<Direction> allDirections = new ArrayList<>();
+    LinkedList<Direction> allDirections = new LinkedList<>();
+//    List<Direction> allDirections = new ArrayList<>();
     if (closestFriend == null) {
       for (Direction dir : Utils.directions) {
         if (!rc.canMove(dir)) continue;
@@ -213,8 +212,8 @@ public class Launcher extends MobileRobot {
         }
       }
     }
-    if (allDirections.size() > 0) {
-      Direction dir = allDirections.get(Utils.rng.nextInt(allDirections.size()));
+    if (allDirections.size > 0) {
+      Direction dir = allDirections.get(Utils.rng.nextInt(allDirections.size));
       pathing.move(dir);
     }
   }
