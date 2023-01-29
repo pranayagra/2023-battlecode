@@ -65,8 +65,12 @@ public class Launcher extends MobileRobot {
   @Override
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
-    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
-    if (manaIncome > 20) {
+    if (rc.canWriteSharedArray(0, 0)) {
+      CommsHandler.writeNumLaunchersIncrement();
+    }
+//    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
+    int manaIncome = Communicator.getTotalCarriersMiningType(ResourceType.MANA);
+    if (manaIncome > 8) {
       MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
     } else {
       MIN_GROUP_SIZE_TO_MOVE = 3;

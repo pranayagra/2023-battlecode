@@ -73,6 +73,13 @@ METAINFO = {
   'map_symmetry': {
     'bits': 3,
   },
+  'num_launchers_counter': { # this is just a lower bound approximation depending on launchers that can write
+    'bits': 5,
+  },
+  'num_amps_counter': {
+    'bits': 5,
+  }
+
 }
 
 WELL_SCHEMA = {
@@ -95,7 +102,7 @@ MAIN_SCHEMA = {
       'even_spawn_loc': LOCATION_BITS,
       'odd_spawn_instruction': 2,
       'even_spawn_instruction': 2,
-      'adamantium_income_counter': 5, # changing any of these income bit#'s require changing the max value checking done manually in HQ and Carrier.
+      'adamantium_income_counter': 5,
       'mana_income_counter': 5,
       'elixir_income_counter': 5,
     }

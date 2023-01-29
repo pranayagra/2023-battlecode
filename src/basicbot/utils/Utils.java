@@ -366,7 +366,7 @@ public class Utils {
   public static int maxCarriersPerWell(int capacity, int singleAxisMaxDist, boolean isUpgraded) {
     int collectionTime = isUpgraded ? 14 : 40;
     // carriers spend 40 / 3 turns @ well
-    double multiplier = (singleAxisMaxDist * 2.5 + 1) / collectionTime;
+    double multiplier = ((singleAxisMaxDist * 2.5 + 1) / collectionTime) + 1;
     return (int) (capacity * multiplier);
   }
   public static int maxCarriersPerWell(int capacity, int singleAxisMaxDist) {
