@@ -185,12 +185,36 @@ public class Communicator {
     return numCarriers;
   }
 
+  /**
+   *
+   * @param resourceType
+   * @return number of wells of some resource that is saturated (currentworkers >= capacity)
+   * @throws GameActionException
+   */
+  public static int numWellsSaturated(ResourceType resourceType) throws GameActionException {
+    int numWells = 0;
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      numWells += writer.readWellCurrentWorkers(i) >= writer.readWellCapacity(i)? 1: 0 ;
+    }
+    return numWells;
+  }
+
+  /**
+   *
+   * @param resourceType
+   * @return number of wells of some resource that is fully (extra) saturated (currentworkers >= max capacity) where
+   * max capacity accounts for distance
+   * @throws GameActionException
+   */
   public static int numWellsFullySaturated(ResourceType resourceType) throws GameActionException {
     int numWells = 0;
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (!writer.readWellExists(i)) continue;
-      numWells += writer.readWellCurrentWorkers(i) == writer.readWellCapacity(i)? 1: 0 ;
+      MapLocation loc = writer.readWellLocation(i);
+      numWells += writer.readWellCurrentWorkers(i) >= Utils.maxCarriersPerWell(writer.readWellCapacity(i), Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc))? 1: 0 ;
     }
     return numWells;
   }

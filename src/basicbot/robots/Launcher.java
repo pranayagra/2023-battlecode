@@ -42,6 +42,7 @@ public class Launcher extends MobileRobot {
   private boolean carrierInVision;
   private boolean carrierInAttackRange;
   private MapLocation lastAttackedLocation;
+  private MapLocation lastEnemyLocation;
 
   private int turnsInCloud;
 
@@ -64,8 +65,12 @@ public class Launcher extends MobileRobot {
   @Override
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
-    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
-    if (manaIncome > 20) {
+    if (rc.canWriteSharedArray(0, 0)) {
+      CommsHandler.writeNumLaunchersIncrement();
+    }
+//    int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
+    int manaIncome = Communicator.getTotalCarriersMiningType(ResourceType.MANA);
+    if (manaIncome > 8) {
       MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
     } else {
       MIN_GROUP_SIZE_TO_MOVE = 3;
@@ -316,18 +321,31 @@ public class Launcher extends MobileRobot {
     launcherInVision = false;
     carrierInVision = false;
     carrierInAttackRange = false;
+    MapLocation closestEnemy = null;
+    int closestEnemyDistance = Integer.MAX_VALUE;
     for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
-      if (robot.type == RobotType.HEADQUARTERS) {
-        continue;
+      switch (robot.type) {
+        case HEADQUARTERS:
+          continue;
+        case LAUNCHER:
+          launcherInVision = true;
+        case DESTABILIZER:
+          int dist = robot.location.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
+          if (dist < closestEnemyDistance) {
+            closestEnemyDistance = dist;
+            closestEnemy = robot.location;
+          }
+          break;
+        case CARRIER:
+          carrierInVision = true;
+          if (robot.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
+            carrierInAttackRange = true;
+          }
+          break;
       }
-      if (robot.type == RobotType.LAUNCHER) {
-        launcherInVision = true;
-      } else if (robot.type == RobotType.CARRIER) {
-        carrierInVision = true;
-        if (robot.location.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
-          carrierInAttackRange = true;
-        }
-      }
+    }
+    if (closestEnemy != null) {
+      lastEnemyLocation = closestEnemy;
     }
   }
 
@@ -1003,13 +1021,40 @@ public class Launcher extends MobileRobot {
 
   private boolean attemptCloudAttack() throws GameActionException {
     if (!rc.isActionReady()) return false;
+    if (attack(lastAttackedLocation)) return true;
+    if (!rc.isActionReady()) return false;
+    if (attack(lastEnemyLocation)) return true;
+
+    if (!rc.isActionReady()) return false;
+    if (Cache.PerTurn.IS_IN_CLOUD) {
+      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION));
+      MapLocation target = Cache.PerTurn.CURRENT_LOCATION.add(toEnemy);
+      while (target.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
+        target = target.add(toEnemy);
+      }
+      target = target.add(toEnemy.opposite());
+      if (attack(target)) return true;
+    }
+
+    if (!rc.isActionReady()) return false;
+    MapLocation closeTo = lastAttackedLocation;
+    if (closeTo == null || !closeTo.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED  * 2)) {
+      closeTo = lastEnemyLocation;
+      if (closeTo == null || !closeTo.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED  * 2)) {
+        closeTo = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+        if (closeTo == null) {
+          closeTo = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        }
+      }
+    }
     MapLocation[] clouds = rc.senseNearbyCloudLocations(Cache.Permanent.ACTION_RADIUS_SQUARED);
     MapLocation bestCloudToAttack = null;
     int bestCloudDist = Integer.MAX_VALUE;
     for (int i = clouds.length; --i >= 0;) {
       MapLocation loc = clouds[i];
-      int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(loc);
-      if (dist >= GameConstants.CLOUD_VISION_RADIUS_SQUARED && rc.canAttack(loc)) {
+      if (rc.canSenseLocation(loc)) continue;
+      if (rc.canAttack(loc)) {
+        int dist = closeTo.distanceSquaredTo(loc);
         if (dist < bestCloudDist) {
           bestCloudDist = dist;
           bestCloudToAttack = loc;
@@ -1019,27 +1064,6 @@ public class Launcher extends MobileRobot {
     if (bestCloudToAttack != null && attack(bestCloudToAttack)) {
       return true;
     }
-    if (Cache.PerTurn.IS_IN_CLOUD) {
-      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION));
-      MapLocation target = Cache.PerTurn.CURRENT_LOCATION.add(toEnemy);
-      while (target.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
-        target = target.add(toEnemy);
-      }
-      target = target.add(toEnemy.opposite());
-      return attack(target);
-    }
     return false;
-//    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
-//    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
-//    for (int i = -cells; i <= cells; ++i) {
-//      for (int j = -cells; j <= cells; ++j) {
-//        MapLocation loc = Cache.PerTurn.CURRENT_LOCATION.translate(i, j);
-//        if (rc.canAttack(loc) && rc.senseCloud(loc) != inCloud) {
-//          rc.attack(loc);
-//          return true;
-//        }
-//      }
-//    }
-//    return false;
   }
 }

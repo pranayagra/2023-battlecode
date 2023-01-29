@@ -45,16 +45,62 @@ public class CommsHandler {
     rc.writeSharedArray(0, (rc.readSharedArray(0) & 58367) | (value << 10));
   }
 
+  private static int readNumLaunchersBits() throws GameActionException {
+    return (rc.readSharedArray(0) & 992) >>> 5;
+  }
+
+  private static void writeNumLaunchersBits(int value) throws GameActionException {
+    rc.writeSharedArray(0, (rc.readSharedArray(0) & 64543) | (value << 5));
+  }
+
+  private static int readNumAmpsBits() throws GameActionException {
+    return (rc.readSharedArray(0) & 31);
+  }
+
+  private static void writeNumAmpsBits(int value) throws GameActionException {
+    rc.writeSharedArray(0, (rc.readSharedArray(0) & 65504) | (value));
+  }
+
+  public static int readNumLaunchers() throws GameActionException {
+    return (readNumLaunchersBits());
+  }
+  public static void writeNumLaunchersReset() throws GameActionException {
+    writeNumLaunchersBits(0);
+  }
+  public static void writeNumLaunchersSet(int value) throws GameActionException {
+    writeNumLaunchersBits(Math.min(Math.max(value, 0), 31));
+  }
+  public static void writeNumLaunchersIncrement() throws GameActionException {
+    writeNumLaunchersBits(Math.min((readNumLaunchers())+1, 31));
+  }
+  public static void writeNumLaunchersDecrement() throws GameActionException {
+    writeNumLaunchersBits(Math.max((readNumLaunchers())-1, 0));
+  }
+  public static int readNumAmps() throws GameActionException {
+    return (readNumAmpsBits());
+  }
+  public static void writeNumAmpsReset() throws GameActionException {
+    writeNumAmpsBits(0);
+  }
+  public static void writeNumAmpsSet(int value) throws GameActionException {
+    writeNumAmpsBits(Math.min(Math.max(value, 0), 31));
+  }
+  public static void writeNumAmpsIncrement() throws GameActionException {
+    writeNumAmpsBits(Math.min((readNumAmps())+1, 31));
+  }
+  public static void writeNumAmpsDecrement() throws GameActionException {
+    writeNumAmpsBits(Math.max((readNumAmps())-1, 0));
+  }
   private static int readOurHqX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(0) & 1008) >>> 4;
+          return (rc.readSharedArray(1) & 64512) >>> 10;
       case 1:
-          return ((rc.readSharedArray(3) & 7) << 3) + ((rc.readSharedArray(4) & 57344) >>> 13);
+          return (rc.readSharedArray(4) & 504) >>> 3;
       case 2:
-          return (rc.readSharedArray(7) & 4032) >>> 6;
+          return ((rc.readSharedArray(7) & 3) << 4) + ((rc.readSharedArray(8) & 61440) >>> 12);
       case 3:
-          return ((rc.readSharedArray(10) & 31) << 1) + ((rc.readSharedArray(11) & 32768) >>> 15);
+          return (rc.readSharedArray(11) & 2016) >>> 5;
       default:
           return -1;
     }
@@ -63,18 +109,17 @@ public class CommsHandler {
   private static void writeOurHqX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(0, (rc.readSharedArray(0) & 64527) | (value << 4));
+        rc.writeSharedArray(1, (rc.readSharedArray(1) & 1023) | (value << 10));
         break;
       case 1:
-        rc.writeSharedArray(3, (rc.readSharedArray(3) & 65528) | ((value & 56) >>> 3));
-        rc.writeSharedArray(4, (rc.readSharedArray(4) & 8191) | ((value & 7) << 13));
+        rc.writeSharedArray(4, (rc.readSharedArray(4) & 65031) | (value << 3));
         break;
       case 2:
-        rc.writeSharedArray(7, (rc.readSharedArray(7) & 61503) | (value << 6));
+        rc.writeSharedArray(7, (rc.readSharedArray(7) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(8, (rc.readSharedArray(8) & 4095) | ((value & 15) << 12));
         break;
       case 3:
-        rc.writeSharedArray(10, (rc.readSharedArray(10) & 65504) | ((value & 62) >>> 1));
-        rc.writeSharedArray(11, (rc.readSharedArray(11) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(11, (rc.readSharedArray(11) & 63519) | (value << 5));
         break;
     }
   }
@@ -82,13 +127,13 @@ public class CommsHandler {
   private static int readOurHqY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return ((rc.readSharedArray(0) & 15) << 2) + ((rc.readSharedArray(1) & 49152) >>> 14);
+          return (rc.readSharedArray(1) & 1008) >>> 4;
       case 1:
-          return (rc.readSharedArray(4) & 8064) >>> 7;
+          return ((rc.readSharedArray(4) & 7) << 3) + ((rc.readSharedArray(5) & 57344) >>> 13);
       case 2:
-          return (rc.readSharedArray(7) & 63);
+          return (rc.readSharedArray(8) & 4032) >>> 6;
       case 3:
-          return (rc.readSharedArray(11) & 32256) >>> 9;
+          return ((rc.readSharedArray(11) & 31) << 1) + ((rc.readSharedArray(12) & 32768) >>> 15);
       default:
           return -1;
     }
@@ -97,17 +142,18 @@ public class CommsHandler {
   private static void writeOurHqY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(0, (rc.readSharedArray(0) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(1, (rc.readSharedArray(1) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(1, (rc.readSharedArray(1) & 64527) | (value << 4));
         break;
       case 1:
-        rc.writeSharedArray(4, (rc.readSharedArray(4) & 57471) | (value << 7));
+        rc.writeSharedArray(4, (rc.readSharedArray(4) & 65528) | ((value & 56) >>> 3));
+        rc.writeSharedArray(5, (rc.readSharedArray(5) & 8191) | ((value & 7) << 13));
         break;
       case 2:
-        rc.writeSharedArray(7, (rc.readSharedArray(7) & 65472) | (value));
+        rc.writeSharedArray(8, (rc.readSharedArray(8) & 61503) | (value << 6));
         break;
       case 3:
-        rc.writeSharedArray(11, (rc.readSharedArray(11) & 33279) | (value << 9));
+        rc.writeSharedArray(11, (rc.readSharedArray(11) & 65504) | ((value & 62) >>> 1));
+        rc.writeSharedArray(12, (rc.readSharedArray(12) & 32767) | ((value & 1) << 15));
         break;
     }
   }
@@ -115,13 +161,13 @@ public class CommsHandler {
   private static int readOurHqOddSpawnX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(1) & 16128) >>> 8;
+          return ((rc.readSharedArray(1) & 15) << 2) + ((rc.readSharedArray(2) & 49152) >>> 14);
       case 1:
-          return (rc.readSharedArray(4) & 126) >>> 1;
+          return (rc.readSharedArray(5) & 8064) >>> 7;
       case 2:
-          return (rc.readSharedArray(8) & 64512) >>> 10;
+          return (rc.readSharedArray(8) & 63);
       case 3:
-          return (rc.readSharedArray(11) & 504) >>> 3;
+          return (rc.readSharedArray(12) & 32256) >>> 9;
       default:
           return -1;
     }
@@ -130,16 +176,17 @@ public class CommsHandler {
   private static void writeOurHqOddSpawnX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(1, (rc.readSharedArray(1) & 49407) | (value << 8));
+        rc.writeSharedArray(1, (rc.readSharedArray(1) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(2, (rc.readSharedArray(2) & 16383) | ((value & 3) << 14));
         break;
       case 1:
-        rc.writeSharedArray(4, (rc.readSharedArray(4) & 65409) | (value << 1));
+        rc.writeSharedArray(5, (rc.readSharedArray(5) & 57471) | (value << 7));
         break;
       case 2:
-        rc.writeSharedArray(8, (rc.readSharedArray(8) & 1023) | (value << 10));
+        rc.writeSharedArray(8, (rc.readSharedArray(8) & 65472) | (value));
         break;
       case 3:
-        rc.writeSharedArray(11, (rc.readSharedArray(11) & 65031) | (value << 3));
+        rc.writeSharedArray(12, (rc.readSharedArray(12) & 33279) | (value << 9));
         break;
     }
   }
@@ -147,13 +194,13 @@ public class CommsHandler {
   private static int readOurHqOddSpawnY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(1) & 252) >>> 2;
+          return (rc.readSharedArray(2) & 16128) >>> 8;
       case 1:
-          return ((rc.readSharedArray(4) & 1) << 5) + ((rc.readSharedArray(5) & 63488) >>> 11);
+          return (rc.readSharedArray(5) & 126) >>> 1;
       case 2:
-          return (rc.readSharedArray(8) & 1008) >>> 4;
+          return (rc.readSharedArray(9) & 64512) >>> 10;
       case 3:
-          return ((rc.readSharedArray(11) & 7) << 3) + ((rc.readSharedArray(12) & 57344) >>> 13);
+          return (rc.readSharedArray(12) & 504) >>> 3;
       default:
           return -1;
     }
@@ -162,18 +209,16 @@ public class CommsHandler {
   private static void writeOurHqOddSpawnY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(1, (rc.readSharedArray(1) & 65283) | (value << 2));
+        rc.writeSharedArray(2, (rc.readSharedArray(2) & 49407) | (value << 8));
         break;
       case 1:
-        rc.writeSharedArray(4, (rc.readSharedArray(4) & 65534) | ((value & 32) >>> 5));
-        rc.writeSharedArray(5, (rc.readSharedArray(5) & 2047) | ((value & 31) << 11));
+        rc.writeSharedArray(5, (rc.readSharedArray(5) & 65409) | (value << 1));
         break;
       case 2:
-        rc.writeSharedArray(8, (rc.readSharedArray(8) & 64527) | (value << 4));
+        rc.writeSharedArray(9, (rc.readSharedArray(9) & 1023) | (value << 10));
         break;
       case 3:
-        rc.writeSharedArray(11, (rc.readSharedArray(11) & 65528) | ((value & 56) >>> 3));
-        rc.writeSharedArray(12, (rc.readSharedArray(12) & 8191) | ((value & 7) << 13));
+        rc.writeSharedArray(12, (rc.readSharedArray(12) & 65031) | (value << 3));
         break;
     }
   }
@@ -181,13 +226,13 @@ public class CommsHandler {
   private static int readOurHqEvenSpawnX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return ((rc.readSharedArray(1) & 3) << 4) + ((rc.readSharedArray(2) & 61440) >>> 12);
+          return (rc.readSharedArray(2) & 252) >>> 2;
       case 1:
-          return (rc.readSharedArray(5) & 2016) >>> 5;
+          return ((rc.readSharedArray(5) & 1) << 5) + ((rc.readSharedArray(6) & 63488) >>> 11);
       case 2:
-          return ((rc.readSharedArray(8) & 15) << 2) + ((rc.readSharedArray(9) & 49152) >>> 14);
+          return (rc.readSharedArray(9) & 1008) >>> 4;
       case 3:
-          return (rc.readSharedArray(12) & 8064) >>> 7;
+          return ((rc.readSharedArray(12) & 7) << 3) + ((rc.readSharedArray(13) & 57344) >>> 13);
       default:
           return -1;
     }
@@ -196,18 +241,18 @@ public class CommsHandler {
   private static void writeOurHqEvenSpawnX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(1, (rc.readSharedArray(1) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(2, (rc.readSharedArray(2) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(2, (rc.readSharedArray(2) & 65283) | (value << 2));
         break;
       case 1:
-        rc.writeSharedArray(5, (rc.readSharedArray(5) & 63519) | (value << 5));
+        rc.writeSharedArray(5, (rc.readSharedArray(5) & 65534) | ((value & 32) >>> 5));
+        rc.writeSharedArray(6, (rc.readSharedArray(6) & 2047) | ((value & 31) << 11));
         break;
       case 2:
-        rc.writeSharedArray(8, (rc.readSharedArray(8) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(9, (rc.readSharedArray(9) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(9, (rc.readSharedArray(9) & 64527) | (value << 4));
         break;
       case 3:
-        rc.writeSharedArray(12, (rc.readSharedArray(12) & 57471) | (value << 7));
+        rc.writeSharedArray(12, (rc.readSharedArray(12) & 65528) | ((value & 56) >>> 3));
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 8191) | ((value & 7) << 13));
         break;
     }
   }
@@ -215,13 +260,13 @@ public class CommsHandler {
   private static int readOurHqEvenSpawnY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(2) & 4032) >>> 6;
+          return ((rc.readSharedArray(2) & 3) << 4) + ((rc.readSharedArray(3) & 61440) >>> 12);
       case 1:
-          return ((rc.readSharedArray(5) & 31) << 1) + ((rc.readSharedArray(6) & 32768) >>> 15);
+          return (rc.readSharedArray(6) & 2016) >>> 5;
       case 2:
-          return (rc.readSharedArray(9) & 16128) >>> 8;
+          return ((rc.readSharedArray(9) & 15) << 2) + ((rc.readSharedArray(10) & 49152) >>> 14);
       case 3:
-          return (rc.readSharedArray(12) & 126) >>> 1;
+          return (rc.readSharedArray(13) & 8064) >>> 7;
       default:
           return -1;
     }
@@ -230,17 +275,18 @@ public class CommsHandler {
   private static void writeOurHqEvenSpawnY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(2, (rc.readSharedArray(2) & 61503) | (value << 6));
+        rc.writeSharedArray(2, (rc.readSharedArray(2) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(3, (rc.readSharedArray(3) & 4095) | ((value & 15) << 12));
         break;
       case 1:
-        rc.writeSharedArray(5, (rc.readSharedArray(5) & 65504) | ((value & 62) >>> 1));
-        rc.writeSharedArray(6, (rc.readSharedArray(6) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(6, (rc.readSharedArray(6) & 63519) | (value << 5));
         break;
       case 2:
-        rc.writeSharedArray(9, (rc.readSharedArray(9) & 49407) | (value << 8));
+        rc.writeSharedArray(9, (rc.readSharedArray(9) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(10, (rc.readSharedArray(10) & 16383) | ((value & 3) << 14));
         break;
       case 3:
-        rc.writeSharedArray(12, (rc.readSharedArray(12) & 65409) | (value << 1));
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 57471) | (value << 7));
         break;
     }
   }
@@ -248,13 +294,13 @@ public class CommsHandler {
   public static int readOurHqOddSpawnInstruction(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(2) & 48) >>> 4;
+          return (rc.readSharedArray(3) & 3072) >>> 10;
       case 1:
-          return (rc.readSharedArray(6) & 24576) >>> 13;
+          return (rc.readSharedArray(6) & 24) >>> 3;
       case 2:
-          return (rc.readSharedArray(9) & 192) >>> 6;
+          return (rc.readSharedArray(10) & 12288) >>> 12;
       case 3:
-          return ((rc.readSharedArray(12) & 1) << 1) + ((rc.readSharedArray(13) & 32768) >>> 15);
+          return (rc.readSharedArray(13) & 96) >>> 5;
       default:
           return -1;
     }
@@ -263,17 +309,16 @@ public class CommsHandler {
   public static void writeOurHqOddSpawnInstruction(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(2, (rc.readSharedArray(2) & 65487) | (value << 4));
+        rc.writeSharedArray(3, (rc.readSharedArray(3) & 62463) | (value << 10));
         break;
       case 1:
-        rc.writeSharedArray(6, (rc.readSharedArray(6) & 40959) | (value << 13));
+        rc.writeSharedArray(6, (rc.readSharedArray(6) & 65511) | (value << 3));
         break;
       case 2:
-        rc.writeSharedArray(9, (rc.readSharedArray(9) & 65343) | (value << 6));
+        rc.writeSharedArray(10, (rc.readSharedArray(10) & 53247) | (value << 12));
         break;
       case 3:
-        rc.writeSharedArray(12, (rc.readSharedArray(12) & 65534) | ((value & 2) >>> 1));
-        rc.writeSharedArray(13, (rc.readSharedArray(13) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 65439) | (value << 5));
         break;
     }
   }
@@ -281,13 +326,13 @@ public class CommsHandler {
   public static int readOurHqEvenSpawnInstruction(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(2) & 12) >>> 2;
+          return (rc.readSharedArray(3) & 768) >>> 8;
       case 1:
-          return (rc.readSharedArray(6) & 6144) >>> 11;
+          return (rc.readSharedArray(6) & 6) >>> 1;
       case 2:
-          return (rc.readSharedArray(9) & 48) >>> 4;
+          return (rc.readSharedArray(10) & 3072) >>> 10;
       case 3:
-          return (rc.readSharedArray(13) & 24576) >>> 13;
+          return (rc.readSharedArray(13) & 24) >>> 3;
       default:
           return -1;
     }
@@ -296,87 +341,21 @@ public class CommsHandler {
   public static void writeOurHqEvenSpawnInstruction(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(2, (rc.readSharedArray(2) & 65523) | (value << 2));
+        rc.writeSharedArray(3, (rc.readSharedArray(3) & 64767) | (value << 8));
         break;
       case 1:
-        rc.writeSharedArray(6, (rc.readSharedArray(6) & 59391) | (value << 11));
+        rc.writeSharedArray(6, (rc.readSharedArray(6) & 65529) | (value << 1));
         break;
       case 2:
-        rc.writeSharedArray(9, (rc.readSharedArray(9) & 65487) | (value << 4));
+        rc.writeSharedArray(10, (rc.readSharedArray(10) & 62463) | (value << 10));
         break;
       case 3:
-        rc.writeSharedArray(13, (rc.readSharedArray(13) & 40959) | (value << 13));
+        rc.writeSharedArray(13, (rc.readSharedArray(13) & 65511) | (value << 3));
         break;
     }
   }
 
   private static int readOurHqAdamantiumIncomeBits(int idx) throws GameActionException {
-    switch (idx) {
-      case 0:
-          return ((rc.readSharedArray(2) & 3) << 3) + ((rc.readSharedArray(3) & 57344) >>> 13);
-      case 1:
-          return (rc.readSharedArray(6) & 1984) >>> 6;
-      case 2:
-          return ((rc.readSharedArray(9) & 15) << 1) + ((rc.readSharedArray(10) & 32768) >>> 15);
-      case 3:
-          return (rc.readSharedArray(13) & 7936) >>> 8;
-      default:
-          return -1;
-    }
-  }
-
-  private static void writeOurHqAdamantiumIncomeBits(int idx, int value) throws GameActionException {
-    switch (idx) {
-      case 0:
-        rc.writeSharedArray(2, (rc.readSharedArray(2) & 65532) | ((value & 24) >>> 3));
-        rc.writeSharedArray(3, (rc.readSharedArray(3) & 8191) | ((value & 7) << 13));
-        break;
-      case 1:
-        rc.writeSharedArray(6, (rc.readSharedArray(6) & 63551) | (value << 6));
-        break;
-      case 2:
-        rc.writeSharedArray(9, (rc.readSharedArray(9) & 65520) | ((value & 30) >>> 1));
-        rc.writeSharedArray(10, (rc.readSharedArray(10) & 32767) | ((value & 1) << 15));
-        break;
-      case 3:
-        rc.writeSharedArray(13, (rc.readSharedArray(13) & 57599) | (value << 8));
-        break;
-    }
-  }
-
-  private static int readOurHqManaIncomeBits(int idx) throws GameActionException {
-    switch (idx) {
-      case 0:
-          return (rc.readSharedArray(3) & 7936) >>> 8;
-      case 1:
-          return (rc.readSharedArray(6) & 62) >>> 1;
-      case 2:
-          return (rc.readSharedArray(10) & 31744) >>> 10;
-      case 3:
-          return (rc.readSharedArray(13) & 248) >>> 3;
-      default:
-          return -1;
-    }
-  }
-
-  private static void writeOurHqManaIncomeBits(int idx, int value) throws GameActionException {
-    switch (idx) {
-      case 0:
-        rc.writeSharedArray(3, (rc.readSharedArray(3) & 57599) | (value << 8));
-        break;
-      case 1:
-        rc.writeSharedArray(6, (rc.readSharedArray(6) & 65473) | (value << 1));
-        break;
-      case 2:
-        rc.writeSharedArray(10, (rc.readSharedArray(10) & 33791) | (value << 10));
-        break;
-      case 3:
-        rc.writeSharedArray(13, (rc.readSharedArray(13) & 65287) | (value << 3));
-        break;
-    }
-  }
-
-  private static int readOurHqElixirIncomeBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(3) & 248) >>> 3;
@@ -391,7 +370,7 @@ public class CommsHandler {
     }
   }
 
-  private static void writeOurHqElixirIncomeBits(int idx, int value) throws GameActionException {
+  private static void writeOurHqAdamantiumIncomeBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(3, (rc.readSharedArray(3) & 65287) | (value << 3));
@@ -406,6 +385,71 @@ public class CommsHandler {
       case 3:
         rc.writeSharedArray(13, (rc.readSharedArray(13) & 65528) | ((value & 28) >>> 2));
         rc.writeSharedArray(14, (rc.readSharedArray(14) & 16383) | ((value & 3) << 14));
+        break;
+    }
+  }
+
+  private static int readOurHqManaIncomeBits(int idx) throws GameActionException {
+    switch (idx) {
+      case 0:
+          return ((rc.readSharedArray(3) & 7) << 2) + ((rc.readSharedArray(4) & 49152) >>> 14);
+      case 1:
+          return (rc.readSharedArray(7) & 3968) >>> 7;
+      case 2:
+          return (rc.readSharedArray(10) & 31);
+      case 3:
+          return (rc.readSharedArray(14) & 15872) >>> 9;
+      default:
+          return -1;
+    }
+  }
+
+  private static void writeOurHqManaIncomeBits(int idx, int value) throws GameActionException {
+    switch (idx) {
+      case 0:
+        rc.writeSharedArray(3, (rc.readSharedArray(3) & 65528) | ((value & 28) >>> 2));
+        rc.writeSharedArray(4, (rc.readSharedArray(4) & 16383) | ((value & 3) << 14));
+        break;
+      case 1:
+        rc.writeSharedArray(7, (rc.readSharedArray(7) & 61567) | (value << 7));
+        break;
+      case 2:
+        rc.writeSharedArray(10, (rc.readSharedArray(10) & 65504) | (value));
+        break;
+      case 3:
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 49663) | (value << 9));
+        break;
+    }
+  }
+
+  private static int readOurHqElixirIncomeBits(int idx) throws GameActionException {
+    switch (idx) {
+      case 0:
+          return (rc.readSharedArray(4) & 15872) >>> 9;
+      case 1:
+          return (rc.readSharedArray(7) & 124) >>> 2;
+      case 2:
+          return (rc.readSharedArray(11) & 63488) >>> 11;
+      case 3:
+          return (rc.readSharedArray(14) & 496) >>> 4;
+      default:
+          return -1;
+    }
+  }
+
+  private static void writeOurHqElixirIncomeBits(int idx, int value) throws GameActionException {
+    switch (idx) {
+      case 0:
+        rc.writeSharedArray(4, (rc.readSharedArray(4) & 49663) | (value << 9));
+        break;
+      case 1:
+        rc.writeSharedArray(7, (rc.readSharedArray(7) & 65411) | (value << 2));
+        break;
+      case 2:
+        rc.writeSharedArray(11, (rc.readSharedArray(11) & 2047) | (value << 11));
+        break;
+      case 3:
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65039) | (value << 4));
         break;
     }
   }
@@ -488,13 +532,13 @@ public class CommsHandler {
   private static int readAdamantiumWellX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(14) & 16128) >>> 8;
+          return ((rc.readSharedArray(14) & 15) << 2) + ((rc.readSharedArray(15) & 49152) >>> 14);
       case 1:
-          return (rc.readSharedArray(15) & 504) >>> 3;
+          return (rc.readSharedArray(16) & 32256) >>> 9;
       case 2:
-          return ((rc.readSharedArray(16) & 15) << 2) + ((rc.readSharedArray(17) & 49152) >>> 14);
+          return (rc.readSharedArray(17) & 1008) >>> 4;
       case 3:
-          return (rc.readSharedArray(18) & 32256) >>> 9;
+          return ((rc.readSharedArray(18) & 31) << 1) + ((rc.readSharedArray(19) & 32768) >>> 15);
       default:
           return -1;
     }
@@ -503,17 +547,18 @@ public class CommsHandler {
   private static void writeAdamantiumWellX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(14, (rc.readSharedArray(14) & 49407) | (value << 8));
+        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 16383) | ((value & 3) << 14));
         break;
       case 1:
-        rc.writeSharedArray(15, (rc.readSharedArray(15) & 65031) | (value << 3));
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 33279) | (value << 9));
         break;
       case 2:
-        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(17, (rc.readSharedArray(17) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 64527) | (value << 4));
         break;
       case 3:
-        rc.writeSharedArray(18, (rc.readSharedArray(18) & 33279) | (value << 9));
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 65504) | ((value & 62) >>> 1));
+        rc.writeSharedArray(19, (rc.readSharedArray(19) & 32767) | ((value & 1) << 15));
         break;
     }
   }
@@ -521,13 +566,13 @@ public class CommsHandler {
   private static int readAdamantiumWellY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(14) & 252) >>> 2;
+          return (rc.readSharedArray(15) & 16128) >>> 8;
       case 1:
-          return ((rc.readSharedArray(15) & 7) << 3) + ((rc.readSharedArray(16) & 57344) >>> 13);
+          return (rc.readSharedArray(16) & 504) >>> 3;
       case 2:
-          return (rc.readSharedArray(17) & 16128) >>> 8;
+          return ((rc.readSharedArray(17) & 15) << 2) + ((rc.readSharedArray(18) & 49152) >>> 14);
       case 3:
-          return (rc.readSharedArray(18) & 504) >>> 3;
+          return (rc.readSharedArray(19) & 32256) >>> 9;
       default:
           return -1;
     }
@@ -536,17 +581,17 @@ public class CommsHandler {
   private static void writeAdamantiumWellY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65283) | (value << 2));
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 49407) | (value << 8));
         break;
       case 1:
-        rc.writeSharedArray(15, (rc.readSharedArray(15) & 65528) | ((value & 56) >>> 3));
-        rc.writeSharedArray(16, (rc.readSharedArray(16) & 8191) | ((value & 7) << 13));
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65031) | (value << 3));
         break;
       case 2:
-        rc.writeSharedArray(17, (rc.readSharedArray(17) & 49407) | (value << 8));
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 16383) | ((value & 3) << 14));
         break;
       case 3:
-        rc.writeSharedArray(18, (rc.readSharedArray(18) & 65031) | (value << 3));
+        rc.writeSharedArray(19, (rc.readSharedArray(19) & 33279) | (value << 9));
         break;
     }
   }
@@ -554,13 +599,13 @@ public class CommsHandler {
   private static int readAdamantiumWellUpgradedBit(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(14) & 2) >>> 1;
+          return (rc.readSharedArray(15) & 128) >>> 7;
       case 1:
-          return (rc.readSharedArray(16) & 4096) >>> 12;
+          return (rc.readSharedArray(16) & 4) >>> 2;
       case 2:
-          return (rc.readSharedArray(17) & 128) >>> 7;
+          return (rc.readSharedArray(18) & 8192) >>> 13;
       case 3:
-          return (rc.readSharedArray(18) & 4) >>> 2;
+          return (rc.readSharedArray(19) & 256) >>> 8;
       default:
           return -1;
     }
@@ -569,16 +614,16 @@ public class CommsHandler {
   private static void writeAdamantiumWellUpgradedBit(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65533) | (value << 1));
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 65407) | (value << 7));
         break;
       case 1:
-        rc.writeSharedArray(16, (rc.readSharedArray(16) & 61439) | (value << 12));
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65531) | (value << 2));
         break;
       case 2:
-        rc.writeSharedArray(17, (rc.readSharedArray(17) & 65407) | (value << 7));
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 57343) | (value << 13));
         break;
       case 3:
-        rc.writeSharedArray(18, (rc.readSharedArray(18) & 65531) | (value << 2));
+        rc.writeSharedArray(19, (rc.readSharedArray(19) & 65279) | (value << 8));
         break;
     }
   }
@@ -586,13 +631,13 @@ public class CommsHandler {
   private static int readAdamantiumWellCapacityBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return ((rc.readSharedArray(14) & 1) << 3) + ((rc.readSharedArray(15) & 57344) >>> 13);
+          return (rc.readSharedArray(15) & 120) >>> 3;
       case 1:
-          return (rc.readSharedArray(16) & 3840) >>> 8;
+          return ((rc.readSharedArray(16) & 3) << 2) + ((rc.readSharedArray(17) & 49152) >>> 14);
       case 2:
-          return (rc.readSharedArray(17) & 120) >>> 3;
+          return (rc.readSharedArray(18) & 7680) >>> 9;
       case 3:
-          return ((rc.readSharedArray(18) & 3) << 2) + ((rc.readSharedArray(19) & 49152) >>> 14);
+          return (rc.readSharedArray(19) & 240) >>> 4;
       default:
           return -1;
     }
@@ -601,18 +646,17 @@ public class CommsHandler {
   private static void writeAdamantiumWellCapacityBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(14, (rc.readSharedArray(14) & 65534) | ((value & 8) >>> 3));
-        rc.writeSharedArray(15, (rc.readSharedArray(15) & 8191) | ((value & 7) << 13));
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 65415) | (value << 3));
         break;
       case 1:
-        rc.writeSharedArray(16, (rc.readSharedArray(16) & 61695) | (value << 8));
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65532) | ((value & 12) >>> 2));
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 16383) | ((value & 3) << 14));
         break;
       case 2:
-        rc.writeSharedArray(17, (rc.readSharedArray(17) & 65415) | (value << 3));
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 57855) | (value << 9));
         break;
       case 3:
-        rc.writeSharedArray(18, (rc.readSharedArray(18) & 65532) | ((value & 12) >>> 2));
-        rc.writeSharedArray(19, (rc.readSharedArray(19) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(19, (rc.readSharedArray(19) & 65295) | (value << 4));
         break;
     }
   }
@@ -620,13 +664,13 @@ public class CommsHandler {
   private static int readAdamantiumWellCurrentWorkersBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(15) & 7680) >>> 9;
+          return ((rc.readSharedArray(15) & 7) << 1) + ((rc.readSharedArray(16) & 32768) >>> 15);
       case 1:
-          return (rc.readSharedArray(16) & 240) >>> 4;
+          return (rc.readSharedArray(17) & 15360) >>> 10;
       case 2:
-          return ((rc.readSharedArray(17) & 7) << 1) + ((rc.readSharedArray(18) & 32768) >>> 15);
+          return (rc.readSharedArray(18) & 480) >>> 5;
       case 3:
-          return (rc.readSharedArray(19) & 15360) >>> 10;
+          return (rc.readSharedArray(19) & 15);
       default:
           return -1;
     }
@@ -635,17 +679,17 @@ public class CommsHandler {
   private static void writeAdamantiumWellCurrentWorkersBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(15, (rc.readSharedArray(15) & 57855) | (value << 9));
+        rc.writeSharedArray(15, (rc.readSharedArray(15) & 65528) | ((value & 14) >>> 1));
+        rc.writeSharedArray(16, (rc.readSharedArray(16) & 32767) | ((value & 1) << 15));
         break;
       case 1:
-        rc.writeSharedArray(16, (rc.readSharedArray(16) & 65295) | (value << 4));
+        rc.writeSharedArray(17, (rc.readSharedArray(17) & 50175) | (value << 10));
         break;
       case 2:
-        rc.writeSharedArray(17, (rc.readSharedArray(17) & 65528) | ((value & 14) >>> 1));
-        rc.writeSharedArray(18, (rc.readSharedArray(18) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(18, (rc.readSharedArray(18) & 65055) | (value << 5));
         break;
       case 3:
-        rc.writeSharedArray(19, (rc.readSharedArray(19) & 50175) | (value << 10));
+        rc.writeSharedArray(19, (rc.readSharedArray(19) & 65520) | (value));
         break;
     }
   }
@@ -699,13 +743,13 @@ public class CommsHandler {
   private static int readManaWellX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(19) & 1008) >>> 4;
+          return (rc.readSharedArray(20) & 64512) >>> 10;
       case 1:
-          return ((rc.readSharedArray(20) & 31) << 1) + ((rc.readSharedArray(21) & 32768) >>> 15);
+          return (rc.readSharedArray(21) & 2016) >>> 5;
       case 2:
-          return (rc.readSharedArray(22) & 64512) >>> 10;
+          return (rc.readSharedArray(22) & 63);
       case 3:
-          return (rc.readSharedArray(23) & 2016) >>> 5;
+          return ((rc.readSharedArray(23) & 1) << 5) + ((rc.readSharedArray(24) & 63488) >>> 11);
       default:
           return -1;
     }
@@ -714,17 +758,17 @@ public class CommsHandler {
   private static void writeManaWellX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(19, (rc.readSharedArray(19) & 64527) | (value << 4));
+        rc.writeSharedArray(20, (rc.readSharedArray(20) & 1023) | (value << 10));
         break;
       case 1:
-        rc.writeSharedArray(20, (rc.readSharedArray(20) & 65504) | ((value & 62) >>> 1));
-        rc.writeSharedArray(21, (rc.readSharedArray(21) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(21, (rc.readSharedArray(21) & 63519) | (value << 5));
         break;
       case 2:
-        rc.writeSharedArray(22, (rc.readSharedArray(22) & 1023) | (value << 10));
+        rc.writeSharedArray(22, (rc.readSharedArray(22) & 65472) | (value));
         break;
       case 3:
-        rc.writeSharedArray(23, (rc.readSharedArray(23) & 63519) | (value << 5));
+        rc.writeSharedArray(23, (rc.readSharedArray(23) & 65534) | ((value & 32) >>> 5));
+        rc.writeSharedArray(24, (rc.readSharedArray(24) & 2047) | ((value & 31) << 11));
         break;
     }
   }
@@ -732,13 +776,13 @@ public class CommsHandler {
   private static int readManaWellY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return ((rc.readSharedArray(19) & 15) << 2) + ((rc.readSharedArray(20) & 49152) >>> 14);
+          return (rc.readSharedArray(20) & 1008) >>> 4;
       case 1:
-          return (rc.readSharedArray(21) & 32256) >>> 9;
+          return ((rc.readSharedArray(21) & 31) << 1) + ((rc.readSharedArray(22) & 32768) >>> 15);
       case 2:
-          return (rc.readSharedArray(22) & 1008) >>> 4;
+          return (rc.readSharedArray(23) & 64512) >>> 10;
       case 3:
-          return ((rc.readSharedArray(23) & 31) << 1) + ((rc.readSharedArray(24) & 32768) >>> 15);
+          return (rc.readSharedArray(24) & 2016) >>> 5;
       default:
           return -1;
     }
@@ -747,18 +791,17 @@ public class CommsHandler {
   private static void writeManaWellY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(19, (rc.readSharedArray(19) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(20, (rc.readSharedArray(20) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(20, (rc.readSharedArray(20) & 64527) | (value << 4));
         break;
       case 1:
-        rc.writeSharedArray(21, (rc.readSharedArray(21) & 33279) | (value << 9));
+        rc.writeSharedArray(21, (rc.readSharedArray(21) & 65504) | ((value & 62) >>> 1));
+        rc.writeSharedArray(22, (rc.readSharedArray(22) & 32767) | ((value & 1) << 15));
         break;
       case 2:
-        rc.writeSharedArray(22, (rc.readSharedArray(22) & 64527) | (value << 4));
+        rc.writeSharedArray(23, (rc.readSharedArray(23) & 1023) | (value << 10));
         break;
       case 3:
-        rc.writeSharedArray(23, (rc.readSharedArray(23) & 65504) | ((value & 62) >>> 1));
-        rc.writeSharedArray(24, (rc.readSharedArray(24) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(24, (rc.readSharedArray(24) & 63519) | (value << 5));
         break;
     }
   }
@@ -766,13 +809,13 @@ public class CommsHandler {
   private static int readManaWellUpgradedBit(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(20) & 8192) >>> 13;
+          return (rc.readSharedArray(20) & 8) >>> 3;
       case 1:
-          return (rc.readSharedArray(21) & 256) >>> 8;
+          return (rc.readSharedArray(22) & 16384) >>> 14;
       case 2:
-          return (rc.readSharedArray(22) & 8) >>> 3;
+          return (rc.readSharedArray(23) & 512) >>> 9;
       case 3:
-          return (rc.readSharedArray(24) & 16384) >>> 14;
+          return (rc.readSharedArray(24) & 16) >>> 4;
       default:
           return -1;
     }
@@ -781,16 +824,16 @@ public class CommsHandler {
   private static void writeManaWellUpgradedBit(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(20, (rc.readSharedArray(20) & 57343) | (value << 13));
+        rc.writeSharedArray(20, (rc.readSharedArray(20) & 65527) | (value << 3));
         break;
       case 1:
-        rc.writeSharedArray(21, (rc.readSharedArray(21) & 65279) | (value << 8));
+        rc.writeSharedArray(22, (rc.readSharedArray(22) & 49151) | (value << 14));
         break;
       case 2:
-        rc.writeSharedArray(22, (rc.readSharedArray(22) & 65527) | (value << 3));
+        rc.writeSharedArray(23, (rc.readSharedArray(23) & 65023) | (value << 9));
         break;
       case 3:
-        rc.writeSharedArray(24, (rc.readSharedArray(24) & 49151) | (value << 14));
+        rc.writeSharedArray(24, (rc.readSharedArray(24) & 65519) | (value << 4));
         break;
     }
   }
@@ -798,13 +841,13 @@ public class CommsHandler {
   private static int readManaWellCapacityBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(20) & 7680) >>> 9;
+          return ((rc.readSharedArray(20) & 7) << 1) + ((rc.readSharedArray(21) & 32768) >>> 15);
       case 1:
-          return (rc.readSharedArray(21) & 240) >>> 4;
+          return (rc.readSharedArray(22) & 15360) >>> 10;
       case 2:
-          return ((rc.readSharedArray(22) & 7) << 1) + ((rc.readSharedArray(23) & 32768) >>> 15);
+          return (rc.readSharedArray(23) & 480) >>> 5;
       case 3:
-          return (rc.readSharedArray(24) & 15360) >>> 10;
+          return (rc.readSharedArray(24) & 15);
       default:
           return -1;
     }
@@ -813,17 +856,17 @@ public class CommsHandler {
   private static void writeManaWellCapacityBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(20, (rc.readSharedArray(20) & 57855) | (value << 9));
+        rc.writeSharedArray(20, (rc.readSharedArray(20) & 65528) | ((value & 14) >>> 1));
+        rc.writeSharedArray(21, (rc.readSharedArray(21) & 32767) | ((value & 1) << 15));
         break;
       case 1:
-        rc.writeSharedArray(21, (rc.readSharedArray(21) & 65295) | (value << 4));
+        rc.writeSharedArray(22, (rc.readSharedArray(22) & 50175) | (value << 10));
         break;
       case 2:
-        rc.writeSharedArray(22, (rc.readSharedArray(22) & 65528) | ((value & 14) >>> 1));
-        rc.writeSharedArray(23, (rc.readSharedArray(23) & 32767) | ((value & 1) << 15));
+        rc.writeSharedArray(23, (rc.readSharedArray(23) & 65055) | (value << 5));
         break;
       case 3:
-        rc.writeSharedArray(24, (rc.readSharedArray(24) & 50175) | (value << 10));
+        rc.writeSharedArray(24, (rc.readSharedArray(24) & 65520) | (value));
         break;
     }
   }
@@ -831,13 +874,13 @@ public class CommsHandler {
   private static int readManaWellCurrentWorkersBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(20) & 480) >>> 5;
+          return (rc.readSharedArray(21) & 30720) >>> 11;
       case 1:
-          return (rc.readSharedArray(21) & 15);
+          return (rc.readSharedArray(22) & 960) >>> 6;
       case 2:
-          return (rc.readSharedArray(23) & 30720) >>> 11;
+          return (rc.readSharedArray(23) & 30) >>> 1;
       case 3:
-          return (rc.readSharedArray(24) & 960) >>> 6;
+          return (rc.readSharedArray(25) & 61440) >>> 12;
       default:
           return -1;
     }
@@ -846,16 +889,16 @@ public class CommsHandler {
   private static void writeManaWellCurrentWorkersBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(20, (rc.readSharedArray(20) & 65055) | (value << 5));
+        rc.writeSharedArray(21, (rc.readSharedArray(21) & 34815) | (value << 11));
         break;
       case 1:
-        rc.writeSharedArray(21, (rc.readSharedArray(21) & 65520) | (value));
+        rc.writeSharedArray(22, (rc.readSharedArray(22) & 64575) | (value << 6));
         break;
       case 2:
-        rc.writeSharedArray(23, (rc.readSharedArray(23) & 34815) | (value << 11));
+        rc.writeSharedArray(23, (rc.readSharedArray(23) & 65505) | (value << 1));
         break;
       case 3:
-        rc.writeSharedArray(24, (rc.readSharedArray(24) & 64575) | (value << 6));
+        rc.writeSharedArray(25, (rc.readSharedArray(25) & 4095) | (value << 12));
         break;
     }
   }
@@ -909,13 +952,13 @@ public class CommsHandler {
   private static int readElixirWellX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(24) & 63);
+          return (rc.readSharedArray(25) & 4032) >>> 6;
       case 1:
-          return ((rc.readSharedArray(25) & 1) << 5) + ((rc.readSharedArray(26) & 63488) >>> 11);
+          return (rc.readSharedArray(26) & 126) >>> 1;
       case 2:
-          return (rc.readSharedArray(27) & 4032) >>> 6;
+          return ((rc.readSharedArray(27) & 3) << 4) + ((rc.readSharedArray(28) & 61440) >>> 12);
       case 3:
-          return (rc.readSharedArray(28) & 126) >>> 1;
+          return (rc.readSharedArray(29) & 8064) >>> 7;
       default:
           return -1;
     }
@@ -924,17 +967,17 @@ public class CommsHandler {
   private static void writeElixirWellX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(24, (rc.readSharedArray(24) & 65472) | (value));
+        rc.writeSharedArray(25, (rc.readSharedArray(25) & 61503) | (value << 6));
         break;
       case 1:
-        rc.writeSharedArray(25, (rc.readSharedArray(25) & 65534) | ((value & 32) >>> 5));
-        rc.writeSharedArray(26, (rc.readSharedArray(26) & 2047) | ((value & 31) << 11));
+        rc.writeSharedArray(26, (rc.readSharedArray(26) & 65409) | (value << 1));
         break;
       case 2:
-        rc.writeSharedArray(27, (rc.readSharedArray(27) & 61503) | (value << 6));
+        rc.writeSharedArray(27, (rc.readSharedArray(27) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(28, (rc.readSharedArray(28) & 4095) | ((value & 15) << 12));
         break;
       case 3:
-        rc.writeSharedArray(28, (rc.readSharedArray(28) & 65409) | (value << 1));
+        rc.writeSharedArray(29, (rc.readSharedArray(29) & 57471) | (value << 7));
         break;
     }
   }
@@ -942,13 +985,13 @@ public class CommsHandler {
   private static int readElixirWellY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(25) & 64512) >>> 10;
+          return (rc.readSharedArray(25) & 63);
       case 1:
-          return (rc.readSharedArray(26) & 2016) >>> 5;
+          return ((rc.readSharedArray(26) & 1) << 5) + ((rc.readSharedArray(27) & 63488) >>> 11);
       case 2:
-          return (rc.readSharedArray(27) & 63);
+          return (rc.readSharedArray(28) & 4032) >>> 6;
       case 3:
-          return ((rc.readSharedArray(28) & 1) << 5) + ((rc.readSharedArray(29) & 63488) >>> 11);
+          return (rc.readSharedArray(29) & 126) >>> 1;
       default:
           return -1;
     }
@@ -957,17 +1000,17 @@ public class CommsHandler {
   private static void writeElixirWellY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(25, (rc.readSharedArray(25) & 1023) | (value << 10));
+        rc.writeSharedArray(25, (rc.readSharedArray(25) & 65472) | (value));
         break;
       case 1:
-        rc.writeSharedArray(26, (rc.readSharedArray(26) & 63519) | (value << 5));
+        rc.writeSharedArray(26, (rc.readSharedArray(26) & 65534) | ((value & 32) >>> 5));
+        rc.writeSharedArray(27, (rc.readSharedArray(27) & 2047) | ((value & 31) << 11));
         break;
       case 2:
-        rc.writeSharedArray(27, (rc.readSharedArray(27) & 65472) | (value));
+        rc.writeSharedArray(28, (rc.readSharedArray(28) & 61503) | (value << 6));
         break;
       case 3:
-        rc.writeSharedArray(28, (rc.readSharedArray(28) & 65534) | ((value & 32) >>> 5));
-        rc.writeSharedArray(29, (rc.readSharedArray(29) & 2047) | ((value & 31) << 11));
+        rc.writeSharedArray(29, (rc.readSharedArray(29) & 65409) | (value << 1));
         break;
     }
   }
@@ -975,13 +1018,13 @@ public class CommsHandler {
   private static int readElixirWellUpgradedBit(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(25) & 512) >>> 9;
+          return (rc.readSharedArray(26) & 32768) >>> 15;
       case 1:
-          return (rc.readSharedArray(26) & 16) >>> 4;
+          return (rc.readSharedArray(27) & 1024) >>> 10;
       case 2:
-          return (rc.readSharedArray(28) & 32768) >>> 15;
+          return (rc.readSharedArray(28) & 32) >>> 5;
       case 3:
-          return (rc.readSharedArray(29) & 1024) >>> 10;
+          return (rc.readSharedArray(29) & 1);
       default:
           return -1;
     }
@@ -990,16 +1033,16 @@ public class CommsHandler {
   private static void writeElixirWellUpgradedBit(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(25, (rc.readSharedArray(25) & 65023) | (value << 9));
+        rc.writeSharedArray(26, (rc.readSharedArray(26) & 32767) | (value << 15));
         break;
       case 1:
-        rc.writeSharedArray(26, (rc.readSharedArray(26) & 65519) | (value << 4));
+        rc.writeSharedArray(27, (rc.readSharedArray(27) & 64511) | (value << 10));
         break;
       case 2:
-        rc.writeSharedArray(28, (rc.readSharedArray(28) & 32767) | (value << 15));
+        rc.writeSharedArray(28, (rc.readSharedArray(28) & 65503) | (value << 5));
         break;
       case 3:
-        rc.writeSharedArray(29, (rc.readSharedArray(29) & 64511) | (value << 10));
+        rc.writeSharedArray(29, (rc.readSharedArray(29) & 65534) | (value));
         break;
     }
   }
@@ -1007,13 +1050,13 @@ public class CommsHandler {
   private static int readElixirWellCapacityBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(25) & 480) >>> 5;
+          return (rc.readSharedArray(26) & 30720) >>> 11;
       case 1:
-          return (rc.readSharedArray(26) & 15);
+          return (rc.readSharedArray(27) & 960) >>> 6;
       case 2:
-          return (rc.readSharedArray(28) & 30720) >>> 11;
+          return (rc.readSharedArray(28) & 30) >>> 1;
       case 3:
-          return (rc.readSharedArray(29) & 960) >>> 6;
+          return (rc.readSharedArray(30) & 61440) >>> 12;
       default:
           return -1;
     }
@@ -1022,16 +1065,16 @@ public class CommsHandler {
   private static void writeElixirWellCapacityBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(25, (rc.readSharedArray(25) & 65055) | (value << 5));
+        rc.writeSharedArray(26, (rc.readSharedArray(26) & 34815) | (value << 11));
         break;
       case 1:
-        rc.writeSharedArray(26, (rc.readSharedArray(26) & 65520) | (value));
+        rc.writeSharedArray(27, (rc.readSharedArray(27) & 64575) | (value << 6));
         break;
       case 2:
-        rc.writeSharedArray(28, (rc.readSharedArray(28) & 34815) | (value << 11));
+        rc.writeSharedArray(28, (rc.readSharedArray(28) & 65505) | (value << 1));
         break;
       case 3:
-        rc.writeSharedArray(29, (rc.readSharedArray(29) & 64575) | (value << 6));
+        rc.writeSharedArray(30, (rc.readSharedArray(30) & 4095) | (value << 12));
         break;
     }
   }
@@ -1039,13 +1082,13 @@ public class CommsHandler {
   private static int readElixirWellCurrentWorkersBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(25) & 30) >>> 1;
+          return (rc.readSharedArray(26) & 1920) >>> 7;
       case 1:
-          return (rc.readSharedArray(27) & 61440) >>> 12;
+          return (rc.readSharedArray(27) & 60) >>> 2;
       case 2:
-          return (rc.readSharedArray(28) & 1920) >>> 7;
+          return ((rc.readSharedArray(28) & 1) << 3) + ((rc.readSharedArray(29) & 57344) >>> 13);
       case 3:
-          return (rc.readSharedArray(29) & 60) >>> 2;
+          return (rc.readSharedArray(30) & 3840) >>> 8;
       default:
           return -1;
     }
@@ -1054,16 +1097,17 @@ public class CommsHandler {
   private static void writeElixirWellCurrentWorkersBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(25, (rc.readSharedArray(25) & 65505) | (value << 1));
+        rc.writeSharedArray(26, (rc.readSharedArray(26) & 63615) | (value << 7));
         break;
       case 1:
-        rc.writeSharedArray(27, (rc.readSharedArray(27) & 4095) | (value << 12));
+        rc.writeSharedArray(27, (rc.readSharedArray(27) & 65475) | (value << 2));
         break;
       case 2:
-        rc.writeSharedArray(28, (rc.readSharedArray(28) & 63615) | (value << 7));
+        rc.writeSharedArray(28, (rc.readSharedArray(28) & 65534) | ((value & 8) >>> 3));
+        rc.writeSharedArray(29, (rc.readSharedArray(29) & 8191) | ((value & 7) << 13));
         break;
       case 3:
-        rc.writeSharedArray(29, (rc.readSharedArray(29) & 65475) | (value << 2));
+        rc.writeSharedArray(30, (rc.readSharedArray(30) & 61695) | (value << 8));
         break;
     }
   }
@@ -1115,45 +1159,45 @@ public class CommsHandler {
     writeElixirWellCurrentWorkersBits(idx, Math.max((readElixirWellCurrentWorkers(idx))-1, 0));
   }
   private static int readIslandInfoX() throws GameActionException {
-    return ((rc.readSharedArray(29) & 3) << 4) + ((rc.readSharedArray(30) & 61440) >>> 12);
+    return (rc.readSharedArray(30) & 252) >>> 2;
   }
 
   private static void writeIslandInfoX(int value) throws GameActionException {
-    rc.writeSharedArray(29, (rc.readSharedArray(29) & 65532) | ((value & 48) >>> 4));
-    rc.writeSharedArray(30, (rc.readSharedArray(30) & 4095) | ((value & 15) << 12));
+    rc.writeSharedArray(30, (rc.readSharedArray(30) & 65283) | (value << 2));
   }
 
   private static int readIslandInfoY() throws GameActionException {
-    return (rc.readSharedArray(30) & 4032) >>> 6;
+    return ((rc.readSharedArray(30) & 3) << 4) + ((rc.readSharedArray(31) & 61440) >>> 12);
   }
 
   private static void writeIslandInfoY(int value) throws GameActionException {
-    rc.writeSharedArray(30, (rc.readSharedArray(30) & 61503) | (value << 6));
+    rc.writeSharedArray(30, (rc.readSharedArray(30) & 65532) | ((value & 48) >>> 4));
+    rc.writeSharedArray(31, (rc.readSharedArray(31) & 4095) | ((value & 15) << 12));
   }
 
   public static int readIslandInfoOwner() throws GameActionException {
-    return (rc.readSharedArray(30) & 48) >>> 4;
+    return (rc.readSharedArray(31) & 3072) >>> 10;
   }
 
   public static void writeIslandInfoOwner(int value) throws GameActionException {
-    rc.writeSharedArray(30, (rc.readSharedArray(30) & 65487) | (value << 4));
+    rc.writeSharedArray(31, (rc.readSharedArray(31) & 62463) | (value << 10));
   }
 
   public static int readIslandInfoRoundNum() throws GameActionException {
-    return ((rc.readSharedArray(30) & 15) << 7) + ((rc.readSharedArray(31) & 65024) >>> 9);
+    return ((rc.readSharedArray(31) & 1023) << 1) + ((rc.readSharedArray(32) & 32768) >>> 15);
   }
 
   public static void writeIslandInfoRoundNum(int value) throws GameActionException {
-    rc.writeSharedArray(30, (rc.readSharedArray(30) & 65520) | ((value & 1920) >>> 7));
-    rc.writeSharedArray(31, (rc.readSharedArray(31) & 511) | ((value & 127) << 9));
+    rc.writeSharedArray(31, (rc.readSharedArray(31) & 64512) | ((value & 2046) >>> 1));
+    rc.writeSharedArray(32, (rc.readSharedArray(32) & 32767) | ((value & 1) << 15));
   }
 
   public static int readIslandInfoIslandId() throws GameActionException {
-    return (rc.readSharedArray(31) & 504) >>> 3;
+    return (rc.readSharedArray(32) & 32256) >>> 9;
   }
 
   public static void writeIslandInfoIslandId(int value) throws GameActionException {
-    rc.writeSharedArray(31, (rc.readSharedArray(31) & 65031) | (value << 3));
+    rc.writeSharedArray(32, (rc.readSharedArray(32) & 33279) | (value << 9));
   }
 
   public static MapLocation readIslandInfoLocation() throws GameActionException {
@@ -1167,20 +1211,20 @@ public class CommsHandler {
     writeIslandInfoY((value).y+1);
   }
   private static int readNextIslandToClaimX() throws GameActionException {
-    return ((rc.readSharedArray(31) & 7) << 3) + ((rc.readSharedArray(32) & 57344) >>> 13);
+    return (rc.readSharedArray(32) & 504) >>> 3;
   }
 
   private static void writeNextIslandToClaimX(int value) throws GameActionException {
-    rc.writeSharedArray(31, (rc.readSharedArray(31) & 65528) | ((value & 56) >>> 3));
-    rc.writeSharedArray(32, (rc.readSharedArray(32) & 8191) | ((value & 7) << 13));
+    rc.writeSharedArray(32, (rc.readSharedArray(32) & 65031) | (value << 3));
   }
 
   private static int readNextIslandToClaimY() throws GameActionException {
-    return (rc.readSharedArray(32) & 8064) >>> 7;
+    return ((rc.readSharedArray(32) & 7) << 3) + ((rc.readSharedArray(33) & 57344) >>> 13);
   }
 
   private static void writeNextIslandToClaimY(int value) throws GameActionException {
-    rc.writeSharedArray(32, (rc.readSharedArray(32) & 57471) | (value << 7));
+    rc.writeSharedArray(32, (rc.readSharedArray(32) & 65528) | ((value & 56) >>> 3));
+    rc.writeSharedArray(33, (rc.readSharedArray(33) & 8191) | ((value & 7) << 13));
   }
 
   public static MapLocation readNextIslandToClaimLocation() throws GameActionException {
@@ -1194,36 +1238,36 @@ public class CommsHandler {
     writeNextIslandToClaimY((value).y+1);
   }
   private static int readMyIslandsX() throws GameActionException {
-    return (rc.readSharedArray(32) & 126) >>> 1;
+    return (rc.readSharedArray(33) & 8064) >>> 7;
   }
 
   private static void writeMyIslandsX(int value) throws GameActionException {
-    rc.writeSharedArray(32, (rc.readSharedArray(32) & 65409) | (value << 1));
+    rc.writeSharedArray(33, (rc.readSharedArray(33) & 57471) | (value << 7));
   }
 
   private static int readMyIslandsY() throws GameActionException {
-    return ((rc.readSharedArray(32) & 1) << 5) + ((rc.readSharedArray(33) & 63488) >>> 11);
+    return (rc.readSharedArray(33) & 126) >>> 1;
   }
 
   private static void writeMyIslandsY(int value) throws GameActionException {
-    rc.writeSharedArray(32, (rc.readSharedArray(32) & 65534) | ((value & 32) >>> 5));
-    rc.writeSharedArray(33, (rc.readSharedArray(33) & 2047) | ((value & 31) << 11));
+    rc.writeSharedArray(33, (rc.readSharedArray(33) & 65409) | (value << 1));
   }
 
   public static int readMyIslandsRoundNum() throws GameActionException {
-    return (rc.readSharedArray(33) & 2047);
+    return ((rc.readSharedArray(33) & 1) << 10) + ((rc.readSharedArray(34) & 65472) >>> 6);
   }
 
   public static void writeMyIslandsRoundNum(int value) throws GameActionException {
-    rc.writeSharedArray(33, (rc.readSharedArray(33) & 63488) | (value));
+    rc.writeSharedArray(33, (rc.readSharedArray(33) & 65534) | ((value & 1024) >>> 10));
+    rc.writeSharedArray(34, (rc.readSharedArray(34) & 63) | ((value & 1023) << 6));
   }
 
   public static int readMyIslandsIslandId() throws GameActionException {
-    return (rc.readSharedArray(34) & 64512) >>> 10;
+    return (rc.readSharedArray(34) & 63);
   }
 
   public static void writeMyIslandsIslandId(int value) throws GameActionException {
-    rc.writeSharedArray(34, (rc.readSharedArray(34) & 1023) | (value << 10));
+    rc.writeSharedArray(34, (rc.readSharedArray(34) & 65472) | (value));
   }
 
   public static MapLocation readMyIslandsLocation() throws GameActionException {
@@ -1239,43 +1283,43 @@ public class CommsHandler {
   private static int readEnemyOddX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(34) & 1008) >>> 4;
+          return (rc.readSharedArray(35) & 64512) >>> 10;
       case 1:
-          return ((rc.readSharedArray(35) & 3) << 4) + ((rc.readSharedArray(36) & 61440) >>> 12);
+          return (rc.readSharedArray(36) & 252) >>> 2;
       case 2:
-          return (rc.readSharedArray(37) & 1008) >>> 4;
+          return (rc.readSharedArray(38) & 64512) >>> 10;
       case 3:
-          return ((rc.readSharedArray(38) & 3) << 4) + ((rc.readSharedArray(39) & 61440) >>> 12);
+          return (rc.readSharedArray(39) & 252) >>> 2;
       case 4:
-          return (rc.readSharedArray(40) & 1008) >>> 4;
+          return (rc.readSharedArray(41) & 64512) >>> 10;
       case 5:
-          return ((rc.readSharedArray(41) & 3) << 4) + ((rc.readSharedArray(42) & 61440) >>> 12);
+          return (rc.readSharedArray(42) & 252) >>> 2;
       case 6:
-          return (rc.readSharedArray(43) & 1008) >>> 4;
+          return (rc.readSharedArray(44) & 64512) >>> 10;
       case 7:
-          return ((rc.readSharedArray(44) & 3) << 4) + ((rc.readSharedArray(45) & 61440) >>> 12);
+          return (rc.readSharedArray(45) & 252) >>> 2;
       case 8:
-          return (rc.readSharedArray(46) & 1008) >>> 4;
+          return (rc.readSharedArray(47) & 64512) >>> 10;
       case 9:
-          return ((rc.readSharedArray(47) & 3) << 4) + ((rc.readSharedArray(48) & 61440) >>> 12);
+          return (rc.readSharedArray(48) & 252) >>> 2;
       case 10:
-          return (rc.readSharedArray(49) & 1008) >>> 4;
+          return (rc.readSharedArray(50) & 64512) >>> 10;
       case 11:
-          return ((rc.readSharedArray(50) & 3) << 4) + ((rc.readSharedArray(51) & 61440) >>> 12);
+          return (rc.readSharedArray(51) & 252) >>> 2;
       case 12:
-          return (rc.readSharedArray(52) & 1008) >>> 4;
+          return (rc.readSharedArray(53) & 64512) >>> 10;
       case 13:
-          return ((rc.readSharedArray(53) & 3) << 4) + ((rc.readSharedArray(54) & 61440) >>> 12);
+          return (rc.readSharedArray(54) & 252) >>> 2;
       case 14:
-          return (rc.readSharedArray(55) & 1008) >>> 4;
+          return (rc.readSharedArray(56) & 64512) >>> 10;
       case 15:
-          return ((rc.readSharedArray(56) & 3) << 4) + ((rc.readSharedArray(57) & 61440) >>> 12);
+          return (rc.readSharedArray(57) & 252) >>> 2;
       case 16:
-          return (rc.readSharedArray(58) & 1008) >>> 4;
+          return (rc.readSharedArray(59) & 64512) >>> 10;
       case 17:
-          return ((rc.readSharedArray(59) & 3) << 4) + ((rc.readSharedArray(60) & 61440) >>> 12);
+          return (rc.readSharedArray(60) & 252) >>> 2;
       case 18:
-          return (rc.readSharedArray(61) & 1008) >>> 4;
+          return (rc.readSharedArray(62) & 64512) >>> 10;
       default:
           return -1;
     }
@@ -1284,70 +1328,61 @@ public class CommsHandler {
   private static void writeEnemyOddX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(34, (rc.readSharedArray(34) & 64527) | (value << 4));
+        rc.writeSharedArray(35, (rc.readSharedArray(35) & 1023) | (value << 10));
         break;
       case 1:
-        rc.writeSharedArray(35, (rc.readSharedArray(35) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(36, (rc.readSharedArray(36) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(36, (rc.readSharedArray(36) & 65283) | (value << 2));
         break;
       case 2:
-        rc.writeSharedArray(37, (rc.readSharedArray(37) & 64527) | (value << 4));
+        rc.writeSharedArray(38, (rc.readSharedArray(38) & 1023) | (value << 10));
         break;
       case 3:
-        rc.writeSharedArray(38, (rc.readSharedArray(38) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(39, (rc.readSharedArray(39) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(39, (rc.readSharedArray(39) & 65283) | (value << 2));
         break;
       case 4:
-        rc.writeSharedArray(40, (rc.readSharedArray(40) & 64527) | (value << 4));
+        rc.writeSharedArray(41, (rc.readSharedArray(41) & 1023) | (value << 10));
         break;
       case 5:
-        rc.writeSharedArray(41, (rc.readSharedArray(41) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(42, (rc.readSharedArray(42) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(42, (rc.readSharedArray(42) & 65283) | (value << 2));
         break;
       case 6:
-        rc.writeSharedArray(43, (rc.readSharedArray(43) & 64527) | (value << 4));
+        rc.writeSharedArray(44, (rc.readSharedArray(44) & 1023) | (value << 10));
         break;
       case 7:
-        rc.writeSharedArray(44, (rc.readSharedArray(44) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(45, (rc.readSharedArray(45) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(45, (rc.readSharedArray(45) & 65283) | (value << 2));
         break;
       case 8:
-        rc.writeSharedArray(46, (rc.readSharedArray(46) & 64527) | (value << 4));
+        rc.writeSharedArray(47, (rc.readSharedArray(47) & 1023) | (value << 10));
         break;
       case 9:
-        rc.writeSharedArray(47, (rc.readSharedArray(47) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(48, (rc.readSharedArray(48) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(48, (rc.readSharedArray(48) & 65283) | (value << 2));
         break;
       case 10:
-        rc.writeSharedArray(49, (rc.readSharedArray(49) & 64527) | (value << 4));
+        rc.writeSharedArray(50, (rc.readSharedArray(50) & 1023) | (value << 10));
         break;
       case 11:
-        rc.writeSharedArray(50, (rc.readSharedArray(50) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(51, (rc.readSharedArray(51) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(51, (rc.readSharedArray(51) & 65283) | (value << 2));
         break;
       case 12:
-        rc.writeSharedArray(52, (rc.readSharedArray(52) & 64527) | (value << 4));
+        rc.writeSharedArray(53, (rc.readSharedArray(53) & 1023) | (value << 10));
         break;
       case 13:
-        rc.writeSharedArray(53, (rc.readSharedArray(53) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(54, (rc.readSharedArray(54) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65283) | (value << 2));
         break;
       case 14:
-        rc.writeSharedArray(55, (rc.readSharedArray(55) & 64527) | (value << 4));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 1023) | (value << 10));
         break;
       case 15:
-        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(57, (rc.readSharedArray(57) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(57, (rc.readSharedArray(57) & 65283) | (value << 2));
         break;
       case 16:
-        rc.writeSharedArray(58, (rc.readSharedArray(58) & 64527) | (value << 4));
+        rc.writeSharedArray(59, (rc.readSharedArray(59) & 1023) | (value << 10));
         break;
       case 17:
-        rc.writeSharedArray(59, (rc.readSharedArray(59) & 65532) | ((value & 48) >>> 4));
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 4095) | ((value & 15) << 12));
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 65283) | (value << 2));
         break;
       case 18:
-        rc.writeSharedArray(61, (rc.readSharedArray(61) & 64527) | (value << 4));
+        rc.writeSharedArray(62, (rc.readSharedArray(62) & 1023) | (value << 10));
         break;
     }
   }
@@ -1355,43 +1390,43 @@ public class CommsHandler {
   private static int readEnemyOddY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return ((rc.readSharedArray(34) & 15) << 2) + ((rc.readSharedArray(35) & 49152) >>> 14);
+          return (rc.readSharedArray(35) & 1008) >>> 4;
       case 1:
-          return (rc.readSharedArray(36) & 4032) >>> 6;
+          return ((rc.readSharedArray(36) & 3) << 4) + ((rc.readSharedArray(37) & 61440) >>> 12);
       case 2:
-          return ((rc.readSharedArray(37) & 15) << 2) + ((rc.readSharedArray(38) & 49152) >>> 14);
+          return (rc.readSharedArray(38) & 1008) >>> 4;
       case 3:
-          return (rc.readSharedArray(39) & 4032) >>> 6;
+          return ((rc.readSharedArray(39) & 3) << 4) + ((rc.readSharedArray(40) & 61440) >>> 12);
       case 4:
-          return ((rc.readSharedArray(40) & 15) << 2) + ((rc.readSharedArray(41) & 49152) >>> 14);
+          return (rc.readSharedArray(41) & 1008) >>> 4;
       case 5:
-          return (rc.readSharedArray(42) & 4032) >>> 6;
+          return ((rc.readSharedArray(42) & 3) << 4) + ((rc.readSharedArray(43) & 61440) >>> 12);
       case 6:
-          return ((rc.readSharedArray(43) & 15) << 2) + ((rc.readSharedArray(44) & 49152) >>> 14);
+          return (rc.readSharedArray(44) & 1008) >>> 4;
       case 7:
-          return (rc.readSharedArray(45) & 4032) >>> 6;
+          return ((rc.readSharedArray(45) & 3) << 4) + ((rc.readSharedArray(46) & 61440) >>> 12);
       case 8:
-          return ((rc.readSharedArray(46) & 15) << 2) + ((rc.readSharedArray(47) & 49152) >>> 14);
+          return (rc.readSharedArray(47) & 1008) >>> 4;
       case 9:
-          return (rc.readSharedArray(48) & 4032) >>> 6;
+          return ((rc.readSharedArray(48) & 3) << 4) + ((rc.readSharedArray(49) & 61440) >>> 12);
       case 10:
-          return ((rc.readSharedArray(49) & 15) << 2) + ((rc.readSharedArray(50) & 49152) >>> 14);
+          return (rc.readSharedArray(50) & 1008) >>> 4;
       case 11:
-          return (rc.readSharedArray(51) & 4032) >>> 6;
+          return ((rc.readSharedArray(51) & 3) << 4) + ((rc.readSharedArray(52) & 61440) >>> 12);
       case 12:
-          return ((rc.readSharedArray(52) & 15) << 2) + ((rc.readSharedArray(53) & 49152) >>> 14);
+          return (rc.readSharedArray(53) & 1008) >>> 4;
       case 13:
-          return (rc.readSharedArray(54) & 4032) >>> 6;
+          return ((rc.readSharedArray(54) & 3) << 4) + ((rc.readSharedArray(55) & 61440) >>> 12);
       case 14:
-          return ((rc.readSharedArray(55) & 15) << 2) + ((rc.readSharedArray(56) & 49152) >>> 14);
+          return (rc.readSharedArray(56) & 1008) >>> 4;
       case 15:
-          return (rc.readSharedArray(57) & 4032) >>> 6;
+          return ((rc.readSharedArray(57) & 3) << 4) + ((rc.readSharedArray(58) & 61440) >>> 12);
       case 16:
-          return ((rc.readSharedArray(58) & 15) << 2) + ((rc.readSharedArray(59) & 49152) >>> 14);
+          return (rc.readSharedArray(59) & 1008) >>> 4;
       case 17:
-          return (rc.readSharedArray(60) & 4032) >>> 6;
+          return ((rc.readSharedArray(60) & 3) << 4) + ((rc.readSharedArray(61) & 61440) >>> 12);
       case 18:
-          return ((rc.readSharedArray(61) & 15) << 2) + ((rc.readSharedArray(62) & 49152) >>> 14);
+          return (rc.readSharedArray(62) & 1008) >>> 4;
       default:
           return -1;
     }
@@ -1400,71 +1435,70 @@ public class CommsHandler {
   private static void writeEnemyOddY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(34, (rc.readSharedArray(34) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(35, (rc.readSharedArray(35) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(35, (rc.readSharedArray(35) & 64527) | (value << 4));
         break;
       case 1:
-        rc.writeSharedArray(36, (rc.readSharedArray(36) & 61503) | (value << 6));
+        rc.writeSharedArray(36, (rc.readSharedArray(36) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(37, (rc.readSharedArray(37) & 4095) | ((value & 15) << 12));
         break;
       case 2:
-        rc.writeSharedArray(37, (rc.readSharedArray(37) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(38, (rc.readSharedArray(38) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(38, (rc.readSharedArray(38) & 64527) | (value << 4));
         break;
       case 3:
-        rc.writeSharedArray(39, (rc.readSharedArray(39) & 61503) | (value << 6));
+        rc.writeSharedArray(39, (rc.readSharedArray(39) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(40, (rc.readSharedArray(40) & 4095) | ((value & 15) << 12));
         break;
       case 4:
-        rc.writeSharedArray(40, (rc.readSharedArray(40) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(41, (rc.readSharedArray(41) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(41, (rc.readSharedArray(41) & 64527) | (value << 4));
         break;
       case 5:
-        rc.writeSharedArray(42, (rc.readSharedArray(42) & 61503) | (value << 6));
+        rc.writeSharedArray(42, (rc.readSharedArray(42) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(43, (rc.readSharedArray(43) & 4095) | ((value & 15) << 12));
         break;
       case 6:
-        rc.writeSharedArray(43, (rc.readSharedArray(43) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(44, (rc.readSharedArray(44) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(44, (rc.readSharedArray(44) & 64527) | (value << 4));
         break;
       case 7:
-        rc.writeSharedArray(45, (rc.readSharedArray(45) & 61503) | (value << 6));
+        rc.writeSharedArray(45, (rc.readSharedArray(45) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(46, (rc.readSharedArray(46) & 4095) | ((value & 15) << 12));
         break;
       case 8:
-        rc.writeSharedArray(46, (rc.readSharedArray(46) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(47, (rc.readSharedArray(47) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(47, (rc.readSharedArray(47) & 64527) | (value << 4));
         break;
       case 9:
-        rc.writeSharedArray(48, (rc.readSharedArray(48) & 61503) | (value << 6));
+        rc.writeSharedArray(48, (rc.readSharedArray(48) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(49, (rc.readSharedArray(49) & 4095) | ((value & 15) << 12));
         break;
       case 10:
-        rc.writeSharedArray(49, (rc.readSharedArray(49) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(50, (rc.readSharedArray(50) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(50, (rc.readSharedArray(50) & 64527) | (value << 4));
         break;
       case 11:
-        rc.writeSharedArray(51, (rc.readSharedArray(51) & 61503) | (value << 6));
+        rc.writeSharedArray(51, (rc.readSharedArray(51) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(52, (rc.readSharedArray(52) & 4095) | ((value & 15) << 12));
         break;
       case 12:
-        rc.writeSharedArray(52, (rc.readSharedArray(52) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(53, (rc.readSharedArray(53) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(53, (rc.readSharedArray(53) & 64527) | (value << 4));
         break;
       case 13:
-        rc.writeSharedArray(54, (rc.readSharedArray(54) & 61503) | (value << 6));
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(55, (rc.readSharedArray(55) & 4095) | ((value & 15) << 12));
         break;
       case 14:
-        rc.writeSharedArray(55, (rc.readSharedArray(55) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(56, (rc.readSharedArray(56) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 64527) | (value << 4));
         break;
       case 15:
-        rc.writeSharedArray(57, (rc.readSharedArray(57) & 61503) | (value << 6));
+        rc.writeSharedArray(57, (rc.readSharedArray(57) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(58, (rc.readSharedArray(58) & 4095) | ((value & 15) << 12));
         break;
       case 16:
-        rc.writeSharedArray(58, (rc.readSharedArray(58) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(59, (rc.readSharedArray(59) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(59, (rc.readSharedArray(59) & 64527) | (value << 4));
         break;
       case 17:
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 61503) | (value << 6));
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 65532) | ((value & 48) >>> 4));
+        rc.writeSharedArray(61, (rc.readSharedArray(61) & 4095) | ((value & 15) << 12));
         break;
       case 18:
-        rc.writeSharedArray(61, (rc.readSharedArray(61) & 65520) | ((value & 60) >>> 2));
-        rc.writeSharedArray(62, (rc.readSharedArray(62) & 16383) | ((value & 3) << 14));
+        rc.writeSharedArray(62, (rc.readSharedArray(62) & 64527) | (value << 4));
         break;
     }
   }
@@ -1472,43 +1506,43 @@ public class CommsHandler {
   private static int readEnemyEvenX(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(35) & 16128) >>> 8;
+          return ((rc.readSharedArray(35) & 15) << 2) + ((rc.readSharedArray(36) & 49152) >>> 14);
       case 1:
-          return (rc.readSharedArray(36) & 63);
+          return (rc.readSharedArray(37) & 4032) >>> 6;
       case 2:
-          return (rc.readSharedArray(38) & 16128) >>> 8;
+          return ((rc.readSharedArray(38) & 15) << 2) + ((rc.readSharedArray(39) & 49152) >>> 14);
       case 3:
-          return (rc.readSharedArray(39) & 63);
+          return (rc.readSharedArray(40) & 4032) >>> 6;
       case 4:
-          return (rc.readSharedArray(41) & 16128) >>> 8;
+          return ((rc.readSharedArray(41) & 15) << 2) + ((rc.readSharedArray(42) & 49152) >>> 14);
       case 5:
-          return (rc.readSharedArray(42) & 63);
+          return (rc.readSharedArray(43) & 4032) >>> 6;
       case 6:
-          return (rc.readSharedArray(44) & 16128) >>> 8;
+          return ((rc.readSharedArray(44) & 15) << 2) + ((rc.readSharedArray(45) & 49152) >>> 14);
       case 7:
-          return (rc.readSharedArray(45) & 63);
+          return (rc.readSharedArray(46) & 4032) >>> 6;
       case 8:
-          return (rc.readSharedArray(47) & 16128) >>> 8;
+          return ((rc.readSharedArray(47) & 15) << 2) + ((rc.readSharedArray(48) & 49152) >>> 14);
       case 9:
-          return (rc.readSharedArray(48) & 63);
+          return (rc.readSharedArray(49) & 4032) >>> 6;
       case 10:
-          return (rc.readSharedArray(50) & 16128) >>> 8;
+          return ((rc.readSharedArray(50) & 15) << 2) + ((rc.readSharedArray(51) & 49152) >>> 14);
       case 11:
-          return (rc.readSharedArray(51) & 63);
+          return (rc.readSharedArray(52) & 4032) >>> 6;
       case 12:
-          return (rc.readSharedArray(53) & 16128) >>> 8;
+          return ((rc.readSharedArray(53) & 15) << 2) + ((rc.readSharedArray(54) & 49152) >>> 14);
       case 13:
-          return (rc.readSharedArray(54) & 63);
+          return (rc.readSharedArray(55) & 4032) >>> 6;
       case 14:
-          return (rc.readSharedArray(56) & 16128) >>> 8;
+          return ((rc.readSharedArray(56) & 15) << 2) + ((rc.readSharedArray(57) & 49152) >>> 14);
       case 15:
-          return (rc.readSharedArray(57) & 63);
+          return (rc.readSharedArray(58) & 4032) >>> 6;
       case 16:
-          return (rc.readSharedArray(59) & 16128) >>> 8;
+          return ((rc.readSharedArray(59) & 15) << 2) + ((rc.readSharedArray(60) & 49152) >>> 14);
       case 17:
-          return (rc.readSharedArray(60) & 63);
+          return (rc.readSharedArray(61) & 4032) >>> 6;
       case 18:
-          return (rc.readSharedArray(62) & 16128) >>> 8;
+          return ((rc.readSharedArray(62) & 15) << 2) + ((rc.readSharedArray(63) & 49152) >>> 14);
       default:
           return -1;
     }
@@ -1517,61 +1551,71 @@ public class CommsHandler {
   private static void writeEnemyEvenX(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(35, (rc.readSharedArray(35) & 49407) | (value << 8));
+        rc.writeSharedArray(35, (rc.readSharedArray(35) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(36, (rc.readSharedArray(36) & 16383) | ((value & 3) << 14));
         break;
       case 1:
-        rc.writeSharedArray(36, (rc.readSharedArray(36) & 65472) | (value));
+        rc.writeSharedArray(37, (rc.readSharedArray(37) & 61503) | (value << 6));
         break;
       case 2:
-        rc.writeSharedArray(38, (rc.readSharedArray(38) & 49407) | (value << 8));
+        rc.writeSharedArray(38, (rc.readSharedArray(38) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(39, (rc.readSharedArray(39) & 16383) | ((value & 3) << 14));
         break;
       case 3:
-        rc.writeSharedArray(39, (rc.readSharedArray(39) & 65472) | (value));
+        rc.writeSharedArray(40, (rc.readSharedArray(40) & 61503) | (value << 6));
         break;
       case 4:
-        rc.writeSharedArray(41, (rc.readSharedArray(41) & 49407) | (value << 8));
+        rc.writeSharedArray(41, (rc.readSharedArray(41) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(42, (rc.readSharedArray(42) & 16383) | ((value & 3) << 14));
         break;
       case 5:
-        rc.writeSharedArray(42, (rc.readSharedArray(42) & 65472) | (value));
+        rc.writeSharedArray(43, (rc.readSharedArray(43) & 61503) | (value << 6));
         break;
       case 6:
-        rc.writeSharedArray(44, (rc.readSharedArray(44) & 49407) | (value << 8));
+        rc.writeSharedArray(44, (rc.readSharedArray(44) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(45, (rc.readSharedArray(45) & 16383) | ((value & 3) << 14));
         break;
       case 7:
-        rc.writeSharedArray(45, (rc.readSharedArray(45) & 65472) | (value));
+        rc.writeSharedArray(46, (rc.readSharedArray(46) & 61503) | (value << 6));
         break;
       case 8:
-        rc.writeSharedArray(47, (rc.readSharedArray(47) & 49407) | (value << 8));
+        rc.writeSharedArray(47, (rc.readSharedArray(47) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(48, (rc.readSharedArray(48) & 16383) | ((value & 3) << 14));
         break;
       case 9:
-        rc.writeSharedArray(48, (rc.readSharedArray(48) & 65472) | (value));
+        rc.writeSharedArray(49, (rc.readSharedArray(49) & 61503) | (value << 6));
         break;
       case 10:
-        rc.writeSharedArray(50, (rc.readSharedArray(50) & 49407) | (value << 8));
+        rc.writeSharedArray(50, (rc.readSharedArray(50) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(51, (rc.readSharedArray(51) & 16383) | ((value & 3) << 14));
         break;
       case 11:
-        rc.writeSharedArray(51, (rc.readSharedArray(51) & 65472) | (value));
+        rc.writeSharedArray(52, (rc.readSharedArray(52) & 61503) | (value << 6));
         break;
       case 12:
-        rc.writeSharedArray(53, (rc.readSharedArray(53) & 49407) | (value << 8));
+        rc.writeSharedArray(53, (rc.readSharedArray(53) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 16383) | ((value & 3) << 14));
         break;
       case 13:
-        rc.writeSharedArray(54, (rc.readSharedArray(54) & 65472) | (value));
+        rc.writeSharedArray(55, (rc.readSharedArray(55) & 61503) | (value << 6));
         break;
       case 14:
-        rc.writeSharedArray(56, (rc.readSharedArray(56) & 49407) | (value << 8));
+        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(57, (rc.readSharedArray(57) & 16383) | ((value & 3) << 14));
         break;
       case 15:
-        rc.writeSharedArray(57, (rc.readSharedArray(57) & 65472) | (value));
+        rc.writeSharedArray(58, (rc.readSharedArray(58) & 61503) | (value << 6));
         break;
       case 16:
-        rc.writeSharedArray(59, (rc.readSharedArray(59) & 49407) | (value << 8));
+        rc.writeSharedArray(59, (rc.readSharedArray(59) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 16383) | ((value & 3) << 14));
         break;
       case 17:
-        rc.writeSharedArray(60, (rc.readSharedArray(60) & 65472) | (value));
+        rc.writeSharedArray(61, (rc.readSharedArray(61) & 61503) | (value << 6));
         break;
       case 18:
-        rc.writeSharedArray(62, (rc.readSharedArray(62) & 49407) | (value << 8));
+        rc.writeSharedArray(62, (rc.readSharedArray(62) & 65520) | ((value & 60) >>> 2));
+        rc.writeSharedArray(63, (rc.readSharedArray(63) & 16383) | ((value & 3) << 14));
         break;
     }
   }
@@ -1579,43 +1623,43 @@ public class CommsHandler {
   private static int readEnemyEvenY(int idx) throws GameActionException {
     switch (idx) {
       case 0:
-          return (rc.readSharedArray(35) & 252) >>> 2;
+          return (rc.readSharedArray(36) & 16128) >>> 8;
       case 1:
-          return (rc.readSharedArray(37) & 64512) >>> 10;
+          return (rc.readSharedArray(37) & 63);
       case 2:
-          return (rc.readSharedArray(38) & 252) >>> 2;
+          return (rc.readSharedArray(39) & 16128) >>> 8;
       case 3:
-          return (rc.readSharedArray(40) & 64512) >>> 10;
+          return (rc.readSharedArray(40) & 63);
       case 4:
-          return (rc.readSharedArray(41) & 252) >>> 2;
+          return (rc.readSharedArray(42) & 16128) >>> 8;
       case 5:
-          return (rc.readSharedArray(43) & 64512) >>> 10;
+          return (rc.readSharedArray(43) & 63);
       case 6:
-          return (rc.readSharedArray(44) & 252) >>> 2;
+          return (rc.readSharedArray(45) & 16128) >>> 8;
       case 7:
-          return (rc.readSharedArray(46) & 64512) >>> 10;
+          return (rc.readSharedArray(46) & 63);
       case 8:
-          return (rc.readSharedArray(47) & 252) >>> 2;
+          return (rc.readSharedArray(48) & 16128) >>> 8;
       case 9:
-          return (rc.readSharedArray(49) & 64512) >>> 10;
+          return (rc.readSharedArray(49) & 63);
       case 10:
-          return (rc.readSharedArray(50) & 252) >>> 2;
+          return (rc.readSharedArray(51) & 16128) >>> 8;
       case 11:
-          return (rc.readSharedArray(52) & 64512) >>> 10;
+          return (rc.readSharedArray(52) & 63);
       case 12:
-          return (rc.readSharedArray(53) & 252) >>> 2;
+          return (rc.readSharedArray(54) & 16128) >>> 8;
       case 13:
-          return (rc.readSharedArray(55) & 64512) >>> 10;
+          return (rc.readSharedArray(55) & 63);
       case 14:
-          return (rc.readSharedArray(56) & 252) >>> 2;
+          return (rc.readSharedArray(57) & 16128) >>> 8;
       case 15:
-          return (rc.readSharedArray(58) & 64512) >>> 10;
+          return (rc.readSharedArray(58) & 63);
       case 16:
-          return (rc.readSharedArray(59) & 252) >>> 2;
+          return (rc.readSharedArray(60) & 16128) >>> 8;
       case 17:
-          return (rc.readSharedArray(61) & 64512) >>> 10;
+          return (rc.readSharedArray(61) & 63);
       case 18:
-          return (rc.readSharedArray(62) & 252) >>> 2;
+          return (rc.readSharedArray(63) & 16128) >>> 8;
       default:
           return -1;
     }
@@ -1624,61 +1668,61 @@ public class CommsHandler {
   private static void writeEnemyEvenY(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
-        rc.writeSharedArray(35, (rc.readSharedArray(35) & 65283) | (value << 2));
+        rc.writeSharedArray(36, (rc.readSharedArray(36) & 49407) | (value << 8));
         break;
       case 1:
-        rc.writeSharedArray(37, (rc.readSharedArray(37) & 1023) | (value << 10));
+        rc.writeSharedArray(37, (rc.readSharedArray(37) & 65472) | (value));
         break;
       case 2:
-        rc.writeSharedArray(38, (rc.readSharedArray(38) & 65283) | (value << 2));
+        rc.writeSharedArray(39, (rc.readSharedArray(39) & 49407) | (value << 8));
         break;
       case 3:
-        rc.writeSharedArray(40, (rc.readSharedArray(40) & 1023) | (value << 10));
+        rc.writeSharedArray(40, (rc.readSharedArray(40) & 65472) | (value));
         break;
       case 4:
-        rc.writeSharedArray(41, (rc.readSharedArray(41) & 65283) | (value << 2));
+        rc.writeSharedArray(42, (rc.readSharedArray(42) & 49407) | (value << 8));
         break;
       case 5:
-        rc.writeSharedArray(43, (rc.readSharedArray(43) & 1023) | (value << 10));
+        rc.writeSharedArray(43, (rc.readSharedArray(43) & 65472) | (value));
         break;
       case 6:
-        rc.writeSharedArray(44, (rc.readSharedArray(44) & 65283) | (value << 2));
+        rc.writeSharedArray(45, (rc.readSharedArray(45) & 49407) | (value << 8));
         break;
       case 7:
-        rc.writeSharedArray(46, (rc.readSharedArray(46) & 1023) | (value << 10));
+        rc.writeSharedArray(46, (rc.readSharedArray(46) & 65472) | (value));
         break;
       case 8:
-        rc.writeSharedArray(47, (rc.readSharedArray(47) & 65283) | (value << 2));
+        rc.writeSharedArray(48, (rc.readSharedArray(48) & 49407) | (value << 8));
         break;
       case 9:
-        rc.writeSharedArray(49, (rc.readSharedArray(49) & 1023) | (value << 10));
+        rc.writeSharedArray(49, (rc.readSharedArray(49) & 65472) | (value));
         break;
       case 10:
-        rc.writeSharedArray(50, (rc.readSharedArray(50) & 65283) | (value << 2));
+        rc.writeSharedArray(51, (rc.readSharedArray(51) & 49407) | (value << 8));
         break;
       case 11:
-        rc.writeSharedArray(52, (rc.readSharedArray(52) & 1023) | (value << 10));
+        rc.writeSharedArray(52, (rc.readSharedArray(52) & 65472) | (value));
         break;
       case 12:
-        rc.writeSharedArray(53, (rc.readSharedArray(53) & 65283) | (value << 2));
+        rc.writeSharedArray(54, (rc.readSharedArray(54) & 49407) | (value << 8));
         break;
       case 13:
-        rc.writeSharedArray(55, (rc.readSharedArray(55) & 1023) | (value << 10));
+        rc.writeSharedArray(55, (rc.readSharedArray(55) & 65472) | (value));
         break;
       case 14:
-        rc.writeSharedArray(56, (rc.readSharedArray(56) & 65283) | (value << 2));
+        rc.writeSharedArray(57, (rc.readSharedArray(57) & 49407) | (value << 8));
         break;
       case 15:
-        rc.writeSharedArray(58, (rc.readSharedArray(58) & 1023) | (value << 10));
+        rc.writeSharedArray(58, (rc.readSharedArray(58) & 65472) | (value));
         break;
       case 16:
-        rc.writeSharedArray(59, (rc.readSharedArray(59) & 65283) | (value << 2));
+        rc.writeSharedArray(60, (rc.readSharedArray(60) & 49407) | (value << 8));
         break;
       case 17:
-        rc.writeSharedArray(61, (rc.readSharedArray(61) & 1023) | (value << 10));
+        rc.writeSharedArray(61, (rc.readSharedArray(61) & 65472) | (value));
         break;
       case 18:
-        rc.writeSharedArray(62, (rc.readSharedArray(62) & 65283) | (value << 2));
+        rc.writeSharedArray(63, (rc.readSharedArray(63) & 49407) | (value << 8));
         break;
     }
   }
