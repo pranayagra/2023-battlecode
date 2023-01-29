@@ -134,7 +134,7 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 300) rc.resign();
+    if (Cache.PerTurn.ROUND_NUM >= 300) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
@@ -197,9 +197,8 @@ public class HeadQuarters extends Robot {
 
   private void setDefaultIndicatorString() throws GameActionException {
     String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
-    indString += ";kSymm:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
+    indString += ";kSym:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
     rc.setIndicatorString(indString);
-
   }
   /**
    * Handles the resource income information. Does the following actions:

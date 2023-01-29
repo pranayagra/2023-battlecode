@@ -3,6 +3,7 @@ package basicbot.robots;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
+import basicbot.containers.CharSet;
 import basicbot.containers.HashMap;
 import basicbot.containers.HashSet;
 import basicbot.knowledge.RunningMemory;
@@ -38,8 +39,9 @@ public class Carrier extends MobileRobot {
 
 
   private int turnsStuckApproachingWell;
+//  private final Direction[] directions_storage = new Direction[8];
   private final HashMap<MapLocation, Direction> wellApproachDirection;
-  private final HashSet<MapLocation> blackListWells;
+  private final CharSet blackListWells;
   private MapLocation[] wellQueueOrder;
   private MapLocation wellEntryPoint;
   private int wellQueueSize;
@@ -54,7 +56,7 @@ public class Carrier extends MobileRobot {
     super(rc);
     CarrierEnemyProtocol.init(this);
     wellApproachDirection = new HashMap<>(3);
-    blackListWells = new HashSet<>(8);
+    blackListWells = new CharSet();
     wellQueueOrder = null;
     resetTask();
   }
@@ -117,18 +119,16 @@ public class Carrier extends MobileRobot {
   }
 
   private CarrierTask determineNewTask() throws GameActionException {
-    if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
-      // todo: read from comms
-//      checkAssignedTask();
-//      Printer.print("checked assign " + HQAssignedTask);
-      if (HQAssignedTask != null) return HQAssignedTask;
-    }
+//    if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
+//      // todo: read from comms
+////      checkAssignedTask();
+////      Printer.print("checked assign " + HQAssignedTask);
+//      if (HQAssignedTask != null) return HQAssignedTask;
+//    }
 
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) {
       return CarrierTask.DELIVER_RSS_HOME;
     }
-
-    final int MAX_INCOME = 31;
 
     MapLocation closestHQLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
     int closestHQID = HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION);
@@ -138,13 +138,13 @@ public class Carrier extends MobileRobot {
       // decrement
       switch (incrementedResource) {
         case ADAMANTIUM:
-          CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.max(CommsHandler.readOurHqAdamantiumIncome(closestHQID) - 1, 0));
+          CommsHandler.writeOurHqAdamantiumIncomeDecrement(closestHQID);
           break;
         case MANA:
-          CommsHandler.writeOurHqManaIncome(closestHQID, Math.max(CommsHandler.readOurHqManaIncome(closestHQID) - 1, 0));
+          CommsHandler.writeOurHqManaIncomeDecrement(closestHQID);
           break;
         case ELIXIR:
-          CommsHandler.writeOurHqElixirIncome(closestHQID, Math.max(CommsHandler.readOurHqElixirIncome(closestHQID) - 1, 0));
+          CommsHandler.writeOurHqElixirIncomeDecrement(closestHQID);
           break;
       }
       incrementedResource = null;
@@ -191,16 +191,15 @@ public class Carrier extends MobileRobot {
       if (rc.canWriteSharedArray(0, 0)) {
         switch (HQAssignedTask) {
           case FETCH_ADAMANTIUM:
-            CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(CommsHandler.readOurHqAdamantiumIncome(closestHQID) + 1, MAX_INCOME));
+            CommsHandler.writeOurHqAdamantiumIncomeIncrement(closestHQID);
             incrementedResource = ResourceType.ADAMANTIUM;
             break;
           case FETCH_MANA:
-            CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(CommsHandler.readOurHqManaIncome(closestHQID) + 1, MAX_INCOME));
+            CommsHandler.writeOurHqManaIncomeIncrement(closestHQID);
             incrementedResource = ResourceType.MANA;
-
             break;
           case FETCH_ELIXIR:
-            CommsHandler.writeOurHqElixirIncome(closestHQID, Math.min(CommsHandler.readOurHqElixirIncome(closestHQID) + 1, MAX_INCOME));
+            CommsHandler.writeOurHqElixirIncomeIncrement(closestHQID);
             incrementedResource = ResourceType.ELIXIR;
             break;
         }
@@ -235,7 +234,7 @@ public class Carrier extends MobileRobot {
 //    if ((40 * adamantiumIncome) / 100 > 9) {
     if (adamantiumIncome > 8) {
       if (rc.canWriteSharedArray(0, 0)) {
-        CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
+        CommsHandler.writeOurHqManaIncomeSet(closestHQID, manaIncome + 1);
         incrementedResource = ResourceType.MANA;
       }
 
@@ -246,7 +245,7 @@ public class Carrier extends MobileRobot {
     if (manaWeighting * adamantiumIncome < manaIncome) { // TODO: add some weighting factor (maybe based on size)
 //      System.out.println("hi");
       if (rc.canWriteSharedArray(0, 0)) {
-        CommsHandler.writeOurHqAdamantiumIncome(closestHQID, Math.min(adamantiumIncome + 1, MAX_INCOME));
+        CommsHandler.writeOurHqAdamantiumIncomeSet(closestHQID, adamantiumIncome + 1);
         incrementedResource = ResourceType.ADAMANTIUM;
 //        System.out.println("bye");
       }
@@ -257,7 +256,7 @@ public class Carrier extends MobileRobot {
 //    System.out.println("hi");
 
     if (rc.canWriteSharedArray(0, 0)) {
-      CommsHandler.writeOurHqManaIncome(closestHQID, Math.min(manaIncome + 1, MAX_INCOME));
+      CommsHandler.writeOurHqManaIncomeSet(closestHQID, manaIncome + 1);
       incrementedResource = ResourceType.MANA;
 //      System.out.println("bye");
 
@@ -834,7 +833,7 @@ public class Carrier extends MobileRobot {
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     MapLocation closestWellLocation = null;
     if (rc.canWriteSharedArray(0,0) && currentTask.targetWellIndexToDecrement != -1) {
-      writer.writeWellCurrentWorkers(currentTask.targetWellIndexToDecrement, Math.max(writer.readWellCurrentWorkers(currentTask.targetWellIndexToDecrement) - 1 , 0));
+      writer.writeWellCurrentWorkersDecrement(currentTask.targetWellIndexToDecrement);
     }
     int closestDist = Integer.MAX_VALUE;
     int closestWellInd = -1;
@@ -856,8 +855,7 @@ public class Carrier extends MobileRobot {
     }
     currentTask.targetWell = closestWellLocation;
     if (rc.canWriteSharedArray(0,0) && currentTask.targetWellIndexToDecrement != -1) {
-      writer.writeWellCurrentWorkers(currentTask.targetWellIndexToDecrement,
-          writer.readWellCurrentWorkers(currentTask.targetWellIndexToDecrement) + 1);
+      writer.writeWellCurrentWorkersIncrement(currentTask.targetWellIndexToDecrement);
       currentTask.targetWellIndexToDecrement = closestWellInd;
     }
     this.turnsStuckApproachingWell = 0;
@@ -1023,8 +1021,7 @@ public class Carrier extends MobileRobot {
         case FETCH_ELIXIR:
           if (Global.rc.canWriteSharedArray(0,0) && targetWellIndexToDecrement != -1) {
             CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(collectionType);
-            writer.writeWellCurrentWorkers(
-                targetWellIndexToDecrement, Math.max(writer.readWellCurrentWorkers(targetWellIndexToDecrement) - 1 , 0));
+            writer.writeWellCurrentWorkersDecrement(targetWellIndexToDecrement);
             targetWellIndexToDecrement = -1;
           }
           targetWell = null;

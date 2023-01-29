@@ -6,6 +6,7 @@ import basicbot.robots.Carrier;
 import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.utils.Global;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
@@ -45,6 +46,11 @@ public class CarrierWellMicro {
    * @throws GameActionException
    */
   public static boolean isValidQueuePosition(MapLocation wellLocation, MapLocation queuePosition) throws GameActionException {
+    if (queuePosition.x == 16 && queuePosition.y == 6) {
+      Printer.print("checking " + queuePosition + " for well " + wellLocation);
+      Printer.print("\tmap:" + rc.onTheMap(queuePosition) + ",sense:" + rc.canSenseLocation(queuePosition) + ",pass:" +  (rc.canSenseLocation(queuePosition) ? rc.senseMapInfo(queuePosition).isPassable() : "unknown"));
+      Printer.print("\tWadj:" + (rc.canSenseLocation(queuePosition) ? queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()).isAdjacentTo(wellLocation) : "unknown")+ ",blk:" + BugNav.blockedLocations.contains(queuePosition) + ",Wblk:" + (rc.canSenseLocation(queuePosition) && BugNav.blockedLocations.contains(queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()))));
+    }
     local_checks: {
       if (!rc.onTheMap(queuePosition)) return false;
       if (!rc.canSenseLocation(queuePosition)) break local_checks; // assume it is valid if can't sense
@@ -71,6 +77,11 @@ public class CarrierWellMicro {
    * @throws GameActionException
    */
   public static boolean isValidStaticQueuePosition(MapLocation wellLocation, MapLocation queuePosition) throws GameActionException {
+//    if (wellLocation.x == 8 && wellLocation.y == 5) {
+//      Printer.print("checking " + queuePosition + " for well " + wellLocation);
+//      Printer.print("\tmap:" + rc.onTheMap(queuePosition) + ",sense:" + rc.canSenseLocation(queuePosition) + ",pass:" + rc.senseMapInfo(queuePosition).isPassable());
+//      Printer.print("\tWadj:" + queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()).isAdjacentTo(wellLocation) + ",blk:" + BugNav.blockedLocations.contains(queuePosition) + ",Wblk:" + (rc.canSenseLocation(queuePosition) && BugNav.blockedLocations.contains(queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()))));
+//    }
     local_checks: {
       if (!rc.onTheMap(queuePosition)) return false;
       if (!rc.canSenseLocation(queuePosition)) break local_checks; // assume it is valid if can't sense

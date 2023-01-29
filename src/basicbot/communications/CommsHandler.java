@@ -19,6 +19,8 @@ public class CommsHandler {
   public static final int ENEMY_SLOTS = 19;
   public static final MapLocation NONEXISTENT_MAP_LOC = new MapLocation(-1,-1);
 
+  
+
 
   static RobotController rc;
 
@@ -308,7 +310,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readOurHqAdamantiumIncome(int idx) throws GameActionException {
+  private static int readOurHqAdamantiumIncomeBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return ((rc.readSharedArray(2) & 3) << 3) + ((rc.readSharedArray(3) & 57344) >>> 13);
@@ -323,7 +325,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeOurHqAdamantiumIncome(int idx, int value) throws GameActionException {
+  private static void writeOurHqAdamantiumIncomeBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(2, (rc.readSharedArray(2) & 65532) | ((value & 24) >>> 3));
@@ -342,7 +344,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readOurHqManaIncome(int idx) throws GameActionException {
+  private static int readOurHqManaIncomeBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(3) & 7936) >>> 8;
@@ -357,7 +359,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeOurHqManaIncome(int idx, int value) throws GameActionException {
+  private static void writeOurHqManaIncomeBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(3, (rc.readSharedArray(3) & 57599) | (value << 8));
@@ -374,7 +376,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readOurHqElixirIncome(int idx) throws GameActionException {
+  private static int readOurHqElixirIncomeBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(3) & 248) >>> 3;
@@ -389,7 +391,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeOurHqElixirIncome(int idx, int value) throws GameActionException {
+  private static void writeOurHqElixirIncomeBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(3, (rc.readSharedArray(3) & 65287) | (value << 3));
@@ -437,6 +439,51 @@ public class CommsHandler {
   public static void writeOurHqEvenSpawnLocation(int idx, MapLocation value) throws GameActionException {
     writeOurHqEvenSpawnX(idx, (value).x+1);
     writeOurHqEvenSpawnY(idx, (value).y+1);
+  }
+  public static int readOurHqAdamantiumIncome(int idx) throws GameActionException {
+    return (readOurHqAdamantiumIncomeBits(idx));
+  }
+  public static void writeOurHqAdamantiumIncomeReset(int idx) throws GameActionException {
+    writeOurHqAdamantiumIncomeBits(idx, 0);
+  }
+  public static void writeOurHqAdamantiumIncomeSet(int idx, int value) throws GameActionException {
+    writeOurHqAdamantiumIncomeBits(idx, Math.min(Math.max(value, 0), 31));
+  }
+  public static void writeOurHqAdamantiumIncomeIncrement(int idx) throws GameActionException {
+    writeOurHqAdamantiumIncomeBits(idx, Math.min((readOurHqAdamantiumIncome(idx))+1, 31));
+  }
+  public static void writeOurHqAdamantiumIncomeDecrement(int idx) throws GameActionException {
+    writeOurHqAdamantiumIncomeBits(idx, Math.max((readOurHqAdamantiumIncome(idx))-1, 0));
+  }
+  public static int readOurHqManaIncome(int idx) throws GameActionException {
+    return (readOurHqManaIncomeBits(idx));
+  }
+  public static void writeOurHqManaIncomeReset(int idx) throws GameActionException {
+    writeOurHqManaIncomeBits(idx, 0);
+  }
+  public static void writeOurHqManaIncomeSet(int idx, int value) throws GameActionException {
+    writeOurHqManaIncomeBits(idx, Math.min(Math.max(value, 0), 31));
+  }
+  public static void writeOurHqManaIncomeIncrement(int idx) throws GameActionException {
+    writeOurHqManaIncomeBits(idx, Math.min((readOurHqManaIncome(idx))+1, 31));
+  }
+  public static void writeOurHqManaIncomeDecrement(int idx) throws GameActionException {
+    writeOurHqManaIncomeBits(idx, Math.max((readOurHqManaIncome(idx))-1, 0));
+  }
+  public static int readOurHqElixirIncome(int idx) throws GameActionException {
+    return (readOurHqElixirIncomeBits(idx));
+  }
+  public static void writeOurHqElixirIncomeReset(int idx) throws GameActionException {
+    writeOurHqElixirIncomeBits(idx, 0);
+  }
+  public static void writeOurHqElixirIncomeSet(int idx, int value) throws GameActionException {
+    writeOurHqElixirIncomeBits(idx, Math.min(Math.max(value, 0), 31));
+  }
+  public static void writeOurHqElixirIncomeIncrement(int idx) throws GameActionException {
+    writeOurHqElixirIncomeBits(idx, Math.min((readOurHqElixirIncome(idx))+1, 31));
+  }
+  public static void writeOurHqElixirIncomeDecrement(int idx) throws GameActionException {
+    writeOurHqElixirIncomeBits(idx, Math.max((readOurHqElixirIncome(idx))-1, 0));
   }
   private static int readAdamantiumWellX(int idx) throws GameActionException {
     switch (idx) {
@@ -536,7 +583,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readAdamantiumWellCapacity(int idx) throws GameActionException {
+  private static int readAdamantiumWellCapacityBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return ((rc.readSharedArray(14) & 1) << 3) + ((rc.readSharedArray(15) & 57344) >>> 13);
@@ -551,7 +598,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeAdamantiumWellCapacity(int idx, int value) throws GameActionException {
+  private static void writeAdamantiumWellCapacityBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(14, (rc.readSharedArray(14) & 65534) | ((value & 8) >>> 3));
@@ -570,7 +617,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readAdamantiumWellCurrentWorkers(int idx) throws GameActionException {
+  private static int readAdamantiumWellCurrentWorkersBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(15) & 7680) >>> 9;
@@ -585,7 +632,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeAdamantiumWellCurrentWorkers(int idx, int value) throws GameActionException {
+  private static void writeAdamantiumWellCurrentWorkersBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(15, (rc.readSharedArray(15) & 57855) | (value << 9));
@@ -618,6 +665,36 @@ public class CommsHandler {
   }
   public static void writeAdamantiumWellUpgraded(int idx, boolean value) throws GameActionException {
     writeAdamantiumWellUpgradedBit(idx, ((value) ? 1 : 0));
+  }
+  public static int readAdamantiumWellCapacity(int idx) throws GameActionException {
+    return (readAdamantiumWellCapacityBits(idx));
+  }
+  public static void writeAdamantiumWellCapacityReset(int idx) throws GameActionException {
+    writeAdamantiumWellCapacityBits(idx, 0);
+  }
+  public static void writeAdamantiumWellCapacitySet(int idx, int value) throws GameActionException {
+    writeAdamantiumWellCapacityBits(idx, Math.min(Math.max(value, 0), 15));
+  }
+  public static void writeAdamantiumWellCapacityIncrement(int idx) throws GameActionException {
+    writeAdamantiumWellCapacityBits(idx, Math.min((readAdamantiumWellCapacity(idx))+1, 15));
+  }
+  public static void writeAdamantiumWellCapacityDecrement(int idx) throws GameActionException {
+    writeAdamantiumWellCapacityBits(idx, Math.max((readAdamantiumWellCapacity(idx))-1, 0));
+  }
+  public static int readAdamantiumWellCurrentWorkers(int idx) throws GameActionException {
+    return (readAdamantiumWellCurrentWorkersBits(idx));
+  }
+  public static void writeAdamantiumWellCurrentWorkersReset(int idx) throws GameActionException {
+    writeAdamantiumWellCurrentWorkersBits(idx, 0);
+  }
+  public static void writeAdamantiumWellCurrentWorkersSet(int idx, int value) throws GameActionException {
+    writeAdamantiumWellCurrentWorkersBits(idx, Math.min(Math.max(value, 0), 15));
+  }
+  public static void writeAdamantiumWellCurrentWorkersIncrement(int idx) throws GameActionException {
+    writeAdamantiumWellCurrentWorkersBits(idx, Math.min((readAdamantiumWellCurrentWorkers(idx))+1, 15));
+  }
+  public static void writeAdamantiumWellCurrentWorkersDecrement(int idx) throws GameActionException {
+    writeAdamantiumWellCurrentWorkersBits(idx, Math.max((readAdamantiumWellCurrentWorkers(idx))-1, 0));
   }
   private static int readManaWellX(int idx) throws GameActionException {
     switch (idx) {
@@ -718,7 +795,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readManaWellCapacity(int idx) throws GameActionException {
+  private static int readManaWellCapacityBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(20) & 7680) >>> 9;
@@ -733,7 +810,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeManaWellCapacity(int idx, int value) throws GameActionException {
+  private static void writeManaWellCapacityBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(20, (rc.readSharedArray(20) & 57855) | (value << 9));
@@ -751,7 +828,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readManaWellCurrentWorkers(int idx) throws GameActionException {
+  private static int readManaWellCurrentWorkersBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(20) & 480) >>> 5;
@@ -766,7 +843,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeManaWellCurrentWorkers(int idx, int value) throws GameActionException {
+  private static void writeManaWellCurrentWorkersBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(20, (rc.readSharedArray(20) & 65055) | (value << 5));
@@ -798,6 +875,36 @@ public class CommsHandler {
   }
   public static void writeManaWellUpgraded(int idx, boolean value) throws GameActionException {
     writeManaWellUpgradedBit(idx, ((value) ? 1 : 0));
+  }
+  public static int readManaWellCapacity(int idx) throws GameActionException {
+    return (readManaWellCapacityBits(idx));
+  }
+  public static void writeManaWellCapacityReset(int idx) throws GameActionException {
+    writeManaWellCapacityBits(idx, 0);
+  }
+  public static void writeManaWellCapacitySet(int idx, int value) throws GameActionException {
+    writeManaWellCapacityBits(idx, Math.min(Math.max(value, 0), 15));
+  }
+  public static void writeManaWellCapacityIncrement(int idx) throws GameActionException {
+    writeManaWellCapacityBits(idx, Math.min((readManaWellCapacity(idx))+1, 15));
+  }
+  public static void writeManaWellCapacityDecrement(int idx) throws GameActionException {
+    writeManaWellCapacityBits(idx, Math.max((readManaWellCapacity(idx))-1, 0));
+  }
+  public static int readManaWellCurrentWorkers(int idx) throws GameActionException {
+    return (readManaWellCurrentWorkersBits(idx));
+  }
+  public static void writeManaWellCurrentWorkersReset(int idx) throws GameActionException {
+    writeManaWellCurrentWorkersBits(idx, 0);
+  }
+  public static void writeManaWellCurrentWorkersSet(int idx, int value) throws GameActionException {
+    writeManaWellCurrentWorkersBits(idx, Math.min(Math.max(value, 0), 15));
+  }
+  public static void writeManaWellCurrentWorkersIncrement(int idx) throws GameActionException {
+    writeManaWellCurrentWorkersBits(idx, Math.min((readManaWellCurrentWorkers(idx))+1, 15));
+  }
+  public static void writeManaWellCurrentWorkersDecrement(int idx) throws GameActionException {
+    writeManaWellCurrentWorkersBits(idx, Math.max((readManaWellCurrentWorkers(idx))-1, 0));
   }
   private static int readElixirWellX(int idx) throws GameActionException {
     switch (idx) {
@@ -897,7 +1004,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readElixirWellCapacity(int idx) throws GameActionException {
+  private static int readElixirWellCapacityBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(25) & 480) >>> 5;
@@ -912,7 +1019,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeElixirWellCapacity(int idx, int value) throws GameActionException {
+  private static void writeElixirWellCapacityBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(25, (rc.readSharedArray(25) & 65055) | (value << 5));
@@ -929,7 +1036,7 @@ public class CommsHandler {
     }
   }
 
-  public static int readElixirWellCurrentWorkers(int idx) throws GameActionException {
+  private static int readElixirWellCurrentWorkersBits(int idx) throws GameActionException {
     switch (idx) {
       case 0:
           return (rc.readSharedArray(25) & 30) >>> 1;
@@ -944,7 +1051,7 @@ public class CommsHandler {
     }
   }
 
-  public static void writeElixirWellCurrentWorkers(int idx, int value) throws GameActionException {
+  private static void writeElixirWellCurrentWorkersBits(int idx, int value) throws GameActionException {
     switch (idx) {
       case 0:
         rc.writeSharedArray(25, (rc.readSharedArray(25) & 65505) | (value << 1));
@@ -976,6 +1083,36 @@ public class CommsHandler {
   }
   public static void writeElixirWellUpgraded(int idx, boolean value) throws GameActionException {
     writeElixirWellUpgradedBit(idx, ((value) ? 1 : 0));
+  }
+  public static int readElixirWellCapacity(int idx) throws GameActionException {
+    return (readElixirWellCapacityBits(idx));
+  }
+  public static void writeElixirWellCapacityReset(int idx) throws GameActionException {
+    writeElixirWellCapacityBits(idx, 0);
+  }
+  public static void writeElixirWellCapacitySet(int idx, int value) throws GameActionException {
+    writeElixirWellCapacityBits(idx, Math.min(Math.max(value, 0), 15));
+  }
+  public static void writeElixirWellCapacityIncrement(int idx) throws GameActionException {
+    writeElixirWellCapacityBits(idx, Math.min((readElixirWellCapacity(idx))+1, 15));
+  }
+  public static void writeElixirWellCapacityDecrement(int idx) throws GameActionException {
+    writeElixirWellCapacityBits(idx, Math.max((readElixirWellCapacity(idx))-1, 0));
+  }
+  public static int readElixirWellCurrentWorkers(int idx) throws GameActionException {
+    return (readElixirWellCurrentWorkersBits(idx));
+  }
+  public static void writeElixirWellCurrentWorkersReset(int idx) throws GameActionException {
+    writeElixirWellCurrentWorkersBits(idx, 0);
+  }
+  public static void writeElixirWellCurrentWorkersSet(int idx, int value) throws GameActionException {
+    writeElixirWellCurrentWorkersBits(idx, Math.min(Math.max(value, 0), 15));
+  }
+  public static void writeElixirWellCurrentWorkersIncrement(int idx) throws GameActionException {
+    writeElixirWellCurrentWorkersBits(idx, Math.min((readElixirWellCurrentWorkers(idx))+1, 15));
+  }
+  public static void writeElixirWellCurrentWorkersDecrement(int idx) throws GameActionException {
+    writeElixirWellCurrentWorkersBits(idx, Math.max((readElixirWellCurrentWorkers(idx))-1, 0));
   }
   private static int readIslandInfoX() throws GameActionException {
     return ((rc.readSharedArray(29) & 3) << 4) + ((rc.readSharedArray(30) & 61440) >>> 12);
@@ -1671,19 +1808,67 @@ public class CommsHandler {
       }
     }
 
-    public void writeWellCapacity(int idx, int value) throws GameActionException {
+    public void writeWellCapacityReset(int idx) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          CommsHandler.writeAdamantiumWellCapacity(idx, value);
+          CommsHandler.writeAdamantiumWellCapacityReset(idx);
           break;
         case MANA:
-          CommsHandler.writeManaWellCapacity(idx, value);
+          CommsHandler.writeManaWellCapacityReset(idx);
           break;
         case ELIXIR:
-          CommsHandler.writeElixirWellCapacity(idx, value);
+          CommsHandler.writeElixirWellCapacityReset(idx);
           break;
         default:
-          throw new RuntimeException("writeWellCapacity not defined for " + this);
+          throw new RuntimeException("writeWellCapacityReset not defined for " + this);
+      }
+    }
+
+    public void writeWellCapacitySet(int idx, int value) throws GameActionException {
+      switch (this) {
+        case ADAMANTIUM:
+          CommsHandler.writeAdamantiumWellCapacitySet(idx, value);
+          break;
+        case MANA:
+          CommsHandler.writeManaWellCapacitySet(idx, value);
+          break;
+        case ELIXIR:
+          CommsHandler.writeElixirWellCapacitySet(idx, value);
+          break;
+        default:
+          throw new RuntimeException("writeWellCapacitySet not defined for " + this);
+      }
+    }
+
+    public void writeWellCapacityIncrement(int idx) throws GameActionException {
+      switch (this) {
+        case ADAMANTIUM:
+          CommsHandler.writeAdamantiumWellCapacityIncrement(idx);
+          break;
+        case MANA:
+          CommsHandler.writeManaWellCapacityIncrement(idx);
+          break;
+        case ELIXIR:
+          CommsHandler.writeElixirWellCapacityIncrement(idx);
+          break;
+        default:
+          throw new RuntimeException("writeWellCapacityIncrement not defined for " + this);
+      }
+    }
+
+    public void writeWellCapacityDecrement(int idx) throws GameActionException {
+      switch (this) {
+        case ADAMANTIUM:
+          CommsHandler.writeAdamantiumWellCapacityDecrement(idx);
+          break;
+        case MANA:
+          CommsHandler.writeManaWellCapacityDecrement(idx);
+          break;
+        case ELIXIR:
+          CommsHandler.writeElixirWellCapacityDecrement(idx);
+          break;
+        default:
+          throw new RuntimeException("writeWellCapacityDecrement not defined for " + this);
       }
     }
 
@@ -1700,19 +1885,67 @@ public class CommsHandler {
       }
     }
 
-    public void writeWellCurrentWorkers(int idx, int value) throws GameActionException {
+    public void writeWellCurrentWorkersReset(int idx) throws GameActionException {
       switch (this) {
         case ADAMANTIUM:
-          CommsHandler.writeAdamantiumWellCurrentWorkers(idx, value);
+          CommsHandler.writeAdamantiumWellCurrentWorkersReset(idx);
           break;
         case MANA:
-          CommsHandler.writeManaWellCurrentWorkers(idx, value);
+          CommsHandler.writeManaWellCurrentWorkersReset(idx);
           break;
         case ELIXIR:
-          CommsHandler.writeElixirWellCurrentWorkers(idx, value);
+          CommsHandler.writeElixirWellCurrentWorkersReset(idx);
           break;
         default:
-          throw new RuntimeException("writeWellCurrentWorkers not defined for " + this);
+          throw new RuntimeException("writeWellCurrentWorkersReset not defined for " + this);
+      }
+    }
+
+    public void writeWellCurrentWorkersSet(int idx, int value) throws GameActionException {
+      switch (this) {
+        case ADAMANTIUM:
+          CommsHandler.writeAdamantiumWellCurrentWorkersSet(idx, value);
+          break;
+        case MANA:
+          CommsHandler.writeManaWellCurrentWorkersSet(idx, value);
+          break;
+        case ELIXIR:
+          CommsHandler.writeElixirWellCurrentWorkersSet(idx, value);
+          break;
+        default:
+          throw new RuntimeException("writeWellCurrentWorkersSet not defined for " + this);
+      }
+    }
+
+    public void writeWellCurrentWorkersIncrement(int idx) throws GameActionException {
+      switch (this) {
+        case ADAMANTIUM:
+          CommsHandler.writeAdamantiumWellCurrentWorkersIncrement(idx);
+          break;
+        case MANA:
+          CommsHandler.writeManaWellCurrentWorkersIncrement(idx);
+          break;
+        case ELIXIR:
+          CommsHandler.writeElixirWellCurrentWorkersIncrement(idx);
+          break;
+        default:
+          throw new RuntimeException("writeWellCurrentWorkersIncrement not defined for " + this);
+      }
+    }
+
+    public void writeWellCurrentWorkersDecrement(int idx) throws GameActionException {
+      switch (this) {
+        case ADAMANTIUM:
+          CommsHandler.writeAdamantiumWellCurrentWorkersDecrement(idx);
+          break;
+        case MANA:
+          CommsHandler.writeManaWellCurrentWorkersDecrement(idx);
+          break;
+        case ELIXIR:
+          CommsHandler.writeElixirWellCurrentWorkersDecrement(idx);
+          break;
+        default:
+          throw new RuntimeException("writeWellCurrentWorkersDecrement not defined for " + this);
       }
     }
 

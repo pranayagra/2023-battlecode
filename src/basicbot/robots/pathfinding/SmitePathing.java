@@ -1,28 +1,26 @@
 package basicbot.robots.pathfinding;
 
+import basicbot.containers.CharSet;
 import basicbot.robots.pathfinding.unitpathing.*;
 import basicbot.knowledge.Cache;
-import basicbot.utils.Printer;
 import battlecode.common.*;
 
 public class SmitePathing {
   public boolean forceBugging = false;
-  private static final int MIN_BYTECODE_TO_BFS = 3000;
+  private static final int MIN_BYTECODE_TO_BFS = 4300;
   RobotController rc;
   Pathing pathing;
   UnitPathing up;
   MapLocation destination;
 
-  int[] tracker;// = new int[113];
-//  int[] fuzzyTracker = new int[113];
-
-//  int fuzzyMovesLeft = 0;
-//  int MAX_FUZZY_MOVES = 3;
+  CharSet visitedLocations;
   int doBuggingTurns = 0;
 
   public SmitePathing(RobotController rc, Pathing pathing) {
     this.rc = rc;
     this.pathing = pathing;
+    this.visitedLocations = new CharSet();
+
     switch (Cache.Permanent.ROBOT_TYPE) { // cases for carrier, launcher, amplifier, destabilizer, booster
       case CARRIER:
         up = new CarrierPathing(rc);
@@ -48,8 +46,8 @@ public class SmitePathing {
     if (destination == null || destination.distanceSquaredTo(newDest) != 0) {
       destination = newDest;
       BugNav.setTarget(newDest);
-      resetVisited();
-      addVisited(Cache.PerTurn.CURRENT_LOCATION);
+      visitedLocations.clear();
+      visitedLocations.add(Cache.PerTurn.CURRENT_LOCATION);
       doBuggingTurns = 0;
     }
   }
@@ -77,6 +75,7 @@ public class SmitePathing {
         : Cache.Permanent.ROBOT_TYPE.movementCooldown);
     if (forceBugging
         || Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
+        || Clock.getBytecodeNum() <= 1000 // doing a move very early in the turn
         || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED // too many robots nearby, just bug
     ) {
 //      doBuggingTurns += 2;
@@ -88,7 +87,7 @@ public class SmitePathing {
       if (!BugNav.checkDoneBugging()) {
         doBuggingTurns--;
         if (BugNav.tryBugging()) {
-          addVisited(Cache.PerTurn.CURRENT_LOCATION);
+          visitedLocations.add(Cache.PerTurn.CURRENT_LOCATION);
           if (BugNav.checkDoneBugging()) {
             doBuggingTurns = 0;
           }
@@ -136,9 +135,9 @@ public class SmitePathing {
 
 //    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
 //      Printer.print("nav towards: " + destination, "best dir: " + dir, "bug can move: " + (dir == null ? "null" : BugNav.canMoveInDirection(dir)));
-//      Printer.print("visited: " + (dir == null ? "null" : isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir))), "wind current loc: " + windCurrentLoc, "visited wind current loc: " + (windCurrentLoc == null ? "null" : isVisited(windCurrentLoc)));
+//      Printer.print("visited: " + (dir == null ? "null" : tracker.contains(Cache.PerTurn.CURRENT_LOCATION.add(dir))), "wind current loc: " + windCurrentLoc, "visited wind current loc: " + (windCurrentLoc == null ? "null" : tracker.contains(windCurrentLoc)));
 //    }
-    if (dir == null || !BugNav.canMoveInDirection(dir) || isVisited(Cache.PerTurn.CURRENT_LOCATION.add(dir)) || (windCurrentLoc != null && isVisited(windCurrentLoc))) {
+    if (dir == null || !BugNav.canMoveInDirection(dir) || visitedLocations.contains(Cache.PerTurn.CURRENT_LOCATION.add(dir)) || (windCurrentLoc != null && visitedLocations.contains(windCurrentLoc))) {
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try fuzzy movement for " + MAX_FUZZY_MOVES + " turns");
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try bugging");
 //      Printer.print("current location: " + Cache.PerTurn.CURRENT_LOCATION);
@@ -163,7 +162,7 @@ public class SmitePathing {
 //        fuzzyMovesLeft--;
 //      }
 //    Cache.PerTurn.CURRENT_LOCATION = Cache.PerTurn.CURRENT_LOCATION.add(dir);)
-      addVisited(Cache.PerTurn.CURRENT_LOCATION);
+      visitedLocations.add(Cache.PerTurn.CURRENT_LOCATION);
 //    robot.nearbyEnemies = rc.senseNearbyRobots(rc.getType().visionRadiusSquared, robot.enemyTeam);
       return true;
     }
@@ -262,32 +261,8 @@ public class SmitePathing {
     return false;
   }
 
-  private void addVisited(MapLocation loc) {
-    int bit = loc.x + 60 * loc.y;
-    tracker[bit >>> 5] |= 1 << (31 - bit & 31);
-  }
   private boolean markVisitedAndRetTrue(MapLocation loc) {
-    addVisited(loc);
+    visitedLocations.add(loc);
     return true;
-  }
-
-//  private void addFuzzyVisited(MapLocation loc) {
-//    int bit = loc.x + 60 * loc.y;
-//    fuzzyTracker[bit >>> 5] |= 1 << (31 - bit & 31);
-//  }
-
-  private boolean isVisited(MapLocation loc) {
-    int bit = loc.x + 60*loc.y;
-    return (tracker[bit >>> 5] & (1 << (31 - bit & 31))) != 0;
-  }
-
-//  private boolean isFuzzyVisited(MapLocation loc) {
-//    int bit = loc.x + 60*loc.y;
-//    return (fuzzyTracker[bit >>> 5] & (1 << (31 - bit & 31))) != 0;
-//  }
-
-  private void resetVisited() {
-    tracker = new int[113];
-//    fuzzyTracker = new int[113];
   }
 }

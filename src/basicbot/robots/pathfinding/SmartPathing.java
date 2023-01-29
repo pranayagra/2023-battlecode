@@ -27,8 +27,8 @@ public class SmartPathing extends Pathing {
 //      return sp.cautiousGreedyMove(target);
 //    }
     sp.updateDestination(target);
-    if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
-      return sp.cautiousGreedyMove(target);
+    if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
+      return BugNav.tryBugging();
     }
     return sp.pathToDestination();
   }

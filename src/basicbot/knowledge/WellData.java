@@ -12,6 +12,8 @@ public class WellData {
   public boolean isUpgraded;
   // # of spots available for carriers to mine from. This should not include: walls, bad currents, other wells (WIP).
   public int capacity;
+  public boolean dirty;
+
   public WellData(WellInfo wellInfo, int capacity) {
     this.loc = wellInfo.getMapLocation();
     this.type = wellInfo.getResourceType();

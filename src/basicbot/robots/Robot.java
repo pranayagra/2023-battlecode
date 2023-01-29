@@ -140,12 +140,12 @@ public abstract class Robot {
    */
   private void runTurnWrapper() throws GameActionException {
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
-
-    Memory.updateOnTurn();
     if (!dontYield) {
       rc.setIndicatorString("ac: " + rc.getActionCooldownTurns() + " mc: " + rc.getMovementCooldownTurns());
     }
     dontYield = false;
+
+    Memory.updateOnTurn();
 
     // PRE MESSAGE READING -----
     closestCommedEnemy = null;
@@ -573,12 +573,9 @@ public abstract class Robot {
    * @throws GameActionException any exception with sensing or writing to shared array
    */
   private void initialWellExploration() throws GameActionException {
-    MapLocation knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ADAMANTIUM);
-    boolean needAd = knownWellLoc == null;
-    knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.MANA);
-    boolean needMana = knownWellLoc == null;
-    knownWellLoc = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ELIXIR);
-    boolean needElixir = knownWellLoc == null;
+    boolean needAd = !Communicator.anyWellExists(ResourceType.ADAMANTIUM);
+    boolean needMana = !Communicator.anyWellExists(ResourceType.MANA);
+    boolean needElixir = !Communicator.anyWellExists(ResourceType.ELIXIR);
     if (!needAd && !needMana && !needElixir) return;
 //    Printer.print("yeet");
 
@@ -630,24 +627,25 @@ public abstract class Robot {
   }
 
   /**
-   * Converts wellInfo to wellData
+   * Converts wellInfo to wellData and writes to running memory
+   * true if published, false if not
    */
-  private boolean publishWellData(WellInfo wellInfo) throws GameActionException{
+  private boolean publishWellData(WellInfo wellInfo) throws GameActionException {
     // see all locations around well
     MapLocation wellLoc = wellInfo.getMapLocation();
     int capacity = 0;
-    for (Direction dir : Utils.directionsNine) {
-      MapLocation loc = wellLoc.add(dir);
-      int visionRadiusSq = Cache.PerTurn.IS_IN_CLOUD ? GameConstants.CLOUD_VISION_RADIUS_SQUARED : Cache.Permanent.VISION_RADIUS_SQUARED;
-
-      if (!loc.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, visionRadiusSq)) continue;
-      if (CarrierWellMicro.isValidStaticQueuePosition(wellLoc, loc)) {
-        capacity++;
+    if (Clock.getBytecodesLeft() >= 1000 && Cache.PerTurn.ROUND_NUM == rc.getRoundNum()) { // not enough bytecode to measure this
+      final int visionRadiusSq = Cache.PerTurn.IS_IN_CLOUD ? GameConstants.CLOUD_VISION_RADIUS_SQUARED : Cache.Permanent.VISION_RADIUS_SQUARED;
+      for (Direction dir : Utils.directionsNine) {
+        MapLocation loc = wellLoc.add(dir);
+        if (!loc.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, visionRadiusSq)) continue;
+        if (CarrierWellMicro.isValidStaticQueuePosition(wellLoc, loc)) {
+          capacity++;
+        }
       }
     }
     return RunningMemory.publishWell(new WellData(wellInfo, capacity));
   }
-
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {
     WellInfo[] wells = Global.rc.senseNearbyWells(type);

@@ -5,6 +5,7 @@ import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.containers.HashMap;
 import basicbot.containers.HashMapNodeVal;
+import basicbot.containers.LocDataMap;
 import basicbot.utils.Global;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
@@ -48,9 +49,9 @@ public class RunningMemory {
 
 
   public static final int WELL_MEMORY_LIMIT = 32;
-  public static HashMap<MapLocation, WellData> wells = new HashMap<>(WELL_MEMORY_LIMIT);
-  public static int wellCount = 0;
-  private static final int[] wellsSeenTracker = new int[113];
+  public static final WellData[] wellData_storage = new WellData[WELL_MEMORY_LIMIT];
+  public static LocDataMap<WellData> wells = new LocDataMap<>(wellData_storage);
+//  private static final int[] wellsSeenTracker = new int[113];
 
   public static void markInvalidSymmetry(Utils.MapSymmetry symmetryToEliminate) throws GameActionException {
 //    RunningMemory.symmetryInfo = symmetryInfo;
@@ -117,7 +118,7 @@ public class RunningMemory {
    * @return false if already been visited, true otherwise
    */
   public static boolean publishWell(WellData well) {
-    if (wellCount >= WELL_MEMORY_LIMIT) {
+    if (wells.size >= WELL_MEMORY_LIMIT) {
 //      Printer.print("TOO MANY MEMORIZED WELLS!! " + wellCount);
       return false;
     }
@@ -129,12 +130,13 @@ public class RunningMemory {
 //    wellsSeenTracker[wellVisitedBit >>> 5] |= wellVisitedBitVec;
 //    wells[wellCount] = well;
 
-    if (wells.contains(loc)) {
-      // need to update
-      wells.put(loc, well.merge(wells.get(loc)));
+    WellData existingWell = wells.get(loc);
+    if (existingWell != null) {
+      existingWell.merge(well);
+      existingWell.dirty = true;
     } else {
       wells.put(loc, well);
-      wellCount++;
+      well.dirty = true;
     }
     return true;
   }
@@ -144,9 +146,9 @@ public class RunningMemory {
    * @return the number of wells flushed
    */
   public static int broadcastMemorizedWells() throws GameActionException {
-    if (wellCount == 0) return 0;
+    if (wells.size == 0) return 0;
     if (!Global.rc.canWriteSharedArray(0,0)) return 0;
-    if (Clock.getBytecodesLeft() < wellCount * 250) return 0;
+    if (Clock.getBytecodesLeft() < wells.size * 250) return 0;
 //    int oldCount = wellCount;
 //    Printer.print("flushing " + wellCount + " wells - bc=" + Clock.getBytecodesLeft());
 //    while (wellCount > 0 && Communicator.writeNextWell(wells[wellCount-1])) {
@@ -155,11 +157,9 @@ public class RunningMemory {
 //    }
 //    return oldCount - wellCount;
     int numBroadcast = 0;
-    wells.resetIterator();
-    HashMapNodeVal<MapLocation, WellData> kvPair = wells.next();
-    while(kvPair != null) {
-      if (Communicator.writeNextWell(kvPair.val)) numBroadcast++;
-      kvPair = wells.next();
+    for (int i = wells.size; --i >= 0;) {
+      WellData well = wellData_storage[i];
+      if (Communicator.writeNextWell(well)) numBroadcast++;
     }
     return numBroadcast;
   }

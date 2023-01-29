@@ -77,7 +77,7 @@ public class Communicator {
    * @throws GameActionException if any issues with reading/writing to comms
    */
   public static boolean writeNextWell(WellData well) throws GameActionException {
-
+    if (!well.dirty) return true;
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(well.type);
     if (well.type == ResourceType.ELIXIR) {
       if (!upgradedWellLocations.contains(well.loc)) {
@@ -95,7 +95,7 @@ public class Communicator {
       if (!writer.readWellExists(i)) {
         writer.writeWellLocation(i, well.loc);
         writer.writeWellUpgraded(i, well.isUpgraded);
-        writer.writeWellCapacity(i, well.capacity);
+        writer.writeWellCapacitySet(i, well.capacity);
         Printer.print("Published new well! " + well.loc + "capacity:"+well.capacity);
         return true;
       }
@@ -104,7 +104,7 @@ public class Communicator {
           writer.writeWellUpgraded(i, well.isUpgraded);
         }
         if (writer.readWellCapacity(i) < well.capacity) {
-          writer.writeWellCapacity(i, well.capacity);
+          writer.writeWellCapacitySet(i, well.capacity);
           Printer.print("Updated well:" + well.loc + "capacity:"+well.capacity);
 
         }
@@ -152,6 +152,15 @@ public class Communicator {
       }
     }
     return closest;
+  }
+  public static boolean anyWellExists(ResourceType resourceType) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (writer.readWellExists(i)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // this is actually just written in carrier since it depends on so many of carriers state variables.
