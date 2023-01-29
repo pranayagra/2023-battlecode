@@ -1,17 +1,17 @@
-package basicbot.robots;
+package usqualthree.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import usqualthree.communications.CommsHandler;
+import usqualthree.communications.Communicator;
+import usqualthree.communications.HqMetaInfo;
+import usqualthree.containers.CharSet;
+import usqualthree.knowledge.Cache;
+import usqualthree.knowledge.RunningMemory;
+import usqualthree.utils.Constants;
+import usqualthree.utils.Printer;
+import usqualthree.utils.Utils;
 import battlecode.common.*;
 
-/*WORKFLOW_ONLY*///import basicbot.utils.Printer;
+/*WORKFLOW_ONLY*///import usqualthree.utils.Printer;
 public class HeadQuarters extends Robot {
   /*WORKFLOW_ONLY*///private int totalSpawns = 0;
   private static int NUM_FORCED_LATE_GAME_ANCHORS = 3;
