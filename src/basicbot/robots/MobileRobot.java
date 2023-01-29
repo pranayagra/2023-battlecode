@@ -40,10 +40,11 @@ public abstract class MobileRobot extends Robot {
           int tries = 50;
           MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           MapLocation loc;
-
+          boolean valid;
           do {
             loc = Utils.randomMapLocation();
-          } while ((Utils.maxSingleAxisDist(loc, closestHQ) > distBound || HqMetaInfo.isEnemyTerritory(loc)) && --tries > 0);
+            valid = (Utils.maxSingleAxisDist(loc, closestHQ) < distBound && (Cache.PerTurn.ROUND_NUM > 800 || !HqMetaInfo.isEnemyTerritory(loc)));
+          } while (!valid && --tries > 0);
           if (tries == 0) {
             loc = HqMetaInfo.getFurthestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           }
