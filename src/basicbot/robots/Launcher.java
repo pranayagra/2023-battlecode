@@ -1037,7 +1037,10 @@ public class Launcher extends MobileRobot {
     if (closeTo == null || !closeTo.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED  * 2)) {
       closeTo = lastEnemyLocation;
       if (closeTo == null || !closeTo.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED  * 2)) {
-        closeTo = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        closeTo = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+        if (closeTo == null) {
+          closeTo = HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        }
       }
     }
     MapLocation[] clouds = rc.senseNearbyCloudLocations(Cache.Permanent.ACTION_RADIUS_SQUARED);
