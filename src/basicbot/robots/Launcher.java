@@ -22,9 +22,11 @@ public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
   private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
-  private static final int TURNS_AT_TARGET = 10; // how long to delay at each patrol target
+  private static final int TURNS_AT_TARGET = 5; // how long to delay at each patrol target
+  private static final int TURNS_AT_WELL = 1; // how long to delay at each patrol target
   private static final int MIN_HOT_SPOT_GROUP_SIZE = 5; // min group size to move to hot spot
-  private static final int TURNS_AT_HOT_SPOT = 10;
+  private static final int TURNS_AT_HOT_SPOT = 7;
+  private static final int TURNS_AT_HOT_WELL = 2;
   private static final int TURNS_AT_FIGHT = 3;
   private static final int MAX_LAUNCHER_TASKS = 10;
 
@@ -662,10 +664,10 @@ public class Launcher extends MobileRobot {
 
   public enum PatrolTargetType {
     OUR_HQ("OUR_HQ", true, false, Launcher.TURNS_AT_TARGET, false),
-    OUR_WELL("OUR_WELL", true, false, Launcher.TURNS_AT_TARGET, true),
-    ENEMY_WELL("ENEMY_WELL", false, false, Launcher.TURNS_AT_TARGET, true),
+    OUR_WELL("OUR_WELL", true, false, Launcher.TURNS_AT_WELL, true),
+    ENEMY_WELL("ENEMY_WELL", false, false, Launcher.TURNS_AT_WELL, true),
     ENEMY_HQ("ENEMY_HQ", false, false, Launcher.TURNS_AT_TARGET, true),
-    HOT_SPOT_WELL_DEFENSE("HOT_WELL", false, true, Launcher.TURNS_AT_HOT_SPOT, false),
+    HOT_SPOT_WELL_DEFENSE("HOT_WELL", false, true, Launcher.TURNS_AT_HOT_WELL, false),
     HOT_SPOT_FIGHT("HOT_FIGHT", false, true, Launcher.TURNS_AT_FIGHT, false);
 
     public static final PatrolTargetType DEFAULT_FIRST_TARGET = ENEMY_WELL;
