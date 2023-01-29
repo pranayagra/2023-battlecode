@@ -51,6 +51,10 @@ public class Carrier extends MobileRobot {
   private int fullerRobotsSeen;
   private int roundsWaitingForQueueSpot;
 
+  public static int targetWellIndexToDecrement = -1;
+  private static ResourceType targetWellTypeToDecrement;
+
+
 
   public Carrier(RobotController rc) throws GameActionException {
     super(rc);
@@ -235,7 +239,7 @@ public class Carrier extends MobileRobot {
     // TODO: check for existence of Elixir wells
     int maxAdamantiumCarriersBeforeManaSaturation = 4;
     int singleAxisDistBetweenHQs = HqMetaInfo.getClosestSingleAxisDistBetweenOpposingHQs();
-    Printer.print("singleAxisDistBetweenHQs" + singleAxisDistBetweenHQs);
+    // Printer.print("singleAxisDistBetweenHQs" + singleAxisDistBetweenHQs);
 
     if (singleAxisDistBetweenHQs < 20) {
       maxAdamantiumCarriersBeforeManaSaturation = 0;
@@ -251,7 +255,7 @@ public class Carrier extends MobileRobot {
       if (manaCarriers < adamantiumCarriers) {
         return CarrierTask.FETCH_MANA;
       }
-      if (adamantiumCarriers > manaCarriers) return CarrierTask.FETCH_ADAMANTIUM;
+      if (adamantiumCarriers < manaCarriers) return CarrierTask.FETCH_ADAMANTIUM;
       // equals
       // TODO: this is a hot patch for when no wells are found. See return site in determineNewTask for better desc.
       // hot patch also needs to work when no AD well or w/e :(
@@ -266,15 +270,17 @@ public class Carrier extends MobileRobot {
 
     // now adamantiumCarriers are >= maxAdamantiumCarriersBeforeManaSaturation
     int saturatedManaWells = Communicator.numWellsFullySaturated(ResourceType.MANA);
+    // Printer.print("satured mana wells: " + saturatedManaWells);
     if (saturatedManaWells < HqMetaInfo.hqCount * 2 && saturatedManaWells < Communicator.numWellsOfType(ResourceType.MANA)) {
 
       // not mana saturated yet, get mana
       return CarrierTask.FETCH_MANA;
     }
+    // Printer.print("yeeto im here");
     int saturatedAdWells = Communicator.numWellsFullySaturated(ResourceType.ADAMANTIUM);
     // saturate atleast 1 adamantium well per HQ
     if (saturatedAdWells < HqMetaInfo.hqCount && saturatedAdWells < Communicator.numWellsOfType(ResourceType.ADAMANTIUM)) {
-      return CarrierTask.FETCH_MANA;
+      return CarrierTask.FETCH_ADAMANTIUM;
     }
 
     // GOGOGO MANA WOO (default assuming all the above conditions are met).
@@ -351,8 +357,13 @@ public class Carrier extends MobileRobot {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
     no_well: if (currentTask.targetWell == null
         || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
-        || (CarrierEnemyProtocol.lastEnemyLocation != null && currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 8)) {
-      if ((CarrierEnemyProtocol.lastEnemyLocation != null && currentTask.targetWell != null && currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 8)) {
+        || (CarrierEnemyProtocol.lastEnemyLocation != null
+        && currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26)
+        && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 8)) {
+      if ((CarrierEnemyProtocol.lastEnemyLocation != null
+          && currentTask.targetWell != null
+          && currentTask.targetWell.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26)
+          && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 8)) {
         findNewWell(currentTask.collectionType, currentTask.targetWell);
       } else {
         findNewWell(currentTask.collectionType, null);
@@ -841,8 +852,10 @@ public class Carrier extends MobileRobot {
   private void findNewWell(ResourceType resourceType, MapLocation toAvoid) throws GameActionException {
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     MapLocation closestWellLocation = null;
-    if (rc.canWriteSharedArray(0,0) && currentTask.targetWellIndexToDecrement != -1) {
-      writer.writeWellCurrentWorkersDecrement(currentTask.targetWellIndexToDecrement);
+    if (rc.canWriteSharedArray(0,0) && targetWellIndexToDecrement != -1) {
+      CommsHandler.ResourceTypeReaderWriter decrementWriter = CommsHandler.ResourceTypeReaderWriter.fromResourceType(targetWellTypeToDecrement);
+      decrementWriter.writeWellCurrentWorkersDecrement(targetWellIndexToDecrement);
+      targetWellIndexToDecrement = -1;
     }
     int closestDist = Integer.MAX_VALUE;
     int closestWellInd = -1;
@@ -863,9 +876,12 @@ public class Carrier extends MobileRobot {
       }
     }
     currentTask.targetWell = closestWellLocation;
-    if (rc.canWriteSharedArray(0,0) && currentTask.targetWellIndexToDecrement != -1) {
-      writer.writeWellCurrentWorkersIncrement(currentTask.targetWellIndexToDecrement);
-      currentTask.targetWellIndexToDecrement = closestWellInd;
+    if (rc.canWriteSharedArray(0,0)) {
+      writer.writeWellCurrentWorkersIncrement(closestWellInd);
+      targetWellIndexToDecrement = closestWellInd;
+      targetWellTypeToDecrement = resourceType;
+    } else if (closestWellLocation != null){
+      Printer.print("Could not increment!!" + closestWellLocation + resourceType);
     }
     this.turnsStuckApproachingWell = 0;
 
@@ -993,7 +1009,6 @@ public class Carrier extends MobileRobot {
     public MapLocation targetHQLoc;
     public MapLocation targetWell;
     // index in public comms array - TODO: this can be handled with a map in Communicator potentially
-    public int targetWellIndexToDecrement = -1;
     final public ResourceType collectionType;
     public MapLocation targetIsland;
     public int turnsRunning;
@@ -1024,15 +1039,15 @@ public class Carrier extends MobileRobot {
     }
 
     public void onTaskEnd() throws GameActionException {
+      if (Global.rc.canWriteSharedArray(0,0) && targetWellIndexToDecrement != -1) {
+        CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(targetWellTypeToDecrement);
+        writer.writeWellCurrentWorkersDecrement(targetWellIndexToDecrement);
+        targetWellIndexToDecrement = -1;
+      }
       switch (this) {
         case FETCH_ADAMANTIUM:
         case FETCH_MANA:
         case FETCH_ELIXIR:
-          if (Global.rc.canWriteSharedArray(0,0) && targetWellIndexToDecrement != -1) {
-            CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(collectionType);
-            writer.writeWellCurrentWorkersDecrement(targetWellIndexToDecrement);
-            targetWellIndexToDecrement = -1;
-          }
           targetWell = null;
           break;
         case DELIVER_RSS_HOME:

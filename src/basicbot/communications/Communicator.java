@@ -60,6 +60,7 @@ public class Communicator {
     MetaInfo.init();
   }
 
+  // TODO: store map from MApLoc to index :). This will support general access everywhere including don't go to full well
   //TODO: large - rewrite wells to cycle and every carrier updates their runningMemory turn by turn.
   /**
    * puts a well into the next free slot within the comms buffer for wells of that type.

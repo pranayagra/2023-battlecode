@@ -136,8 +136,9 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
+    // printDebugInfo();
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
+    // if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
@@ -203,6 +204,24 @@ public class HeadQuarters extends Robot {
     String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
     indString += ";kSym:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
     rc.setIndicatorString(indString);
+  }
+
+  private void printDebugInfo() throws GameActionException {
+    if (hqID != 0) return;
+    if (Cache.PerTurn.ROUND_NUM % 10 != 0) return;
+    ResourceType[] resourceTypes = new ResourceType[]{ResourceType.MANA, ResourceType.ADAMANTIUM};
+    for (ResourceType type : resourceTypes) {
+      CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(type);
+      for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+        if (!writer.readWellExists(i)) continue;
+        MapLocation loc = writer.readWellLocation(i);
+        int capacity = writer.readWellCapacity(i);
+        int currentWorkers = writer.readWellCurrentWorkers(i);
+        Printer.print("Well:" + loc + " " + currentWorkers +"/" + capacity);
+
+
+      }
+    }
   }
   /**
    * Handles the resource income information. Does the following actions:
