@@ -89,7 +89,7 @@ public class Communicator {
         writer.writeWellLocation(i, well.loc);
         writer.writeWellUpgraded(i, well.isUpgraded);
         writer.writeWellCapacitySet(i, well.capacity);
-        Printer.print("Published new well! " + well.loc + "capacity:"+well.capacity);
+//        Printer.print("Published new well! " + well.loc + "capacity:"+well.capacity);
         return true;
       }
       if (writer.readWellLocation(i).equals(well.loc)) {
@@ -98,7 +98,7 @@ public class Communicator {
         }
         if (writer.readWellCapacity(i) < well.capacity) {
           writer.writeWellCapacitySet(i, well.capacity);
-          Printer.print("Updated well:" + well.loc + "capacity:"+well.capacity);
+//          Printer.print("Updated well:" + well.loc + "capacity:"+well.capacity);
 
         }
 

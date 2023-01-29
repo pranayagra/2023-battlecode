@@ -337,8 +337,12 @@ public abstract class Robot {
         if (closest == null) {
           return islandLocation;
         } else {
-          localIslandInfo[islandId].islandLocation = closest;
-          localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
+          if (localIslandInfo[islandId] == null) {
+            localIslandInfo[islandId] = new IslandInfo(closest, islandId, Cache.PerTurn.ROUND_NUM, islandTeam);
+          } else {
+            localIslandInfo[islandId].islandLocation = closest;
+            localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
+          }
           return closest;
         }
       }

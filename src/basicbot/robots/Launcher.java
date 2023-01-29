@@ -1002,15 +1002,33 @@ public class Launcher extends MobileRobot {
   }
 
   private boolean attemptCloudAttack() throws GameActionException {
+    if (!rc.isActionReady()) return false;
     MapLocation[] clouds = rc.senseNearbyCloudLocations(Cache.Permanent.ACTION_RADIUS_SQUARED);
+    MapLocation bestCloudToAttack = null;
+    int bestCloudDist = Integer.MAX_VALUE;
     for (int i = clouds.length; --i >= 0;) {
       MapLocation loc = clouds[i];
-      if (rc.canAttack(loc) && Utils.rng.nextBoolean()) {
-        rc.attack(loc);
-        return true;
+      int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(loc);
+      if (dist >= GameConstants.CLOUD_VISION_RADIUS_SQUARED && rc.canAttack(loc)) {
+        if (dist < bestCloudDist) {
+          bestCloudDist = dist;
+          bestCloudToAttack = loc;
+        }
       }
     }
-    return clouds.length > 0 && attack(clouds[0]);
+    if (bestCloudToAttack != null && attack(bestCloudToAttack)) {
+      return true;
+    }
+    if (Cache.PerTurn.IS_IN_CLOUD) {
+      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(HqMetaInfo.getClosestEnemyHqLocation(Cache.PerTurn.CURRENT_LOCATION));
+      MapLocation target = Cache.PerTurn.CURRENT_LOCATION.add(toEnemy);
+      while (target.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.ACTION_RADIUS_SQUARED)) {
+        target = target.add(toEnemy);
+      }
+      target = target.add(toEnemy.opposite());
+      return attack(target);
+    }
+    return false;
 //    int cells = (int) Math.ceil(Math.sqrt(Cache.Permanent.ACTION_RADIUS_SQUARED));
 //    boolean inCloud = rc.senseCloud(Cache.PerTurn.CURRENT_LOCATION);
 //    for (int i = -cells; i <= cells; ++i) {

@@ -2,7 +2,6 @@ package basicbot.robots.pathfinding;
 
 import basicbot.containers.CharSet;
 import basicbot.knowledge.Cache;
-import basicbot.utils.Printer;
 import battlecode.common.*;
 
 public class BugNav{
@@ -51,7 +50,7 @@ public class BugNav{
 //    }
     Direction dir = myLoc.directionTo(currTarget);
     if (lastObstacleFound != null) dir = myLoc.directionTo(lastObstacleFound);
-    if (canMoveInDirection(dir)) {
+    if (canMoveInDirWithBuggingCheck(dir)) {
 //      resetPathfinding();
       return true;
     }
@@ -77,6 +76,7 @@ public class BugNav{
     if (blockedLocations.contains(withCurrentLoc)) return false; // wind blows me into a blocked location
 
     // ensure wind blows me into a less close direction
+//    return true;
     Direction reverse = dir.opposite();
     return !(windCurrentDir == reverse.rotateLeft()
         || windCurrentDir == reverse.rotateRight()
