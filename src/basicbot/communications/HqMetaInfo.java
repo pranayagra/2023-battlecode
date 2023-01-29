@@ -8,7 +8,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotType;
 
 public class HqMetaInfo {
-  private static final int ENEMY_TERRITORY_HQ_DANGER_RADIUS_SQ = 145;
+  private static final int ENEMY_TERRITORY_HQ_DANGER_RADIUS_SQ = 100;
   public static int hqCount;
   public static MapLocation[] hqLocations;
   public static MapLocation[] enemyHqLocations;
@@ -151,6 +151,32 @@ public class HqMetaInfo {
     throw new RuntimeException("hqCount is not 1, 2, 3, or 4. Got=" + hqCount);
   }
 
+  public static MapLocation getClosestSingleAxisEnemyHqLocation(MapLocation location) {
+    int closest = 0;
+    // optimized switch statement to use as little jvm/java bytecode as possible
+    switch (hqCount) {
+      case 4:
+        if (Utils.maxSingleAxisDist(location, enemyHqLocations[3]) <
+            Utils.maxSingleAxisDist(location, enemyHqLocations[closest])) {
+          closest = 3;
+        }
+      case 3:
+        if (Utils.maxSingleAxisDist(location, enemyHqLocations[2]) <
+            Utils.maxSingleAxisDist(location, enemyHqLocations[closest])) {
+          closest = 2;
+        }
+      case 2:
+        if (Utils.maxSingleAxisDist(location, enemyHqLocations[1]) <
+            Utils.maxSingleAxisDist(location, enemyHqLocations[closest])) {
+          closest = 1;
+        }
+        return enemyHqLocations[closest];
+      case 1:
+        return enemyHqLocations[0];
+    }
+    throw new RuntimeException("hqCount is not 1, 2, 3, or 4. Got=" + hqCount);
+  }
+
   public static void recomputeEnemyHqLocations() {
     Utils.MapSymmetry symmetry = RunningMemory.guessedSymmetry;
 //    if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS && hqCount != hqLocations.length) {
@@ -175,6 +201,21 @@ public class HqMetaInfo {
           throw new RuntimeException("Invalid HQ count: " + hqCount);
         }
     }
+  }
+
+  /**
+   *
+   * @return the smallest SINGLE AXIS distance between
+   */
+  public static int getClosestSingleAxisDistBetweenOpposingHQs() {
+    int closestDist = -1;
+    for (MapLocation ourHQ : hqLocations) {
+      int dist = Utils.maxSingleAxisDist(getClosestSingleAxisEnemyHqLocation(ourHQ), ourHQ);
+      if (closestDist == - 1 || dist < closestDist) {
+        closestDist = dist;
+      }
+    }
+    return closestDist;
   }
 
   public static boolean isEnemyTerritory(MapLocation location) {

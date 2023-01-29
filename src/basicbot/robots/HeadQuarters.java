@@ -18,8 +18,8 @@ public class HeadQuarters extends Robot {
   private static final int INCOME_MOVING_AVERAGE_WINDOW_SIZE = 100;
 
   private int hqID;
-  public final WellInfo closestAdamantium;
-  public final WellInfo closestMana;
+//  public final WellInfo closestAdamantium;
+//  public final WellInfo closestMana;
 
   private WellInfo closestWell;
   private MapLocation targetWell;
@@ -72,13 +72,15 @@ public class HeadQuarters extends Robot {
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
-    this.closestAdamantium = getClosestWell(ResourceType.ADAMANTIUM);
-    this.closestMana = getClosestWell(ResourceType.MANA);
-    this.closestWell = this.closestAdamantium;
-    if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
-      this.closestWell = this.closestMana;
-    }
-    this.hqID = Communicator.MetaInfo.registerHQ(this.closestAdamantium, this.closestMana);
+//    this.closestAdamantium = getClosestWell(ResourceType.ADAMANTIUM);
+//    this.closestMana = getClosestWell(ResourceType.MANA);
+//    this.closestWell = this.closestAdamantium;
+//    if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
+//      this.closestWell = this.closestMana;
+//    }
+//    this.hqID = Communicator.MetaInfo.registerHQ(this.closestAdamantium, this.closestMana);
+    this.hqID = Communicator.MetaInfo.registerHQ();
+
     if (Cache.Permanent.MAP_AREA <= 20*20) spawnOrder = spawnOrder20x20;
     else if (Cache.Permanent.MAP_AREA <= 40*40) spawnOrder = spawnOrder40x40;
     else spawnOrder = spawnOrder60x60;
@@ -140,6 +142,7 @@ public class HeadQuarters extends Robot {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
     }
+    setDefaultIndicatorString();
 
     Communicator.clearEnemyComms();
     handleIncome();

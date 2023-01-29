@@ -28,14 +28,16 @@ public abstract class MobileRobot extends Robot {
 //    Printer.print("RUNNING randomizeExplorationTarget(): ");
     switch (Cache.Permanent.ROBOT_TYPE) {
       case CARRIER:
-        int roundNumX2 = Cache.PerTurn.ROUND_NUM * 2;
-        if (roundNumX2 <= 300) {
+        // TODO: make this more efficient (i.e. box around current location)
+        int distBound = Cache.PerTurn.ROUND_NUM / 5 + 8;
+        if (distBound <= 300) {
           int tries = 50;
           MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           MapLocation loc;
+
           do {
             loc = Utils.randomMapLocation();
-          } while ((loc.distanceSquaredTo(closestHQ) < roundNumX2) && --tries > 0);
+          } while ((Utils.maxSingleAxisDist(loc, closestHQ) > distBound || HqMetaInfo.isEnemyTerritory(loc)) && --tries > 0);
           if (tries == 0) {
             loc = HqMetaInfo.getFurthestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           }
