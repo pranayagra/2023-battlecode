@@ -1,21 +1,21 @@
-package basicbot.robots;
+package usqualone.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharSet;
-import basicbot.containers.HashMap;
-import basicbot.knowledge.RunningMemory;
-import basicbot.knowledge.WellData;
-import basicbot.robots.micro.CarrierEnemyProtocol;
-import basicbot.robots.micro.CarrierWellMicro;
-import basicbot.robots.micro.CarrierWellPathing;
-import basicbot.knowledge.Cache;
-import basicbot.robots.micro.MicroConstants;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import usqualone.communications.CommsHandler;
+import usqualone.communications.Communicator;
+import usqualone.communications.HqMetaInfo;
+import usqualone.containers.CharSet;
+import usqualone.containers.HashMap;
+import usqualone.knowledge.RunningMemory;
+import usqualone.knowledge.WellData;
+import usqualone.robots.micro.CarrierEnemyProtocol;
+import usqualone.robots.micro.CarrierWellMicro;
+import usqualone.robots.micro.CarrierWellPathing;
+import usqualone.knowledge.Cache;
+import usqualone.robots.micro.MicroConstants;
+import usqualone.robots.pathfinding.BugNav;
+import usqualone.utils.Global;
+import usqualone.utils.Printer;
+import usqualone.utils.Utils;
 import battlecode.common.*;
 
 import java.util.Arrays;
@@ -584,7 +584,7 @@ public class Carrier extends MobileRobot {
         } else if (distToWell >= 4) {
           if (++turnsSinceCloseToWell >= Math.max(100, closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
             // we've been stuck for a while, give up
-            /*BASICBOT_ONLY*/Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
+            /*BASICBOT_ONLY*///Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
             findNewWell(currentTask.collectionType, wellLocation);
 //          return false;
           }

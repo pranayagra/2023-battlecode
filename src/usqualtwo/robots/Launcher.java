@@ -1,21 +1,21 @@
-package basicbot.robots;
+package usqualtwo.robots;
 
-import basicbot.containers.LinkedList;
-import basicbot.robots.micro.MicroConstants;
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.robots.pathfinding.SmartPathing;
-import basicbot.robots.pathfinding.SmitePathing;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import usqualtwo.containers.LinkedList;
+import usqualtwo.robots.micro.MicroConstants;
+import usqualtwo.communications.CommsHandler;
+import usqualtwo.communications.Communicator;
+import usqualtwo.communications.HqMetaInfo;
+import usqualtwo.containers.HashSet;
+import usqualtwo.knowledge.Cache;
+import usqualtwo.knowledge.RunningMemory;
+import usqualtwo.robots.micro.AttackMicro;
+import usqualtwo.robots.micro.AttackerFightingMicro;
+import usqualtwo.robots.pathfinding.BugNav;
+import usqualtwo.robots.pathfinding.SmartPathing;
+import usqualtwo.robots.pathfinding.SmitePathing;
+import usqualtwo.utils.Constants;
+import usqualtwo.utils.Printer;
+import usqualtwo.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
@@ -153,7 +153,7 @@ public class Launcher extends MobileRobot {
     } else {
       MapLocation target = getDestination();
       if (target != null) {
-        /*BASICBOT_ONLY*/rc.setIndicatorDot(target, 0, 0, 255);
+        /*BASICBOT_ONLY*///rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
       }
     }
@@ -417,7 +417,7 @@ public class Launcher extends MobileRobot {
             ))) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
+          /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;
@@ -885,7 +885,7 @@ public class Launcher extends MobileRobot {
           Printer.print("Failed to select patrol target for type: " + type);
         }
       }
-      /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
 

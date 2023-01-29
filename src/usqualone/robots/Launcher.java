@@ -1,21 +1,21 @@
-package basicbot.robots;
+package usqualone.robots;
 
-import basicbot.containers.LinkedList;
-import basicbot.robots.micro.MicroConstants;
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashSet;
-import basicbot.knowledge.Cache;
-import basicbot.knowledge.RunningMemory;
-import basicbot.robots.micro.AttackMicro;
-import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.robots.pathfinding.SmartPathing;
-import basicbot.robots.pathfinding.SmitePathing;
-import basicbot.utils.Constants;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import usqualone.containers.LinkedList;
+import usqualone.robots.micro.MicroConstants;
+import usqualone.communications.CommsHandler;
+import usqualone.communications.Communicator;
+import usqualone.communications.HqMetaInfo;
+import usqualone.containers.HashSet;
+import usqualone.knowledge.Cache;
+import usqualone.knowledge.RunningMemory;
+import usqualone.robots.micro.AttackMicro;
+import usqualone.robots.micro.AttackerFightingMicro;
+import usqualone.robots.pathfinding.BugNav;
+import usqualone.robots.pathfinding.SmartPathing;
+import usqualone.robots.pathfinding.SmitePathing;
+import usqualone.utils.Constants;
+import usqualone.utils.Printer;
+import usqualone.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
@@ -153,7 +153,7 @@ public class Launcher extends MobileRobot {
     } else {
       MapLocation target = getDestination();
       if (target != null) {
-        /*BASICBOT_ONLY*/rc.setIndicatorDot(target, 0, 0, 255);
+        /*BASICBOT_ONLY*///rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
       }
     }
@@ -417,7 +417,7 @@ public class Launcher extends MobileRobot {
             ))) {
 //          addFightTask(destination);
           rc.setIndicatorString("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
+          /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;
@@ -885,7 +885,7 @@ public class Launcher extends MobileRobot {
           Printer.print("Failed to select patrol target for type: " + type);
         }
       }
-      /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
 
@@ -1021,16 +1021,6 @@ public class Launcher extends MobileRobot {
   }
 
   private boolean attemptCloudAttack() throws GameActionException {
-    if (!rc.isActionReady()) return false;
-    MapLocation commedEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
-    if (commedEnemy != null && (!rc.canSenseLocation(commedEnemy) || (rc.canSenseRobotAtLocation(commedEnemy) && rc.senseRobotAtLocation(commedEnemy).team == Cache.Permanent.OPPONENT_TEAM))) {
-      if (rc.canAttack(commedEnemy)) {
-        lastEnemyLocation = commedEnemy;
-        lastAttackedLocation = commedEnemy;
-        rc.attack(commedEnemy);
-        return true;
-      }
-    }
     if (!rc.isActionReady()) return false;
     if (lastAttackedLocation != null && (!rc.canSenseLocation(lastAttackedLocation) || (rc.canSenseRobotAtLocation(lastAttackedLocation) && rc.senseRobotAtLocation(lastAttackedLocation).team == Cache.Permanent.OPPONENT_TEAM)) && attack(lastAttackedLocation)) return true;
     if (!rc.isActionReady()) return false;

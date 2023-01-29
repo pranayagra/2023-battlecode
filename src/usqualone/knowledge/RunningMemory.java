@@ -1,14 +1,14 @@
-package basicbot.knowledge;
+package usqualone.knowledge;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.HashMap;
-import basicbot.containers.HashMapNodeVal;
-import basicbot.containers.LocDataMap;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import usqualone.communications.CommsHandler;
+import usqualone.communications.Communicator;
+import usqualone.communications.HqMetaInfo;
+import usqualone.containers.HashMap;
+import usqualone.containers.HashMapNodeVal;
+import usqualone.containers.LocDataMap;
+import usqualone.utils.Global;
+import usqualone.utils.Printer;
+import usqualone.utils.Utils;
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
