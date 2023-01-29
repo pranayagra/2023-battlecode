@@ -32,21 +32,23 @@ public class CarrierEnemyProtocol {
   public static boolean doProtocol() throws GameActionException {
     SmitePathing.forceOneBug = true;
     if (enemyExists()) {
-      RobotInfo enemyToAttack = enemyToAttackIfWorth();
-      if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
+      if (rc.getAnchor() == null && rc.getResourceAmount(ResourceType.ELIXIR) == 0) {
+        RobotInfo enemyToAttack = enemyToAttackIfWorth();
+        if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
 //        Printer.print("enemyToAttack - " + enemyToAttack);
-      if (enemyToAttack != null && rc.isActionReady()) {
-        // todo: attack it!
-        if (rc.canAttack(enemyToAttack.location)) {
+        if (enemyToAttack != null && rc.isActionReady()) {
+          // todo: attack it!
+          if (rc.canAttack(enemyToAttack.location)) {
 //            Printer.print("it can attack w/o moving");
-          rc.attack(enemyToAttack.location);
-        } else {
-          // move and then attack
-          if (enemyToAttack.type == RobotType.CARRIER && rc.getResourceAmount(ResourceType.MANA) == 0 && rc.getResourceAmount(ResourceType.ELIXIR) == 0) {
-            pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
+            rc.attack(enemyToAttack.location);
+          } else {
+            // move and then attack
+            if (enemyToAttack.type == RobotType.CARRIER && rc.getResourceAmount(ResourceType.MANA) == 0 && rc.getResourceAmount(ResourceType.ELIXIR) == 0) {
+              pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
 //            Printer.print("moved to attack... " + rc.canAttack(enemyToAttack.location), "loc=" + enemyToAttack.location, "canAct=" + rc.canActLocation(enemyToAttack.location), "robInfo=" + rc.senseRobotAtLocation(enemyToAttack.location));
-            if (rc.canAttack(enemyToAttack.location)) {
-              rc.attack(enemyToAttack.location);
+              if (rc.canAttack(enemyToAttack.location)) {
+                rc.attack(enemyToAttack.location);
+              }
             }
           }
         }
@@ -91,7 +93,7 @@ public class CarrierEnemyProtocol {
 
   private static RobotInfo enemyToAttackIfWorth() throws GameActionException {
 //    Printer.print("enemyToAttackIfWorth()");
-    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA)/2 + (rc.getAnchor() != null ? GameConstants.ANCHOR_WEIGHT : 0));
+    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA)/2);
     if (myInvSize <= 4) {
 //      Printer.print("null bc invSize <= 4");
       return null;
@@ -111,12 +113,12 @@ public class CarrierEnemyProtocol {
       if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
         // determine if we have enough to attack it...
         int totalDmg = 0;
-        if (enemyRobot.type == RobotType.CARRIER) totalDmg -= rc.getResourceAmount(ResourceType.MANA)/2;
+        if (enemyRobot.type == RobotType.CARRIER) totalDmg -= rc.getResourceAmount(ResourceType.MANA)/2 * GameConstants.CARRIER_DAMAGE_FACTOR;
         totalDmg += myInvSize * GameConstants.CARRIER_DAMAGE_FACTOR;
         RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); // does not return this robot as well
         for (RobotInfo friendlyRobot : robotInfos) {
           //todo: maybe dont consider launchers in dmg calculation here
-          int friendDamage = (int) ((friendlyRobot.getResourceAmount(ResourceType.ADAMANTIUM) + (enemyRobot.type == RobotType.CARRIER ? 0 : friendlyRobot.getResourceAmount(ResourceType.MANA)/2) + (friendlyRobot.getTotalAnchors() * GameConstants.ANCHOR_WEIGHT)) * GameConstants.CARRIER_DAMAGE_FACTOR);
+          int friendDamage = (int) ((friendlyRobot.getResourceAmount(ResourceType.ADAMANTIUM) + (enemyRobot.type == RobotType.CARRIER ? 0 : friendlyRobot.getResourceAmount(ResourceType.MANA)/2)) * GameConstants.CARRIER_DAMAGE_FACTOR);
           totalDmg += (friendDamage) + friendlyRobot.type.damage;
         }
 
