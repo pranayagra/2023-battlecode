@@ -524,9 +524,10 @@ public class Carrier extends MobileRobot {
     if (distToWell < closestDistToWell) {
       closestDistToWell = distToWell;
       turnsSinceCloseToWell = 0;
-    } else {
+    } else if (distToWell >= 4) {
       if (++turnsSinceCloseToWell >= closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
         // we've been stuck for a while, give up
+        Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
         return false;
       }
     }
