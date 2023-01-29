@@ -19,7 +19,7 @@ public class Communicator {
       HqMetaInfo.init();
     }
 
-    public static int registerHQ(WellInfo closestAdamantium, WellInfo closestMana) throws GameActionException {
+    public static int registerHQ() throws GameActionException {
       int hqID = HqMetaInfo.hqCount;
 //      Printer.print("Registering HQ " + hqID);
       HqMetaInfo.hqCount++;
@@ -35,14 +35,6 @@ public class Communicator {
       HqMetaInfo.enemyHqLocations = newEnemyHQlocs;
       CommsHandler.writeHqCount(HqMetaInfo.hqCount);
       CommsHandler.writeOurHqLocation(hqID, Cache.PerTurn.CURRENT_LOCATION);
-      if (closestAdamantium != null) {
-        commsHandler.writeAdamantiumWellLocation(hqID, closestAdamantium.getMapLocation());
-//        commsHandler.writeOurHqClosestAdamantiumLocation(hqID, closestAdamantium.getMapLocation());
-      }
-      if (closestMana != null) {
-        commsHandler.writeManaWellLocation(hqID, closestMana.getMapLocation());
-//        commsHandler.writeOurHqClosestManaLocation(hqID, closestMana.getMapLocation());
-      }
       return hqID;
     }
 
@@ -68,6 +60,7 @@ public class Communicator {
     MetaInfo.init();
   }
 
+  // TODO: store map from MApLoc to index :). This will support general access everywhere including don't go to full well
   //TODO: large - rewrite wells to cycle and every carrier updates their runningMemory turn by turn.
   /**
    * puts a well into the next free slot within the comms buffer for wells of that type.
@@ -157,6 +150,7 @@ public class Communicator {
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (writer.readWellExists(i)) {
+        Printer.print("" + writer.readWellLocation(i));
         return true;
       }
     }
@@ -180,6 +174,38 @@ public class Communicator {
 
     }
     return closest;
+  }
+
+  // TODO: CAche all these simple getter methods
+  public static int getTotalCarriersMiningType(ResourceType resourceType) throws GameActionException {
+    int numCarriers = 0;
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      numCarriers += writer.readWellCurrentWorkers(i);
+    }
+    return numCarriers;
+  }
+
+  public static int numWellsFullySaturated(ResourceType resourceType) throws GameActionException {
+    int numWells = 0;
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      numWells += writer.readWellCurrentWorkers(i) == writer.readWellCapacity(i)? 1: 0 ;
+    }
+    return numWells;
+  }
+
+  public static int numWellsOfType(ResourceType resourceType) throws GameActionException{
+    int numWells = 0;
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      numWells ++;
+
+    }
+    return numWells;
   }
 
   public static MapLocation getClosestEnemyWellLocation(MapLocation fromHere, ResourceType resourceType) throws GameActionException {

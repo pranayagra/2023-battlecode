@@ -660,16 +660,20 @@ public abstract class Robot {
    * @throws GameActionException any exception with sensing or writing to shared array
    */
   private void initialWellExploration() throws GameActionException {
-    boolean needAd = !Communicator.anyWellExists(ResourceType.ADAMANTIUM);
-    boolean needMana = !Communicator.anyWellExists(ResourceType.MANA);
-    boolean needElixir = !Communicator.anyWellExists(ResourceType.ELIXIR);
-    if (!needAd && !needMana && !needElixir) return;
-//    Printer.print("yeet");
-
+    // turn off optimization unless we need bytecode back
+//    boolean needAd = !Communicator.anyWellExists(ResourceType.ADAMANTIUM);
+//    boolean needMana = !Communicator.anyWellExists(ResourceType.MANA);
+//    boolean needElixir = !Communicator.anyWellExists(ResourceType.ELIXIR);
+//    if (!needAd && !needMana && !needElixir) return;
+    boolean needAd = true;
+    boolean needMana = true;
+    boolean needElixir = true;
+//    die();
 //    if (needAd || needMana) {
 //      Printer.print("Early game checking for wells: needAd=" + needAd + ", needMana=" + needMana);
 //    }
     for (WellInfo wellInfo : rc.senseNearbyWells()) {
+      // Printer.print("well:" + wellInfo);
       switch (wellInfo.getResourceType()) {
         case ADAMANTIUM:
           if (needAd) {
@@ -698,7 +702,7 @@ public abstract class Robot {
   }
 
   /**
-   * If a nearby well is seen, put it in comms
+   * If a nearby well is seen, put it in local memory
    * @throws GameActionException any issues during reading/writing
    */
   protected void updateWellExploration() throws GameActionException {

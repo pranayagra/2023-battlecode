@@ -18,8 +18,8 @@ public class HeadQuarters extends Robot {
   private static final int INCOME_MOVING_AVERAGE_WINDOW_SIZE = 100;
 
   private int hqID;
-  public final WellInfo closestAdamantium;
-  public final WellInfo closestMana;
+//  public final WellInfo closestAdamantium;
+//  public final WellInfo closestMana;
 
   private WellInfo closestWell;
   private MapLocation targetWell;
@@ -72,13 +72,15 @@ public class HeadQuarters extends Robot {
 
   public HeadQuarters(RobotController rc) throws GameActionException {
     super(rc);
-    this.closestAdamantium = getClosestWell(ResourceType.ADAMANTIUM);
-    this.closestMana = getClosestWell(ResourceType.MANA);
-    this.closestWell = this.closestAdamantium;
-    if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
-      this.closestWell = this.closestMana;
-    }
-    this.hqID = Communicator.MetaInfo.registerHQ(this.closestAdamantium, this.closestMana);
+//    this.closestAdamantium = getClosestWell(ResourceType.ADAMANTIUM);
+//    this.closestMana = getClosestWell(ResourceType.MANA);
+//    this.closestWell = this.closestAdamantium;
+//    if (this.closestAdamantium == null || (this.closestMana != null && this.closestMana.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) < this.closestAdamantium.getMapLocation().distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION))) {
+//      this.closestWell = this.closestMana;
+//    }
+//    this.hqID = Communicator.MetaInfo.registerHQ(this.closestAdamantium, this.closestMana);
+    this.hqID = Communicator.MetaInfo.registerHQ();
+
     if (Cache.Permanent.MAP_AREA <= 20*20) spawnOrder = spawnOrder20x20;
     else if (Cache.Permanent.MAP_AREA <= 40*40) spawnOrder = spawnOrder40x40;
     else spawnOrder = spawnOrder60x60;
@@ -134,12 +136,14 @@ public class HeadQuarters extends Robot {
 
   @Override
   protected void runTurn() throws GameActionException {
+    // printDebugInfo();
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//    if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
+    // if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
     }
+    setDefaultIndicatorString();
 
     Communicator.clearEnemyComms();
     handleIncome();
@@ -202,6 +206,24 @@ public class HeadQuarters extends Robot {
     String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
     indString += ";kSym:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
     rc.setIndicatorString(indString);
+  }
+
+  private void printDebugInfo() throws GameActionException {
+    if (hqID != 0) return;
+    if (Cache.PerTurn.ROUND_NUM % 10 != 0) return;
+    ResourceType[] resourceTypes = new ResourceType[]{ResourceType.MANA, ResourceType.ADAMANTIUM};
+    for (ResourceType type : resourceTypes) {
+      CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(type);
+      for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+        if (!writer.readWellExists(i)) continue;
+        MapLocation loc = writer.readWellLocation(i);
+        int capacity = writer.readWellCapacity(i);
+        int currentWorkers = writer.readWellCurrentWorkers(i);
+        Printer.print("Well:" + loc + " " + currentWorkers +"/" + capacity);
+
+
+      }
+    }
   }
   /**
    * Handles the resource income information. Does the following actions:
