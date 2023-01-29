@@ -271,7 +271,8 @@ public class Carrier extends MobileRobot {
     // now adamantiumCarriers are >= maxAdamantiumCarriersBeforeManaSaturation
     int saturatedManaWells = Communicator.numWellsFullySaturated(ResourceType.MANA);
     // Printer.print("satured mana wells: " + saturatedManaWells);
-    if (saturatedManaWells < HqMetaInfo.hqCount * 2 && saturatedManaWells < Communicator.numWellsOfType(ResourceType.MANA)) {
+    if (saturatedManaWells == 0 ||
+        (saturatedManaWells < HqMetaInfo.hqCount * 2 && saturatedManaWells < Communicator.numWellsOfType(ResourceType.MANA))) {
 
       // not mana saturated yet, get mana
       return CarrierTask.FETCH_MANA;
@@ -279,7 +280,8 @@ public class Carrier extends MobileRobot {
     // Printer.print("yeeto im here");
     int saturatedAdWells = Communicator.numWellsFullySaturated(ResourceType.ADAMANTIUM);
     // saturate atleast 1 adamantium well per HQ
-    if (saturatedAdWells < HqMetaInfo.hqCount && saturatedAdWells < Communicator.numWellsOfType(ResourceType.ADAMANTIUM)) {
+    if (saturatedAdWells == 0 ||
+        (saturatedAdWells < HqMetaInfo.hqCount && saturatedAdWells < Communicator.numWellsOfType(ResourceType.ADAMANTIUM))) {
       return CarrierTask.FETCH_ADAMANTIUM;
     }
 
