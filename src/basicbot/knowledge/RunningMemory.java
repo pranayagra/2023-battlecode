@@ -12,6 +12,7 @@ import basicbot.utils.Utils;
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
+import battlecode.common.ResourceType;
 import battlecode.common.WellInfo;
 
 public class RunningMemory {
@@ -167,5 +168,14 @@ public class RunningMemory {
       if (Communicator.writeNextWell(well)) numBroadcast++;
     }
     return numBroadcast;
+  }
+
+  public static boolean containsWellOfType(ResourceType type) throws GameActionException {
+    if (wells.size == 0) return false;
+    for (WellData wellData : wells.values) {
+      if (wellData == null) continue;
+      if (wellData.type == type) return true;
+    }
+    return false;
   }
 }

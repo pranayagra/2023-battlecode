@@ -350,10 +350,39 @@ public class Carrier extends MobileRobot {
     return transferAllResources(currentTask.targetHQLoc);
   }
 
+  private boolean executeReportInfo() throws GameActionException {
+    if (!shouldReportToComms()) return true;
+    if (rc.canWriteSharedArray(0, 0)) {
+      afterTurnWhenMoved();
+      return true;
+    }
+    // OW move towards HQ
+    MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    while(pathing.moveTowards(closestHQ)) {};
+    return false;
+  }
+
   public boolean transferAllResources(MapLocation targetLocation) throws GameActionException {
     for (ResourceType type : ResourceType.values()) {
       if (transferResource(targetLocation, type, rc.getResourceAmount(type)) && rc.getWeight() == 0) {
         return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Decision whether carrier should report what it knows to comms.
+   * @return
+   * @throws GameActionException
+   */
+  private boolean shouldReportToComms() throws GameActionException {
+    if (Communicator.numWellsOfType(ResourceType.MANA) == 0 && RunningMemory.containsWellOfType(ResourceType.MANA)) {
+      for (WellData wellData : RunningMemory.wells.values) {
+        if (wellData == null) continue;
+        if (wellData.type != ResourceType.MANA) continue;
+        if(wellData.loc.isWithinDistanceSquared(HqMetaInfo.getClosestHqLocation(wellData.loc), 400))
+          return true;
       }
     }
     return false;
@@ -366,6 +395,10 @@ public class Carrier extends MobileRobot {
    */
   private boolean executeFetchResource(ResourceType resourceType) throws GameActionException {
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
+    if (shouldReportToComms()) {
+      forcedNextTask = CarrierTask.REPORT_INFO;
+      return true;
+    }
     no_well: if (currentTask.targetWell == null
         || (currentTask.turnsRunning % 20 == 0 && !currentTask.targetWell.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 400))
         || (CarrierEnemyProtocol.lastEnemyLocation != null
@@ -1056,6 +1089,7 @@ public class Carrier extends MobileRobot {
     DELIVER_RSS_HOME(ResourceType.NO_RESOURCE),
     ANCHOR_ISLAND(ResourceType.NO_RESOURCE),
     SCOUT(ResourceType.NO_RESOURCE),
+    REPORT_INFO(ResourceType.NO_RESOURCE),
     ATTACK(ResourceType.NO_RESOURCE);
 
     public MapLocation targetHQLoc;
@@ -1087,6 +1121,8 @@ public class Carrier extends MobileRobot {
           break;
         case ATTACK:
           break;
+        case REPORT_INFO:
+          break;
       }
     }
 
@@ -1111,6 +1147,8 @@ public class Carrier extends MobileRobot {
         case SCOUT:
           break;
         case ATTACK:
+          break;
+        case REPORT_INFO:
           break;
       }
     }
@@ -1139,6 +1177,8 @@ public class Carrier extends MobileRobot {
           return carrier.executeScout();
         case ATTACK:
           return carrier.executeAttack();
+        case REPORT_INFO:
+          return carrier.executeReportInfo();
       }
       return false;
     }
