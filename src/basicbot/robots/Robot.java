@@ -275,7 +275,8 @@ public abstract class Robot {
 
   private void observeIslandsNearby() throws GameActionException {
     int[] islandIds = rc.senseNearbyIslands();
-    for (int islandId : islandIds) {
+    for (int i = Math.min(islandIds.length, 3); --i >= 0;) {
+      int islandId = islandIds[i];
       if (localIslandInfo[islandId] != null) {
         localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
         localIslandInfo[islandId].islandTeam = rc.senseTeamOccupyingIsland(islandId);
@@ -376,7 +377,9 @@ public abstract class Robot {
   protected IslandInfo getIslandInformation(int id) {
     IslandInfo globalInfo = globalIslandInfo[id];
     IslandInfo localInfo = localIslandInfo[id];
-
+//    if (rc.getID() == 11731 && Cache.PerTurn.ROUND_NUM >= 450 && Cache.PerTurn.ROUND_NUM <= 460) {
+//      Printer.print(id + ", global " + globalInfo + ", local " + localInfo);
+//    }
     if (globalInfo != null && localInfo != null) {
       if (globalInfo.roundNum > localInfo.roundNum) {
         return globalInfo;

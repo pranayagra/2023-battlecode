@@ -122,6 +122,7 @@ public class HeadQuarters extends Robot {
             CommsHandler.writeMyIslandsLocation(islandInfo.islandLocation);
             CommsHandler.writeMyIslandsRoundNum(islandInfo.roundNum);
             CommsHandler.writeMyIslandsIslandId(islandInfo.islandId);
+            Printer.appendToIndicator("writing island " + islandInfo.islandLocation);
 //            Printer.print("rotating island " + islandInfo);
 //            CommsHandler.writeMyIslandsTeam(teamToInt(islandInfo.islandTeam)); // not needed since we only rotate owned team islands
             return;
@@ -134,7 +135,7 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-    if (Cache.PerTurn.ROUND_NUM >= 300) rc.resign();
+//    if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
@@ -314,7 +315,7 @@ public class HeadQuarters extends Robot {
 
     adamantiumToSave = 0;
     manaToSave = 0;
-    if (Cache.PerTurn.ROUND_NUM >= 500 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
       // consider anchor spawn
       if (createAnchors()) {
         numAnchorsMade++;

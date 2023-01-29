@@ -13,6 +13,9 @@ import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Launcher extends MobileRobot {
   private static final int MIN_TURN_TO_MOVE = 0;
   private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
@@ -83,6 +86,17 @@ public class Launcher extends MobileRobot {
     updateEnemyStateInformation();
 
     if (!launcherInVision) {
+      if (shouldHeal) {
+        tryAttack(true);
+      }
+      if (healingProtocol()) {
+        tryAttack(true);
+        tryAttack(false);
+        return;
+      }
+    }
+
+    if (!launcherInVision) {
       if (carrierInAttackRange) {
         // attack carrier in action radius and disable moving
         // TODO: let's consider moving forwards?
@@ -138,32 +152,144 @@ public class Launcher extends MobileRobot {
     tryAttack(false);
   }
 
-  // ISLAND STUFF
-  private void healingProtocol() throws GameActionException {
-    //todo: not complete
-    if (Cache.PerTurn.HEALTH < RobotType.LAUNCHER.health * 0.5) {
-      IslandInfo islandInfo = getClosestFriendlyIsland();
-//      Printer.print("island info: " + islandInfo);
-      if (islandInfo != null) {
-        MapLocation islandLocation = islandInfo.islandLocation;
-        pathing.moveTowards(islandLocation);
+  private MapLocation closestNonAdjIslandFriend() throws GameActionException {
+    int distance = Integer.MAX_VALUE;
+    MapLocation closestFriend = null;
+    for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+      if (robot.type == RobotType.LAUNCHER) {
+        int dist = robot.location.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION);
+        int islandId = rc.senseIsland(robot.location);
+        if (islandId == -1 || rc.senseTeamOccupyingIsland(islandId) != Cache.Permanent.OUR_TEAM) continue;
+        if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(robot.location) && dist < distance) {
+          distance = dist;
+          closestFriend = robot.location;
+        }
       }
     }
+    return closestFriend;
+  }
+
+  // ISLAND STUFF
+  private boolean ownIsland(MapLocation location) throws GameActionException {
+    int islandID = rc.senseIsland(location);
+    return (islandID >= 0 && rc.senseTeamOccupyingIsland(islandID) == Cache.Permanent.OUR_TEAM);
+  }
+
+  private void microIsland() throws GameActionException {
+    if (!rc.isMovementReady()) return;
+
+    MapLocation closestFriend = closestNonAdjIslandFriend();
+
+    List<Direction> allDirections = new ArrayList<>();
+    if (closestFriend == null) {
+      for (Direction dir : Utils.directions) {
+        if (!rc.canMove(dir)) continue;
+        if (ownIsland(Cache.PerTurn.CURRENT_LOCATION.add(dir))) {
+          allDirections.add(dir);
+        }
+      }
+    } else {
+      int bestDistance = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(closestFriend);
+      for (Direction dir : Utils.directions) {
+        if (!rc.canMove(dir)) continue;
+        MapLocation candidateLocation = Cache.PerTurn.CURRENT_LOCATION.add(dir);
+        if (!ownIsland(candidateLocation)) continue;
+        int candidateDistance = candidateLocation.distanceSquaredTo(closestFriend);
+        if (candidateDistance < bestDistance) {
+          allDirections.clear();
+          allDirections.add(dir);
+          bestDistance = candidateDistance;
+        } else if (candidateDistance == bestDistance) {
+          allDirections.add(dir);
+        }
+      }
+    }
+    if (allDirections.size() > 0) {
+      Direction dir = allDirections.get(Utils.rng.nextInt(allDirections.size()));
+      pathing.move(dir);
+    }
+  }
+  private boolean shouldHeal;
+  private boolean healingProtocol() throws GameActionException {
+    //todo: not complete
+    if (Cache.PerTurn.HEALTH < RobotType.LAUNCHER.health * 0.5) {
+      shouldHeal = true;
+    } else if (Cache.PerTurn.HEALTH == RobotType.LAUNCHER.health) {
+      shouldHeal = false;
+    }
+
+    if (!shouldHeal) return false;
+
+    // island micro (I am on my island)
+    if (ownIsland(Cache.PerTurn.CURRENT_LOCATION)) {
+      microIsland();
+      return true;
+    }
+
+    // find closest island and go towards it
+    IslandInfo closestFriendlyIsland = getClosestFriendlyIsland();
+    if (closestFriendlyIsland == null) {
+//      Printer.appendToIndicator("no healing :(");
+      return false;
+    }
+//    Printer.appendToIndicator("healing=" + closestFriendlyIsland.islandLocation);
+    MapLocation[] mapLocations = rc.senseNearbyIslandLocations(closestFriendlyIsland.islandId);
+    if (mapLocations.length == 0) {
+      pathing.moveTowards(closestFriendlyIsland.islandLocation);
+    } else {
+      // I can see the island in vision, let's find a good spot to heal from
+      int closestDist = Integer.MAX_VALUE;
+      int closestEuclideanDist = Integer.MAX_VALUE;
+      MapLocation target = null;
+      for (int i = mapLocations.length; --i >= 0;) {
+        MapLocation mapLocation = mapLocations[i];
+        if (rc.canSenseLocation(mapLocation) && rc.senseRobotAtLocation(mapLocation) == null) {
+          int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, mapLocation);
+          int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(mapLocation);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestEuclideanDist = euclideanDist;
+            target = mapLocation;
+          } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+            closestEuclideanDist = euclideanDist;
+            target = mapLocation;
+          }
+        }
+      }
+
+//      Printer.appendToIndicator(" target=" + target);
+      // I can see the island but I can't find a good spot to heal from, circle around the island?
+      if (target == null) {
+        pathing.moveTowards(closestFriendlyIsland.islandLocation);
+      } else {
+        localIslandInfo[closestFriendlyIsland.islandId].islandLocation = target;
+        localIslandInfo[closestFriendlyIsland.islandId].roundNum = Cache.PerTurn.ROUND_NUM;
+        pathing.moveTowards(target);
+      }
+    }
+    return true;
   }
 
   private IslandInfo getClosestFriendlyIsland() {
     int closestDist = Integer.MAX_VALUE;
+    int closestEuclideanDist = Integer.MAX_VALUE;
     IslandInfo closest = null;
     for (int i = 0; i < 36; ++i) {
       IslandInfo islandInfo = getIslandInformation(i);
       if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
         int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
+        int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(islandInfo.islandLocation);
         if (dist < closestDist) {
           closestDist = dist;
+          closest = islandInfo;
+          closestEuclideanDist = euclideanDist;
+        } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+          closestEuclideanDist = euclideanDist;
           closest = islandInfo;
         }
       }
     }
+
     return closest;
   }
 
