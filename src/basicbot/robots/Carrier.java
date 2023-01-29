@@ -520,20 +520,6 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException any issues with sensing/moving
    */
   private boolean approachWell(MapLocation wellLocation) throws GameActionException {
-    if (rc.getWeight() <= 4) {
-      int distToWell = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, wellLocation);
-      if (distToWell < closestDistToWell) {
-        closestDistToWell = distToWell;
-        turnsSinceCloseToWell = 0;
-      } else if (distToWell >= 4) {
-        if (++turnsSinceCloseToWell >= Math.max(100, closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
-          // we've been stuck for a while, give up
-          /*BASICBOT_ONLY*/Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
-          findNewWell(currentTask.collectionType, wellLocation);
-//          return false;
-        }
-      }
-    }
     if (wellQueueOrder == null) {
       rc.setIndicatorString("no well queue cycle -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
 //      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, wellLocation, 0, 255, 0);
@@ -553,6 +539,23 @@ public class Carrier extends MobileRobot {
           break;
         }
       }
+
+
+      if (rc.getWeight() <= 4) {
+        int distToWell = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, wellLocation);
+        if (distToWell < closestDistToWell) {
+          closestDistToWell = distToWell;
+          turnsSinceCloseToWell = 0;
+        } else if (distToWell >= 4) {
+          if (++turnsSinceCloseToWell >= Math.max(100, closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
+            // we've been stuck for a while, give up
+            /*BASICBOT_ONLY*/Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
+            findNewWell(currentTask.collectionType, wellLocation);
+//          return false;
+          }
+        }
+      }
+
       if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         wellApproachDirection.put(wellLocation, wellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION));
         wellQueueOrder = CarrierWellPathing.getPathForWell(wellLocation, wellApproachDirection.get(wellLocation));
