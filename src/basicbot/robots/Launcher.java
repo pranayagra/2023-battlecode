@@ -1017,9 +1017,9 @@ public class Launcher extends MobileRobot {
 
   private boolean attemptCloudAttack() throws GameActionException {
     if (!rc.isActionReady()) return false;
-    if (attack(lastAttackedLocation)) return true;
+    if (lastAttackedLocation != null && attack(lastAttackedLocation)) return true;
     if (!rc.isActionReady()) return false;
-    if (attack(lastEnemyLocation)) return true;
+    if (lastEnemyLocation != null && attack(lastEnemyLocation)) return true;
 
     if (!rc.isActionReady()) return false;
     if (Cache.PerTurn.IS_IN_CLOUD) {
