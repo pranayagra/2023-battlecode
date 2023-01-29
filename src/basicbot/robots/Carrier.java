@@ -340,6 +340,11 @@ public class Carrier extends MobileRobot {
     if (rc.getWeight() == 0) {
       return true;
     }
+    MapLocation closestHqLoc = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+    int distToClosestHq = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(closestHqLoc);
+    if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(currentTask.targetHQLoc, distToClosestHq*3/2)) {
+      currentTask.targetHQLoc = closestHqLoc;
+    }
     rc.setIndicatorString("Deliver rss home: " + currentTask.targetHQLoc);
     if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(currentTask.targetHQLoc)) {
       pathing.moveTowards(currentTask.targetHQLoc);

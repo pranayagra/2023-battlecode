@@ -61,11 +61,24 @@ public class CarrierEnemyProtocol {
         fleeingCounter = MicroConstants.CARRIER_TURNS_TO_FLEE;
       }
     }
+    MapLocation fleeTarget = closestHQ;
+    if (lastEnemyLocation != null) {
+      Direction toHome = Cache.PerTurn.CURRENT_LOCATION.directionTo(closestHQ);
+      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation);
+      if (toHome == toEnemy || toHome == toEnemy.rotateLeft() || toHome == toEnemy.rotateRight()) {
+        fleeTarget = Cache.PerTurn.CURRENT_LOCATION.subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy);
+      }
+    }
     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      while (rc.isMovementReady() && pathing.moveTowards(closestHQ) && --fleeingCounter >= 0) {}
+      while (rc.isMovementReady() && pathing.moveTowards(fleeTarget) && --fleeingCounter >= 0) {
+        if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(closestHQ)) {
+          carrier.transferAllResources(closestHQ);
+          fleeingCounter = 0;
+        }
+      }
 //      if (cachedLastEnemyForBroadcast != null) { // we need to broadcast this enemy
 //        forcedNextTask = CarrierTask.DELIVER_RSS_HOME;
 //        resetTask();
