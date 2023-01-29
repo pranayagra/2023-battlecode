@@ -122,6 +122,7 @@ public class HeadQuarters extends Robot {
             CommsHandler.writeMyIslandsLocation(islandInfo.islandLocation);
             CommsHandler.writeMyIslandsRoundNum(islandInfo.roundNum);
             CommsHandler.writeMyIslandsIslandId(islandInfo.islandId);
+            Printer.appendToIndicator("writing island " + islandInfo.islandLocation);
 //            Printer.print("rotating island " + islandInfo);
 //            CommsHandler.writeMyIslandsTeam(teamToInt(islandInfo.islandTeam)); // not needed since we only rotate owned team islands
             return;

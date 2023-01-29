@@ -229,28 +229,41 @@ public class Launcher extends MobileRobot {
     // find closest island and go towards it
     IslandInfo closestFriendlyIsland = getClosestFriendlyIsland();
     if (closestFriendlyIsland == null) {
+//      Printer.appendToIndicator("no healing :(");
       return false;
     }
+//    Printer.appendToIndicator("healing=" + closestFriendlyIsland.islandLocation);
     MapLocation[] mapLocations = rc.senseNearbyIslandLocations(closestFriendlyIsland.islandId);
     if (mapLocations.length == 0) {
       pathing.moveTowards(closestFriendlyIsland.islandLocation);
     } else {
       // I can see the island in vision, let's find a good spot to heal from
       int closestDist = Integer.MAX_VALUE;
+      int closestEuclideanDist = Integer.MAX_VALUE;
       MapLocation target = null;
-      for (MapLocation mapLocation : mapLocations) {
+      for (int i = mapLocations.length; --i >= 0;) {
+        MapLocation mapLocation = mapLocations[i];
         if (rc.canSenseLocation(mapLocation) && rc.senseRobotAtLocation(mapLocation) == null) {
           int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, mapLocation);
+          int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(mapLocation);
           if (dist < closestDist) {
             closestDist = dist;
+            closestEuclideanDist = euclideanDist;
+            target = mapLocation;
+          } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+            closestEuclideanDist = euclideanDist;
             target = mapLocation;
           }
         }
       }
+
+//      Printer.appendToIndicator(" target=" + target);
       // I can see the island but I can't find a good spot to heal from, circle around the island?
       if (target == null) {
         pathing.moveTowards(closestFriendlyIsland.islandLocation);
       } else {
+        localIslandInfo[closestFriendlyIsland.islandId].islandLocation = target;
+        localIslandInfo[closestFriendlyIsland.islandId].roundNum = Cache.PerTurn.ROUND_NUM;
         pathing.moveTowards(target);
       }
     }
@@ -259,17 +272,24 @@ public class Launcher extends MobileRobot {
 
   private IslandInfo getClosestFriendlyIsland() {
     int closestDist = Integer.MAX_VALUE;
+    int closestEuclideanDist = Integer.MAX_VALUE;
     IslandInfo closest = null;
     for (int i = 0; i < 36; ++i) {
       IslandInfo islandInfo = getIslandInformation(i);
       if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
         int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
+        int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(islandInfo.islandLocation);
         if (dist < closestDist) {
           closestDist = dist;
+          closest = islandInfo;
+          closestEuclideanDist = euclideanDist;
+        } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+          closestEuclideanDist = euclideanDist;
           closest = islandInfo;
         }
       }
     }
+
     return closest;
   }
 
