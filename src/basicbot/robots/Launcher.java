@@ -65,7 +65,7 @@ public class Launcher extends MobileRobot {
   protected void runTurn() throws GameActionException {
     rc.setIndicatorString("Ooga booga im a launcher");
     int manaIncome = CommsHandler.readOurHqManaIncome(HqMetaInfo.getClosestHQ(Cache.PerTurn.CURRENT_LOCATION));
-    if (manaIncome > 4) {
+    if (manaIncome > 20) {
       MIN_GROUP_SIZE_TO_MOVE = (manaIncome / 8) + 3;
     } else {
       MIN_GROUP_SIZE_TO_MOVE = 3;
@@ -82,9 +82,9 @@ public class Launcher extends MobileRobot {
     } else {
       turnsInCloud = 0;
     }
-    if (Cache.PerTurn.ROUND_NUM < 1000) {
-      MIN_GROUP_SIZE_TO_MOVE = 1;
-    }
+//    if (Cache.PerTurn.ROUND_NUM < 1000) {
+//      MIN_GROUP_SIZE_TO_MOVE = 1;
+//    }
 
     //TODO: refactor this out
     updateEnemyStateInformation();
