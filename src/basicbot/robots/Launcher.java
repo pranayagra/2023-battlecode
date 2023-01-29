@@ -1055,7 +1055,7 @@ public class Launcher extends MobileRobot {
     int bestCloudDist = Integer.MAX_VALUE;
     for (int i = clouds.length; --i >= 0;) {
       MapLocation loc = clouds[i];
-      if (rc.canSenseLocation(loc)) continue;
+      if (rc.canSenseLocation(loc) && (!rc.canSenseRobotAtLocation(loc) || rc.senseRobotAtLocation(loc).team == Cache.Permanent.OPPONENT_TEAM)) continue;
       if (rc.canAttack(loc)) {
         int dist = closeTo.distanceSquaredTo(loc);
         if (dist < bestCloudDist) {
