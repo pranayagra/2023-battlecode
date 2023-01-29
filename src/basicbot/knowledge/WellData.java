@@ -21,6 +21,13 @@ public class WellData {
     this.capacity = capacity;
   }
 
+  public WellData(MapLocation wellLocation, ResourceType resourceType, boolean isUpgraded, int capacity) {
+    this.loc = wellLocation;
+    this.type = resourceType;
+    this.isUpgraded = isUpgraded;
+    this.capacity = capacity;
+  }
+
   /**
    * Merges two well info assuming that the locations are the same.
    * Does not check this!

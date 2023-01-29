@@ -4,6 +4,7 @@ import basicbot.communications.CommsHandler;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
+import basicbot.robots.micro.MicroConstants;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -12,6 +13,8 @@ public abstract class MobileRobot extends Robot {
 
   protected MapLocation explorationTarget;
   protected int turnsExploring;
+  protected int closestDistanceToExplorationTarget = Integer.MAX_VALUE;
+  protected int turnsSinceClosestDistanceToExplorationTarget = 0;
   /** true if the exploration target is set to random location instead of unexplored lands */
   protected boolean exploringRandomly = false;
   public final int EXPLORATION_REACHED_RADIUS;
@@ -26,6 +29,9 @@ public abstract class MobileRobot extends Robot {
   protected void randomizeExplorationTarget(boolean forceNotSelf) throws GameActionException {
 //    int b = Clock.getBytecodeNum();
 //    Printer.print("RUNNING randomizeExplorationTarget(): ");
+    turnsExploring = 0;
+    closestDistanceToExplorationTarget = Integer.MAX_VALUE;
+    turnsSinceClosestDistanceToExplorationTarget = 0;
     switch (Cache.Permanent.ROBOT_TYPE) {
       case CARRIER:
         int roundNumX2 = Cache.PerTurn.ROUND_NUM * 2;
@@ -105,9 +111,9 @@ public abstract class MobileRobot extends Robot {
   private boolean goToExplorationTarget() throws GameActionException {
     turnsExploring++;
     if (!rc.isMovementReady()) {
-      if (explorationTarget != null) {
-        rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
-      }
+      /*BASICBOT_ONLY*/if (explorationTarget != null) {
+      /*BASICBOT_ONLY*/  rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
+      /*BASICBOT_ONLY*/}
     } else {
       pathing.moveTowards(explorationTarget);
     }
@@ -129,6 +135,17 @@ public abstract class MobileRobot extends Robot {
       randomizeExplorationTarget(true);
       rc.setIndicatorString("explored " + oldTarget + " -- now: " + explorationTarget);
       return true;
+    } else {
+      int distance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, explorationTarget);
+      if (distance < closestDistanceToExplorationTarget) {
+        closestDistanceToExplorationTarget = distance;
+        turnsSinceClosestDistanceToExplorationTarget = 0;
+      } else if (++turnsSinceClosestDistanceToExplorationTarget >= closestDistanceToExplorationTarget * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+        MapLocation oldTarget = explorationTarget;
+        randomizeExplorationTarget(true);
+        rc.setIndicatorString("gave up on exploring " + oldTarget + " -- now: " + explorationTarget);
+        return true;
+      }
     }
     return false;
   }

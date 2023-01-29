@@ -5,8 +5,8 @@ import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.containers.CharSet;
 import basicbot.containers.HashMap;
-import basicbot.containers.HashSet;
 import basicbot.knowledge.RunningMemory;
+import basicbot.knowledge.WellData;
 import basicbot.robots.micro.CarrierEnemyProtocol;
 import basicbot.robots.micro.CarrierWellMicro;
 import basicbot.robots.micro.CarrierWellPathing;
@@ -500,26 +500,41 @@ public class Carrier extends MobileRobot {
       if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         wellApproachDirection.put(wellLocation, wellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION));
         wellQueueOrder = CarrierWellPathing.getPathForWell(wellLocation, wellApproachDirection.get(wellLocation));
-        wellEntryPoint = wellQueueOrder[0];
+        WellData wellData = RunningMemory.wells.get(wellLocation);
+        if (wellData == null) {
+          wellData = new WellData(wellLocation, currentTask.collectionType, false, 0);
+          wellData.dirty = true;
+          RunningMemory.wells.put(wellLocation, wellData);
+        }
         boolean wellEntryUndetermined = true;
-        wellQueueSize = 0;
-        for (int i = 0; i < wellQueueOrder.length; i++) {
-          if (wellQueueOrder[i].isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)
-              && (
-                  (rc.canSenseLocation(wellQueueOrder[i]) && rc.sensePassability(wellQueueOrder[i]))
-                  || rc.senseCloud(wellQueueOrder[i])
-              ) && !BugNav.blockedLocations.contains(wellQueueOrder[i])
-          ) {
-            wellQueueSize++;
-            if (wellEntryUndetermined) {
-              RobotInfo robot = rc.canSenseRobotAtLocation(wellQueueOrder[i]) ? rc.senseRobotAtLocation(wellQueueOrder[i]) : null;
-              if (robot == null || robot.type != RobotType.HEADQUARTERS) {
-                wellEntryPoint = wellQueueOrder[i];
-                wellEntryUndetermined = false;
+        wellEntryPoint = wellQueueOrder[0];
+        if (wellData.capacity == 0) {
+          wellQueueSize = 0;
+          for (int i = wellQueueOrder.length; --i >= 0;) {
+            if (CarrierWellMicro.isValidStaticQueuePosition(wellLocation, wellQueueOrder[i])) {
+              wellQueueSize++;
+              if (wellEntryUndetermined) {
+                RobotInfo robot = rc.canSenseRobotAtLocation(wellQueueOrder[i]) ? rc.senseRobotAtLocation(wellQueueOrder[i]) : null;
+                if (robot == null || robot.type != RobotType.HEADQUARTERS) {
+                  wellEntryPoint = wellQueueOrder[i];
+                  wellEntryUndetermined = false;
+                }
               }
             }
           }
+          wellData.capacity = wellQueueSize;
+          wellData.dirty = true;
+        } else {
+          wellQueueSize = wellData.capacity;
+          for (int i = wellQueueOrder.length; --i >= 0;) {
+            if (CarrierWellMicro.isValidQueuePosition(wellLocation, wellQueueOrder[i])) {
+              wellEntryPoint = wellQueueOrder[i];
+              wellEntryUndetermined = false;
+              break;
+            }
+          }
         }
+
         if (wellEntryUndetermined) {
           rc.setIndicatorString("couldn't find well entry for: " + wellLocation);
           wellEntryPoint = wellQueueOrder[0];
@@ -888,6 +903,10 @@ public class Carrier extends MobileRobot {
    */
   private MapLocation findIslandLocationToClaim() throws GameActionException {
     // go to unclaimed island
+    IslandInfo commedIslandToClaim = getClosestUnclaimedIsland();
+    if (commedIslandToClaim != null) {
+      return commedIslandToClaim.updateLocationToClosestOpenLocation(Cache.PerTurn.CURRENT_LOCATION);
+    }
     while (doIslandFindingMove()) {
       int[] nearbyIslands = rc.senseNearbyIslands();
       if (nearbyIslands.length > 0) {
@@ -951,11 +970,14 @@ public class Carrier extends MobileRobot {
     MapLocation islandLocationToClaim = currentTask.targetIsland;
     if (islandLocationToClaim == null) return false;
 
+    rc.setIndicatorString("attempt claim island: " + islandLocationToClaim + " -- trying for " + currentTask.turnsRunning + " turns");
+
     // someone else claimed it while we were moving to the unclaimed island
     if (rc.canSenseLocation(islandLocationToClaim)) {
       if (rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim)) != Team.NEUTRAL) {
         islandLocationToClaim = findIslandLocationToClaim();
         if (islandLocationToClaim == null) return false;
+        currentTask.targetIsland = islandLocationToClaim;
       }
     }
 

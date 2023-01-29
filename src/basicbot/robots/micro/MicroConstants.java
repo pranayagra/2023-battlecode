@@ -12,5 +12,6 @@ public class MicroConstants {
   public static final double BIG_LOSE_HEALTH_MULTIPLIER = 1; // how much less our health has to be than theirs to yeet out
   public static final int CARRIER_TURNS_TO_FLEE = 6;
   public static final int CARRIER_DIST_TO_HQ_TO_RUN_HOME = 10;
+  public static final int TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH = 5;
 }
 

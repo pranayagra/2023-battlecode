@@ -223,7 +223,53 @@ public abstract class Robot {
 
   protected void broadcastMemoryToComms() throws GameActionException {
     int wellsBroadcast = RunningMemory.broadcastMemorizedWells();
+  }
 
+
+  protected IslandInfo getClosestFriendlyIsland() {
+    int closestDist = Integer.MAX_VALUE;
+    int closestEuclideanDist = Integer.MAX_VALUE;
+    IslandInfo closest = null;
+    for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
+      IslandInfo islandInfo = getIslandInformation(i);
+      if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
+        int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
+        int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(islandInfo.islandLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = islandInfo;
+          closestEuclideanDist = euclideanDist;
+        } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+          closestEuclideanDist = euclideanDist;
+          closest = islandInfo;
+        }
+      }
+    }
+
+    return closest;
+  }
+
+  protected IslandInfo getClosestUnclaimedIsland() {
+    int closestDist = Integer.MAX_VALUE;
+    int closestEuclideanDist = Integer.MAX_VALUE;
+    IslandInfo closest = null;
+    for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
+      IslandInfo islandInfo = getIslandInformation(i);
+      if (islandInfo != null && islandInfo.islandTeam == Team.NEUTRAL) {
+        int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
+        int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(islandInfo.islandLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = islandInfo;
+          closestEuclideanDist = euclideanDist;
+        } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+          closestEuclideanDist = euclideanDist;
+          closest = islandInfo;
+        }
+      }
+    }
+
+    return closest;
   }
 
   // ID => [loc, roundNum, owner]
@@ -255,23 +301,61 @@ public abstract class Robot {
           ", islandTeam=" + islandTeam +
           '}';
     }
+
+    /**
+     * Updates the location of the island to the closest location we can see
+     * @param fromHere the location to check closest to
+     * @return the new location of the island (may not change if no closer location is found)
+     */
+    public MapLocation updateLocationToClosestOpenLocation(MapLocation fromHere) throws GameActionException {
+      MapLocation[] mapLocations = rc.senseNearbyIslandLocations(islandId);
+      if (mapLocations.length == 0) {
+        return islandLocation;
+      } else {
+        // I can see the island in vision, let's find a good spot to heal from
+        int closestDist = Integer.MAX_VALUE;
+        int closestEuclideanDist = Integer.MAX_VALUE;
+        MapLocation closest = null;
+        for (int i = mapLocations.length; --i >= 0;) {
+          MapLocation mapLocation = mapLocations[i];
+          if (!rc.isLocationOccupied(mapLocation)) {
+            int dist = Utils.maxSingleAxisDist(fromHere, mapLocation);
+            int euclideanDist = fromHere.distanceSquaredTo(mapLocation);
+            if (dist < closestDist) {
+              closestDist = dist;
+              closestEuclideanDist = euclideanDist;
+              closest = mapLocation;
+            } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+              closestEuclideanDist = euclideanDist;
+              closest = mapLocation;
+            }
+          }
+        }
+
+//      Printer.appendToIndicator(" closest=" + closest);
+        // I can see the island but I can't find a good spot to heal from, circle around the island?
+        if (closest == null) {
+          return islandLocation;
+        } else {
+          localIslandInfo[islandId].islandLocation = closest;
+          localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
+          return closest;
+        }
+      }
+    }
   }
 
   protected int teamToInt(Team t) {
-    if (t == Cache.Permanent.OUR_TEAM) return 1;
-    if (t == Cache.Permanent.OPPONENT_TEAM) return 2;
-    return 0;
+    return t.ordinal();
   }
 
   protected Team intToTeam(int i) {
-    if (i == 1) return Cache.Permanent.OUR_TEAM;
-    if (i == 2) return Cache.Permanent.OPPONENT_TEAM;
-    return Team.NEUTRAL;
+    return Team.values()[i];
   }
 
-  protected IslandInfo[] globalIslandInfo = new IslandInfo[36];
+  protected IslandInfo[] globalIslandInfo = new IslandInfo[GameConstants.MAX_NUMBER_ISLANDS];
 
-  protected IslandInfo[] localIslandInfo = new IslandInfo[36];
+  protected IslandInfo[] localIslandInfo = new IslandInfo[GameConstants.MAX_NUMBER_ISLANDS];
 
   private void observeIslandsNearby() throws GameActionException {
     int[] islandIds = rc.senseNearbyIslands();
@@ -290,7 +374,7 @@ public abstract class Robot {
 
   private void debugIslandComms() {
     if (Cache.PerTurn.ROUND_NUM % 20 == 0) {
-      for (int i = 0; i < 36; ++i) {
+      for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
         Printer.print("island " + i + " " + globalIslandInfo[i] + " " + localIslandInfo[i]);
       }
     }
@@ -325,7 +409,7 @@ public abstract class Robot {
       return;
     }
 
-    for (int i = 0; i < 36; ++i) {
+    for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
       IslandInfo globalInfo = globalIslandInfo[i];
       IslandInfo localInfo = localIslandInfo[i];
       if (localInfo != null) {
@@ -552,8 +636,8 @@ public abstract class Robot {
     RunningMemory.broadcastSymmetry();
   }
   private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2, Utils.MapSymmetry symmetryToCheck) throws GameActionException {
-    rc.setIndicatorDot(test1, 211, 211, 211);
-    rc.setIndicatorDot(test2, 211, 211, 211);
+    /*BASICBOT_ONLY*/rc.setIndicatorDot(test1, 211, 211, 211);
+    /*BASICBOT_ONLY*/rc.setIndicatorDot(test2, 211, 211, 211);
     if (rc.onTheMap(test1)
         && rc.onTheMap(test2)
         && test1.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)

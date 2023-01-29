@@ -103,9 +103,9 @@ public abstract class MobileRobot extends Robot {
    */
   private boolean goToExplorationTarget() throws GameActionException {
     if (!rc.isMovementReady()) {
-      if (explorationTarget != null) {
-        rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
-      }
+//      if (explorationTarget != null) {
+//        rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
+//      }
     }
     turnsExploring++;
     pathing.moveTowards(explorationTarget);

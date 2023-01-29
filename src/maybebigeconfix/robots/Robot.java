@@ -320,8 +320,8 @@ public abstract class Robot {
     RunningMemory.broadcastSymmetry();
   }
   private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2, Utils.MapSymmetry symmetryToCheck) throws GameActionException {
-    rc.setIndicatorDot(test1, 211, 211, 211);
-    rc.setIndicatorDot(test2, 211, 211, 211);
+//    rc.setIndicatorDot(test1, 211, 211, 211);
+//    rc.setIndicatorDot(test2, 211, 211, 211);
     if (rc.onTheMap(test1)
         && rc.onTheMap(test2)
         && test1.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)

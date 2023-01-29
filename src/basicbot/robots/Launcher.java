@@ -1,5 +1,6 @@
 package basicbot.robots;
 
+import basicbot.robots.micro.MicroConstants;
 import basicbot.communications.CommsHandler;
 import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
@@ -8,6 +9,9 @@ import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
+import basicbot.robots.pathfinding.BugNav;
+import basicbot.robots.pathfinding.SmartPathing;
+import basicbot.robots.pathfinding.SmitePathing;
 import basicbot.utils.Constants;
 import basicbot.utils.Printer;
 import basicbot.utils.Utils;
@@ -49,7 +53,7 @@ public class Launcher extends MobileRobot {
     resetVisited();
     launcherTaskStack = new LauncherTask[MAX_LAUNCHER_TASKS];
     launcherTaskStackPointer = -1;
-    addLauncherTask(setupInitialLauncherTask());
+    setupInitialLauncherTask();
     turnsInCloud = 0;
   }
 
@@ -210,6 +214,12 @@ public class Launcher extends MobileRobot {
     }
   }
   private boolean shouldHeal;
+
+  /**
+   * does healing logic -- going to closest island when low health
+   * @return true if we are healing
+   * @throws GameActionException
+   */
   private boolean healingProtocol() throws GameActionException {
     //todo: not complete
     if (Cache.PerTurn.HEALTH < RobotType.LAUNCHER.health * 0.5) {
@@ -233,64 +243,9 @@ public class Launcher extends MobileRobot {
       return false;
     }
 //    Printer.appendToIndicator("healing=" + closestFriendlyIsland.islandLocation);
-    MapLocation[] mapLocations = rc.senseNearbyIslandLocations(closestFriendlyIsland.islandId);
-    if (mapLocations.length == 0) {
-      pathing.moveTowards(closestFriendlyIsland.islandLocation);
-    } else {
-      // I can see the island in vision, let's find a good spot to heal from
-      int closestDist = Integer.MAX_VALUE;
-      int closestEuclideanDist = Integer.MAX_VALUE;
-      MapLocation target = null;
-      for (int i = mapLocations.length; --i >= 0;) {
-        MapLocation mapLocation = mapLocations[i];
-        if (rc.canSenseLocation(mapLocation) && rc.senseRobotAtLocation(mapLocation) == null) {
-          int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, mapLocation);
-          int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(mapLocation);
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestEuclideanDist = euclideanDist;
-            target = mapLocation;
-          } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
-            closestEuclideanDist = euclideanDist;
-            target = mapLocation;
-          }
-        }
-      }
-
-//      Printer.appendToIndicator(" target=" + target);
-      // I can see the island but I can't find a good spot to heal from, circle around the island?
-      if (target == null) {
-        pathing.moveTowards(closestFriendlyIsland.islandLocation);
-      } else {
-        localIslandInfo[closestFriendlyIsland.islandId].islandLocation = target;
-        localIslandInfo[closestFriendlyIsland.islandId].roundNum = Cache.PerTurn.ROUND_NUM;
-        pathing.moveTowards(target);
-      }
-    }
+    MapLocation islandTargetLocation = closestFriendlyIsland.updateLocationToClosestOpenLocation(Cache.PerTurn.CURRENT_LOCATION);
+    pathing.moveTowards(islandTargetLocation);
     return true;
-  }
-
-  private IslandInfo getClosestFriendlyIsland() {
-    int closestDist = Integer.MAX_VALUE;
-    int closestEuclideanDist = Integer.MAX_VALUE;
-    IslandInfo closest = null;
-    for (int i = 0; i < 36; ++i) {
-      IslandInfo islandInfo = getIslandInformation(i);
-      if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
-        int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
-        int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(islandInfo.islandLocation);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = islandInfo;
-          closestEuclideanDist = euclideanDist;
-        } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
-          closestEuclideanDist = euclideanDist;
-          closest = islandInfo;
-        }
-      }
-    }
-
-    return closest;
   }
 
   private Direction bestCarrierInVision() {
@@ -451,6 +406,9 @@ public class Launcher extends MobileRobot {
     }
 
     // do actual patrolling -> cycle between different enemy hotspots (wells / HQs)
+    if (currentTask.turnsSinceClosest >= 20) {
+      SmitePathing.forceOneBug = true;
+    }
     return getPatrolTarget(); //shouldn't return null
   }
 
@@ -550,7 +508,7 @@ public class Launcher extends MobileRobot {
       // TODO if we're closest to the target, don't move
       Direction toTarget = myLocation.directionTo(patrolTarget);
       if (closestFriendDistToTargetDist < myDistToTarget) { // someone else is closer
-        rc.setIndicatorString("clump friend -> " + currentTask.type.name + "@" + currentTask.targetLocation + "via-" + patrolTarget + " - turns@target:" + currentTask.numTurnsNearTarget);
+        rc.setIndicatorString("clump -" + currentTask.type.name + "@" + currentTask.targetLocation + "via-" + patrolTarget + "-turns@=" + currentTask.numTurnsNearTarget + "-turns close=" + currentTask.turnsSinceClosest);
 ////        return closestFriendToTargetLoc.add(closestFriendToTargetLoc.directionTo(patrolTarget));
 //        MapLocation lineFormationCenter = closestFriendToTargetLoc;
 //        MapLocation lineFormationPointLeft = lineFormationCenter;//.add(toTarget.rotateLeft());
@@ -614,7 +572,9 @@ public class Launcher extends MobileRobot {
    * determines if there is a hot spot we need to visit when spawned
    * @throws GameActionException any issues with figuring out a hot spot
    */
-  private LauncherTask setupInitialLauncherTask() throws GameActionException {
+  private void setupInitialLauncherTask() throws GameActionException {
+    addLauncherTask(new LauncherTask(PatrolTargetType.DEFAULT_FIRST_TARGET, null, null));
+
     MapLocation[] endangeredWellPair = Communicator.closestAllyEnemyWellPair();
     MapLocation mostEndangeredWell = endangeredWellPair[0];
     MapLocation mostEndangeredEnemyWell = endangeredWellPair[1];
@@ -626,11 +586,14 @@ public class Launcher extends MobileRobot {
         Direction oursToTheirs = mostEndangeredWell.directionTo(mostEndangeredEnemyWell);
         MapLocation toGuard = mostEndangeredWell.add(oursToTheirs).add(oursToTheirs);
         //      Printer.print("need to guard hotspot - save last target -- " + patrolTargetType + ": " + patrolTarget);
-        return new LauncherTask(PatrolTargetType.HOT_SPOT_WELL_DEFENSE, mostEndangeredWell, toGuard);
+        addLauncherTask(new LauncherTask(PatrolTargetType.HOT_SPOT_WELL_DEFENSE, mostEndangeredWell, toGuard));
       }
     }
 
-    return new LauncherTask(PatrolTargetType.DEFAULT_FIRST_TARGET, null, null);
+//    MapLocation launcherMidpoint = CommsHandler.readLauncherMidpointLocation();
+//    if (!launcherMidpoint.equals(CommsHandler.NONEXISTENT_MAP_LOC)) {
+//      addLauncherTask(new LauncherTask(PatrolTargetType.HOT_SPOT_FIGHT, launcherMidpoint, launcherMidpoint));
+//    }
   }
 
   private void addLauncherTask(LauncherTask launcherTask) {
@@ -681,10 +644,10 @@ public class Launcher extends MobileRobot {
   }
 
   public enum PatrolTargetType {
-    OUR_HQ("OUR_HQ", true, false, Launcher.TURNS_AT_TARGET, true),
+    OUR_HQ("OUR_HQ", true, false, Launcher.TURNS_AT_TARGET, false),
     OUR_WELL("OUR_WELL", true, false, Launcher.TURNS_AT_TARGET, true),
     ENEMY_WELL("ENEMY_WELL", false, false, Launcher.TURNS_AT_TARGET, true),
-    ENEMY_HQ("ENEMY_HQ", false, false, Launcher.TURNS_AT_TARGET, false),
+    ENEMY_HQ("ENEMY_HQ", false, false, Launcher.TURNS_AT_TARGET, true),
     HOT_SPOT_WELL_DEFENSE("HOT_WELL", false, true, Launcher.TURNS_AT_HOT_SPOT, false),
     HOT_SPOT_FIGHT("HOT_FIGHT", false, true, Launcher.TURNS_AT_FIGHT, false);
 
@@ -694,15 +657,15 @@ public class Launcher extends MobileRobot {
     public final boolean isOurSide;
     public final boolean isHotSpot;
     public final int numTurnsToStayAtTarget;
-    public final boolean shouldAlwaysUpdate;
+    public final boolean updateOnSymmetryChange;
     public final String name;
 
-    PatrolTargetType(String name, boolean isOurSide, boolean isHotSpot, int numTurnsToStayAtTarget, boolean shouldAlwaysUpdate) {
+    PatrolTargetType(String name, boolean isOurSide, boolean isHotSpot, int numTurnsToStayAtTarget, boolean updateOnSymmetryChange) {
       this.name = name;
       this.isOurSide = isOurSide;
       this.isHotSpot = isHotSpot;
       this.numTurnsToStayAtTarget = numTurnsToStayAtTarget;
-      this.shouldAlwaysUpdate = shouldAlwaysUpdate;
+      this.updateOnSymmetryChange = updateOnSymmetryChange;
     }
   }
 
@@ -713,15 +676,21 @@ public class Launcher extends MobileRobot {
     PatrolTargetType type;
     MapLocation patrolLocation;
     MapLocation targetLocation;
+    Utils.MapSymmetry symmetryOnSet;
 
     int numTurnsNearTarget;
+
+    int closestDistanceToPatrolLocation;
+    int turnsSinceClosest;
 
     private LauncherTask(PatrolTargetType type, MapLocation targetLocation, MapLocation patrolLocation) throws GameActionException {
       this.type = type;
       this.numTurnsNearTarget = 0;
+      closestDistanceToPatrolLocation = Integer.MAX_VALUE;
+      turnsSinceClosest = 0;
       if (patrolLocation != null) {
-        this.patrolLocation = patrolLocation;
         this.targetLocation = targetLocation;
+        setNewPatrolLocation(patrolLocation);
       } else {
         update();
       }
@@ -771,14 +740,25 @@ public class Launcher extends MobileRobot {
         // if we're here, the target is messed up
         targetLocation = null;
         patrolLocation = null;
-        return update();
+      }
+
+      if (patrolLocation != null) {
+        int distanceToPatrolLocation = Utils.maxSingleAxisDist(patrolLocation, Cache.PerTurn.CURRENT_LOCATION);
+        if (distanceToPatrolLocation < closestDistanceToPatrolLocation) {
+          closestDistanceToPatrolLocation = distanceToPatrolLocation;
+          turnsSinceClosest = 0;
+        } else {
+          turnsSinceClosest++;
+        }
       }
 
       at_target: if (numTurnsNearTarget > 0 && patrolLocation != null && numTurnsNearTarget < type.numTurnsToStayAtTarget) {
         rc.setIndicatorString("Completing patrol " + type.name + "@" + targetLocation + " (via: " + patrolLocation + ")" + " --turns=" + numTurnsNearTarget);
         return false; // exit early if we're near the patrol target -- finish patrolling
       }
-      patrol_complete: if (numTurnsNearTarget >= type.numTurnsToStayAtTarget * 0.7) {
+
+      boolean isComplete = false;
+      patrol_complete: if (patrolLocation != null && numTurnsNearTarget >= type.numTurnsToStayAtTarget * 0.7) {
         if (type.isHotSpot && type != PatrolTargetType.HOT_SPOT_FIGHT) {
           // need to be more careful with hotspots, wait for more friends
           if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length < MIN_HOT_SPOT_GROUP_SIZE) {
@@ -789,7 +769,15 @@ public class Launcher extends MobileRobot {
         if (numTurnsNearTarget < type.numTurnsToStayAtTarget) {
           break patrol_complete;
         }
+        isComplete = true;
+      }
 
+      patrol_giveup: if (turnsSinceClosest > closestDistanceToPatrolLocation * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+        // we've been stuck for a while, give up
+        isComplete = true;
+      }
+
+      if (isComplete) {
         numTurnsNearTarget = 0;
         // mark the current target as visited
         if (targetLocation != null) {
@@ -803,7 +791,7 @@ public class Launcher extends MobileRobot {
       }
 
       // update if we haven't gotten near the target
-      if ((numTurnsNearTarget == 0 && type.shouldAlwaysUpdate) || patrolLocation == null) { // we are done patrolling the current location
+      if ((numTurnsNearTarget == 0 && type.updateOnSymmetryChange && symmetryOnSet != RunningMemory.guessedSymmetry) || patrolLocation == null) { // we are done patrolling the current location
         // update the target if needed
         switch (type) {
           case OUR_HQ:
@@ -811,7 +799,7 @@ public class Launcher extends MobileRobot {
             targetLocation = parentLauncher.determinePatrollingTargetLocationOurHq();
             if (targetLocation != null) {
               Direction randomDir = Utils.randomDirection();
-              patrolLocation = targetLocation.add(randomDir).add(randomDir);
+              setNewPatrolLocation(targetLocation.add(randomDir).add(randomDir));
               rc.setIndicatorString("patrolling our hq " + targetLocation + " - from " + patrolLocation);
               break;
             }
@@ -821,7 +809,7 @@ public class Launcher extends MobileRobot {
             targetLocation = parentLauncher.determinePatrollingTargetLocationOurWell();
             if (targetLocation != null) {
               Direction awayFromBase = HqMetaInfo.getClosestHqLocation(targetLocation).directionTo(targetLocation);
-              patrolLocation = targetLocation.add(awayFromBase).add(awayFromBase);
+              setNewPatrolLocation(targetLocation.add(awayFromBase).add(awayFromBase));
               rc.setIndicatorString("patrolling our well " + targetLocation + " - from " + patrolLocation);
               break; // switch to enemy well if all our wells are visited
             }
@@ -832,7 +820,7 @@ public class Launcher extends MobileRobot {
             targetLocation = parentLauncher.determinePatrollingTargetLocationEnemyWell();
             if (targetLocation != null) {
               Direction towardsEnemyBase = targetLocation.directionTo(HqMetaInfo.getClosestEnemyHqLocation(targetLocation));
-              patrolLocation = targetLocation.add(towardsEnemyBase).add(towardsEnemyBase);
+              setNewPatrolLocation(targetLocation.add(towardsEnemyBase).add(towardsEnemyBase));
               rc.setIndicatorString("patrolling enemy well " + targetLocation + " - from " + patrolLocation);
               break; // fall through to enemy HQ if no enemy well known
             }
@@ -840,15 +828,16 @@ public class Launcher extends MobileRobot {
             type = PatrolTargetType.ENEMY_HQ;
             targetLocation = parentLauncher.determinePatrollingTargetLocationEnemyHq();
             if (targetLocation != null) {
-              patrolLocation = targetLocation;
+              MapLocation newPatrolLocation = targetLocation;
               int tries = 10;
-              while (patrolLocation.isWithinDistanceSquared(targetLocation, RobotType.HEADQUARTERS.actionRadiusSquared) && --tries >= 0) {
-                patrolLocation = patrolLocation.add(Utils.randomDirection());
+              while ((newPatrolLocation.isWithinDistanceSquared(targetLocation, RobotType.HEADQUARTERS.actionRadiusSquared) || !rc.onTheMap(newPatrolLocation)) && --tries >= 0) {
+                newPatrolLocation = newPatrolLocation.add(Utils.randomDirection());
               }
               if (tries < 0) {
-                Direction toSelf = patrolLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-                patrolLocation = targetLocation.translate(toSelf.dx*4, toSelf.dy*4);
+                Direction toSelf = newPatrolLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+                newPatrolLocation = targetLocation.translate(toSelf.dx*4, toSelf.dy*4);
               }
+              setNewPatrolLocation(newPatrolLocation);
               rc.setIndicatorString("patrolling enemy HQ " + targetLocation + " - from " + patrolLocation);
               break;
             }
@@ -879,6 +868,17 @@ public class Launcher extends MobileRobot {
       }
       /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
+    }
+
+    private void setNewPatrolLocation(MapLocation newPatrolLocation) {
+      if (newPatrolLocation != patrolLocation) {
+        patrolLocation = newPatrolLocation;
+        closestDistanceToPatrolLocation = Integer.MAX_VALUE;
+        turnsSinceClosest = 0;
+        numTurnsNearTarget = 0;
+        symmetryOnSet = RunningMemory.guessedSymmetry;
+//        Printer.print("New patrol location: " + patrolLocation,"reset turnsClosest");
+      }
     }
   }
 

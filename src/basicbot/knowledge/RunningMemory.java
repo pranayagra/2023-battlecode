@@ -97,7 +97,12 @@ public class RunningMemory {
     notHorizontalSymmetry = (newSymmetryInfo & NOT_HORIZ_MASK) != 0;
     notVerticalSymmetry = (newSymmetryInfo & NOT_VERT_MASK) != 0;
     notRotationalSymmetry = (newSymmetryInfo & NOT_ROT_MASK) != 0;
-    guessedSymmetry = newKnownSymmetry != null ? newKnownSymmetry : SYMMETRY_GUESS_MAP[newSymmetryInfo];
+    if (newKnownSymmetry != null) {
+      guessedSymmetry = newKnownSymmetry;
+      symmetryInfoDirty = false;
+    } else {
+      guessedSymmetry = SYMMETRY_GUESS_MAP[newSymmetryInfo];
+    }
     return true;
   }
 

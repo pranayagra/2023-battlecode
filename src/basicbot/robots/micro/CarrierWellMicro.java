@@ -46,11 +46,11 @@ public class CarrierWellMicro {
    * @throws GameActionException
    */
   public static boolean isValidQueuePosition(MapLocation wellLocation, MapLocation queuePosition) throws GameActionException {
-    if (queuePosition.x == 16 && queuePosition.y == 6) {
-      Printer.print("checking " + queuePosition + " for well " + wellLocation);
-      Printer.print("\tmap:" + rc.onTheMap(queuePosition) + ",sense:" + rc.canSenseLocation(queuePosition) + ",pass:" +  (rc.canSenseLocation(queuePosition) ? rc.senseMapInfo(queuePosition).isPassable() : "unknown"));
-      Printer.print("\tWadj:" + (rc.canSenseLocation(queuePosition) ? queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()).isAdjacentTo(wellLocation) : "unknown")+ ",blk:" + BugNav.blockedLocations.contains(queuePosition) + ",Wblk:" + (rc.canSenseLocation(queuePosition) && BugNav.blockedLocations.contains(queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()))));
-    }
+//    if (queuePosition.x == 16 && queuePosition.y == 6) {
+//      Printer.print("checking " + queuePosition + " for well " + wellLocation);
+//      Printer.print("\tmap:" + rc.onTheMap(queuePosition) + ",sense:" + rc.canSenseLocation(queuePosition) + ",pass:" +  (rc.canSenseLocation(queuePosition) ? rc.senseMapInfo(queuePosition).isPassable() : "unknown"));
+//      Printer.print("\tWadj:" + (rc.canSenseLocation(queuePosition) ? queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()).isAdjacentTo(wellLocation) : "unknown")+ ",blk:" + BugNav.blockedLocations.contains(queuePosition) + ",Wblk:" + (rc.canSenseLocation(queuePosition) && BugNav.blockedLocations.contains(queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()))));
+//    }
     local_checks: {
       if (!rc.onTheMap(queuePosition)) return false;
       if (!rc.canSenseLocation(queuePosition)) break local_checks; // assume it is valid if can't sense
