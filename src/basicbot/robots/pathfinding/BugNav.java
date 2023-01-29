@@ -75,8 +75,14 @@ public class BugNav{
     // wind is not blowing towards me
     MapLocation withCurrentLoc = nextLoc.add(windCurrentDir);
     if (blockedLocations.contains(withCurrentLoc)) return false; // wind blows me into a blocked location
-    return !(windCurrentDir == dir.opposite().rotateLeft() || windCurrentDir == dir.opposite().rotateRight()); // wind blows me into a less close direction
-//    return true; // haven't visited this location yet
+
+    // ensure wind blows me into a less close direction
+    Direction reverse = dir.opposite();
+    return !(windCurrentDir == reverse.rotateLeft()
+        || windCurrentDir == reverse.rotateRight()
+//        || windCurrentDir == reverse.rotateLeft().rotateLeft()
+//        || windCurrentDir == reverse.rotateRight().rotateRight()
+    );
   }
 
   private static boolean canMoveInDirWithBuggingCheck(Direction dir) throws GameActionException {
@@ -97,8 +103,14 @@ public class BugNav{
     MapLocation withCurrentLoc = nextLoc.add(windCurrentDir);
     if (blockedLocations.contains(withCurrentLoc)) return false; // wind blows me into a blocked location
     if (visited.contains(getCode(withCurrentLoc))) return false; // wind blows me into a location I've already visited
-    return !(windCurrentDir == dir.opposite().rotateLeft() || windCurrentDir == dir.opposite().rotateRight()); // wind blows me into a less close direction
-//    return true; // haven't visited this location yet
+
+    // ensure wind blows me into a less close direction
+    Direction reverse = dir.opposite();
+    return !(windCurrentDir == reverse.rotateLeft()
+        || windCurrentDir == reverse.rotateRight()
+//        || windCurrentDir == reverse.rotateLeft().rotateLeft()
+//        || windCurrentDir == reverse.rotateRight().rotateRight()
+    );
   }
 
   /**
