@@ -42,10 +42,12 @@ public class CarrierEnemyProtocol {
           rc.attack(enemyToAttack.location);
         } else {
           // move and then attack
-          pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
+          if (enemyToAttack.type == RobotType.CARRIER && rc.getResourceAmount(ResourceType.MANA) == 0 && rc.getResourceAmount(ResourceType.ELIXIR) == 0) {
+            pathing.moveInDirLoose(Cache.PerTurn.CURRENT_LOCATION.directionTo(enemyToAttack.location));
 //            Printer.print("moved to attack... " + rc.canAttack(enemyToAttack.location), "loc=" + enemyToAttack.location, "canAct=" + rc.canActLocation(enemyToAttack.location), "robInfo=" + rc.senseRobotAtLocation(enemyToAttack.location));
-          if (rc.canAttack(enemyToAttack.location)) {
-            rc.attack(enemyToAttack.location);
+            if (rc.canAttack(enemyToAttack.location)) {
+              rc.attack(enemyToAttack.location);
+            }
           }
         }
       }
@@ -89,7 +91,7 @@ public class CarrierEnemyProtocol {
 
   private static RobotInfo enemyToAttackIfWorth() throws GameActionException {
 //    Printer.print("enemyToAttackIfWorth()");
-    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA) + rc.getResourceAmount(ResourceType.ELIXIR) + (rc.getAnchor() != null ? 40 : 0));
+    int myInvSize = (rc.getResourceAmount(ResourceType.ADAMANTIUM) + rc.getResourceAmount(ResourceType.MANA)/2 + (rc.getAnchor() != null ? GameConstants.ANCHOR_WEIGHT : 0));
     if (myInvSize <= 4) {
 //      Printer.print("null bc invSize <= 4");
       return null;
@@ -109,11 +111,13 @@ public class CarrierEnemyProtocol {
       if (enemyRobot.health / GameConstants.CARRIER_DAMAGE_FACTOR <= enemyValue || type == RobotType.LAUNCHER) { // it is worth attacking this enemy;
         // determine if we have enough to attack it...
         int totalDmg = 0;
+        if (enemyRobot.type == RobotType.CARRIER) totalDmg -= rc.getResourceAmount(ResourceType.MANA)/2;
         totalDmg += myInvSize * GameConstants.CARRIER_DAMAGE_FACTOR;
-        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); //assume this returns this robot as well
+        RobotInfo[] robotInfos = rc.senseNearbyRobots(enemyRobot.location, -1, Cache.Permanent.OUR_TEAM); // does not return this robot as well
         for (RobotInfo friendlyRobot : robotInfos) {
           //todo: maybe dont consider launchers in dmg calculation here
-          totalDmg += (Utils.getInvWeight(friendlyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR) + friendlyRobot.type.damage;
+          int friendDamage = (int) ((friendlyRobot.getResourceAmount(ResourceType.ADAMANTIUM) + (enemyRobot.type == RobotType.CARRIER ? 0 : friendlyRobot.getResourceAmount(ResourceType.MANA)/2) + (friendlyRobot.getTotalAnchors() * GameConstants.ANCHOR_WEIGHT)) * GameConstants.CARRIER_DAMAGE_FACTOR);
+          totalDmg += (friendDamage) + friendlyRobot.type.damage;
         }
 
 //        Printer.print("enemy location: " + enemyRobot.location + " we deal: " + totalDmg);
@@ -131,6 +135,11 @@ public class CarrierEnemyProtocol {
     //todo: perform the attack here?
   }
 
+  /**
+   * determines if we can run away based on enemy damage
+   * @return the enemy to attack ONLY if we cannot run away from enemy
+   * @throws GameActionException
+   */
   private static RobotInfo attackEnemyIfCannotRun() throws GameActionException {
 //    Printer.print("attackEnemyIfCannotRun()");
     int myInvSize = rc.getWeight();
@@ -145,22 +154,22 @@ public class CarrierEnemyProtocol {
 //    int numMoves = numMoves();
     for (RobotInfo enemyRobot : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
       if (enemyRobot.type == RobotType.HEADQUARTERS) continue;
-      if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, enemyRobot.type.actionRadiusSquared)) {
+      if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(enemyRobot.location, enemyRobot.type.actionRadiusSquared)) {
         enemyDamage += Utils.getInvWeight(enemyRobot) * GameConstants.CARRIER_DAMAGE_FACTOR + enemyRobot.type.damage;
       }
-      if (rc.getLocation().isWithinDistanceSquared(enemyRobot.location, rc.getType().actionRadiusSquared)) { // todo: need to consider movement here
-        if (enemyToAttack == null || (enemyToAttack.type != RobotType.LAUNCHER && enemyRobot.type == RobotType.LAUNCHER))
+      if (Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(enemyRobot.location, Cache.Permanent.ACTION_RADIUS_SQUARED)) { // todo: need to consider movement here
+        if (enemyToAttack == null || ((!(enemyToAttack.type == RobotType.LAUNCHER || enemyToAttack.type == RobotType.DESTABILIZER)) && (enemyRobot.type == RobotType.LAUNCHER || enemyRobot.type == RobotType.DESTABILIZER)))
           enemyToAttack = enemyRobot;
       }
     }
 
-    if (enemyToAttack == null) {
-//      Printer.print("enemyToAttack=null" + ", enemies can deal: " + enemyDamage);
-    } else {
-//      Printer.print("enemyToAttack loc:" + enemyToAttack.location + ", enemies can deal: " + enemyDamage);
-    }
+//    if (enemyToAttack == null) {
+////      Printer.print("enemyToAttack=null" + ", enemies can deal: " + enemyDamage);
+//    } else {
+////      Printer.print("enemyToAttack loc:" + enemyToAttack.location + ", enemies can deal: " + enemyDamage);
+//    }
 
-    if (enemyDamage > rc.getHealth() - 1) {
+    if (enemyDamage >= 1.5*Cache.PerTurn.HEALTH) {
 //      Printer.print("attack bc no option!!");
       return enemyToAttack;
     }
