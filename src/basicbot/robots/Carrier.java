@@ -57,6 +57,7 @@ public class Carrier extends MobileRobot {
 
   public static int targetWellIndexToDecrement = -1;
   private static ResourceType targetWellTypeToDecrement;
+  private boolean alreadyReportedFirstManaWell = false;
 
 
   public Carrier(RobotController rc) throws GameActionException {
@@ -72,7 +73,7 @@ public class Carrier extends MobileRobot {
     CarrierTask previousTask = currentTask;
     currentTask = null;
     if (previousTask != null) {
-      previousTask.onTaskEnd();
+      previousTask.onTaskEnd(this);
     }
     currentTask = forcedNextTask == null ? determineNewTask() : forcedNextTask;
     if (currentTask != null) {
@@ -384,6 +385,7 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException
    */
   private boolean shouldReportToComms() throws GameActionException {
+    if (alreadyReportedFirstManaWell) return false;
     if (Communicator.numWellsOfType(ResourceType.MANA) == 0 && RunningMemory.containsWellOfType(ResourceType.MANA)) {
       for (WellData wellData : RunningMemory.wells.values) {
         if (wellData == null) continue;
@@ -1151,11 +1153,12 @@ public class Carrier extends MobileRobot {
         case ATTACK:
           break;
         case REPORT_INFO:
+          carrier.alreadyReportedFirstManaWell = true;
           break;
       }
     }
 
-    public void onTaskEnd() throws GameActionException {
+    public void onTaskEnd(Carrier carrier) throws GameActionException {
       if (Global.rc.canWriteSharedArray(0,0) && targetWellIndexToDecrement != -1) {
         CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(targetWellTypeToDecrement);
         writer.writeWellCurrentWorkersDecrement(targetWellIndexToDecrement);
