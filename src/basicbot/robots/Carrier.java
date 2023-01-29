@@ -325,6 +325,8 @@ public class Carrier extends MobileRobot {
         CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
       }
     }
+
+    tryCollectResource();
   }
 
   /**
@@ -1155,6 +1157,28 @@ public class Carrier extends MobileRobot {
       if (rc.getWeight() >= MAX_CARRYING_CAPACITY) return true;
     }
     return false;
+  }
+
+  private void tryCollectResource() throws GameActionException {
+    if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION, -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION, -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 0), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 0), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 0), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 0), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, 1), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, 1), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, -1), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, -1), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 1), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 1), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, -1), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, -1), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, -1), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, -1), -1);
+    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 1), -1)) {
+      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 1), -1);
+    }
   }
 
   private boolean collectResource(MapLocation well, int amount) throws GameActionException {
