@@ -137,13 +137,18 @@ public class HeadQuarters extends Robot {
   @Override
   protected void runTurn() throws GameActionException {
     // printDebugInfo();
-    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-    // if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
+//    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
+     if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
     }
-    setDefaultIndicatorString();
+
+    if (this.hqID + 1 == HqMetaInfo.hqCount) {
+      printDebugInfo();
+      CommsHandler.writeNumLaunchersReset();
+      CommsHandler.writeNumAmpsReset();
+    }
 
     Communicator.clearEnemyComms();
     handleIncome();
@@ -209,7 +214,6 @@ public class HeadQuarters extends Robot {
   }
 
   private void printDebugInfo() throws GameActionException {
-    if (hqID != 0) return;
     if (Cache.PerTurn.ROUND_NUM % 10 != 0) return;
     ResourceType[] resourceTypes = new ResourceType[]{ResourceType.MANA, ResourceType.ADAMANTIUM};
     for (ResourceType type : resourceTypes) {
@@ -218,12 +222,13 @@ public class HeadQuarters extends Robot {
         if (!writer.readWellExists(i)) continue;
         MapLocation loc = writer.readWellLocation(i);
         int capacity = writer.readWellCapacity(i);
+        int extraCapacity = Utils.maxCarriersPerWell(capacity, Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc));
         int currentWorkers = writer.readWellCurrentWorkers(i);
-        Printer.print("Well:" + loc + " " + currentWorkers +"/" + capacity);
-
-
+        Printer.print("Well:" + loc + " " + currentWorkers +"/" + capacity + "/" + extraCapacity);
       }
     }
+    Printer.print("Num Amps:" + CommsHandler.readNumAmps());
+    Printer.print("Num launchers:" + CommsHandler.readNumLaunchers());
   }
   /**
    * Handles the resource income information. Does the following actions:

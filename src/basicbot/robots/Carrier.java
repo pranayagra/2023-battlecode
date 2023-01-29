@@ -242,13 +242,15 @@ public class Carrier extends MobileRobot {
   private CarrierTask determineNewWellTask() throws GameActionException {
     //TODO: fix naming of income. this is now semantically the # of carriers out getting that resource type.
     // TODO: check for existence of Elixir wells
-    int maxAdamantiumCarriersBeforeManaSaturation = 4;
+    int maxAdamantiumCarriersBeforeManaSaturation = 3;
     int singleAxisDistBetweenHQs = HqMetaInfo.getClosestSingleAxisDistBetweenOpposingHQs();
     // Printer.print("singleAxisDistBetweenHQs" + singleAxisDistBetweenHQs);
 
     if (singleAxisDistBetweenHQs < 20) {
       maxAdamantiumCarriersBeforeManaSaturation = 0;
     } else if (singleAxisDistBetweenHQs < 40) {
+      maxAdamantiumCarriersBeforeManaSaturation = 1;
+    } else if (singleAxisDistBetweenHQs < 60) {
       maxAdamantiumCarriersBeforeManaSaturation = 2;
     }
     int adamantiumCarriers = Communicator.getTotalCarriersMiningType(ResourceType.ADAMANTIUM);
@@ -274,7 +276,7 @@ public class Carrier extends MobileRobot {
     }
 
     // now adamantiumCarriers are >= maxAdamantiumCarriersBeforeManaSaturation
-    int saturatedManaWells = Communicator.numWellsFullySaturated(ResourceType.MANA);
+    int saturatedManaWells = Communicator.numWellsSaturated(ResourceType.MANA);
     // Printer.print("satured mana wells: " + saturatedManaWells);
     if (saturatedManaWells == 0 ||
         (saturatedManaWells < HqMetaInfo.hqCount * 2 && saturatedManaWells < Communicator.numWellsOfType(ResourceType.MANA))) {
@@ -283,7 +285,7 @@ public class Carrier extends MobileRobot {
       return CarrierTask.FETCH_MANA;
     }
     // Printer.print("yeeto im here");
-    int saturatedAdWells = Communicator.numWellsFullySaturated(ResourceType.ADAMANTIUM);
+    int saturatedAdWells = Communicator.numWellsSaturated(ResourceType.ADAMANTIUM);
     // saturate atleast 1 adamantium well per HQ
     if (saturatedAdWells == 0 ||
         (saturatedAdWells < HqMetaInfo.hqCount && saturatedAdWells < Communicator.numWellsOfType(ResourceType.ADAMANTIUM))) {
@@ -889,7 +891,10 @@ public class Carrier extends MobileRobot {
       if (!writer.readWellExists(i)) continue;
       MapLocation wellLocation = writer.readWellLocation(i);
       if (wellLocation.equals(toAvoid) || blackListWells.contains(wellLocation)) continue;
-      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
+//      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
+      MapLocation loc = writer.readWellLocation(i);
+      int extraCapacity = Utils.maxCarriersPerWell(writer.readWellCapacity(i), Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc));
+      if (writer.readWellCurrentWorkers(i) >= extraCapacity) continue;
       if (CarrierEnemyProtocol.lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
         continue;
       }

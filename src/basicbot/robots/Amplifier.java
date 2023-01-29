@@ -1,5 +1,6 @@
 package basicbot.robots;
 
+import basicbot.communications.CommsHandler;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
@@ -13,6 +14,7 @@ public class Amplifier extends MobileRobot {
 
   @Override
   protected void runTurn() throws GameActionException {
+    CommsHandler.writeNumAmpsIncrement();
     MapLocation closestEnemyLocation = closestEnemyLauncher();
     if (closestEnemyLocation != null) {
 //      rc.setIndicatorDot(closestEnemyLocation, 255, 0, 0);
