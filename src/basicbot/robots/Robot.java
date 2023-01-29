@@ -93,21 +93,21 @@ public abstract class Robot {
         Printer.submitPrint();
       } catch (GameActionException e) {
         // something illegal in the Battlecode world
-        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " GameActionException");
+        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " GameActionException");
         Printer.submitPrint();
         e.printStackTrace();
         rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
         if (RESIGN_ON_GAME_EXCEPTION) die();
       } catch (Exception e) {
         // something bad
-        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " Exception");
+        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " Exception");
         Printer.submitPrint();
         e.printStackTrace();
         rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
         if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) die();
       } catch (AssertionError e) {
         // some assertion failed
-        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " AssertionError");
+        System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " AssertionError");
         Printer.submitPrint();
         e.printStackTrace();
         rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
@@ -230,7 +230,7 @@ public abstract class Robot {
     int closestDist = Integer.MAX_VALUE;
     int closestEuclideanDist = Integer.MAX_VALUE;
     IslandInfo closest = null;
-    for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
+    for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
       IslandInfo islandInfo = getIslandInformation(i);
       if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
         int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
@@ -253,7 +253,7 @@ public abstract class Robot {
     int closestDist = Integer.MAX_VALUE;
     int closestEuclideanDist = Integer.MAX_VALUE;
     IslandInfo closest = null;
-    for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
+    for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
       IslandInfo islandInfo = getIslandInformation(i);
       if (islandInfo != null && islandInfo.islandTeam == Team.NEUTRAL) {
         int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
@@ -274,6 +274,8 @@ public abstract class Robot {
 
   // ID => [loc, roundNum, owner]
   class IslandInfo {
+    public static final int MAX_ISLAND_COUNT = GameConstants.MAX_NUMBER_ISLANDS + 1;
+    
     public MapLocation islandLocation;
     public int islandId;
     public int roundNum;
@@ -347,6 +349,11 @@ public abstract class Robot {
         }
       }
     }
+
+    public void updateTeam(Team newOwner) {
+      islandTeam = newOwner;
+      roundNum = Cache.PerTurn.ROUND_NUM;
+    }
   }
 
   protected int teamToInt(Team t) {
@@ -357,28 +364,32 @@ public abstract class Robot {
     return Team.values()[i];
   }
 
-  protected IslandInfo[] globalIslandInfo = new IslandInfo[GameConstants.MAX_NUMBER_ISLANDS];
+  protected IslandInfo[] globalIslandInfo = new IslandInfo[IslandInfo.MAX_ISLAND_COUNT];
 
-  protected IslandInfo[] localIslandInfo = new IslandInfo[GameConstants.MAX_NUMBER_ISLANDS];
+  protected IslandInfo[] localIslandInfo = new IslandInfo[IslandInfo.MAX_ISLAND_COUNT];
 
   private void observeIslandsNearby() throws GameActionException {
     int[] islandIds = rc.senseNearbyIslands();
     for (int i = Math.min(islandIds.length, 3); --i >= 0;) {
       int islandId = islandIds[i];
-      if (localIslandInfo[islandId] != null) {
-        localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
-        localIslandInfo[islandId].islandTeam = rc.senseTeamOccupyingIsland(islandId);
-      } else {
-        Team team = rc.senseTeamOccupyingIsland(islandId);
-        MapLocation islandLocation = rc.senseNearbyIslandLocations(islandId)[0];
-        localIslandInfo[islandId] = new IslandInfo(islandLocation, islandId, Cache.PerTurn.ROUND_NUM, team);
+      try { // TODO: remove once they patch this
+        if (localIslandInfo[islandId] != null) {
+          localIslandInfo[islandId].roundNum = Cache.PerTurn.ROUND_NUM;
+          localIslandInfo[islandId].islandTeam = rc.senseTeamOccupyingIsland(islandId);
+        } else {
+          Team team = rc.senseTeamOccupyingIsland(islandId);
+          MapLocation islandLocation = rc.senseNearbyIslandLocations(islandId)[0];
+          localIslandInfo[islandId] = new IslandInfo(islandLocation, islandId, Cache.PerTurn.ROUND_NUM, team);
+        }
+      } catch (GameActionException e) {
+        /*BASICBOT_ONLY*/Printer.print("Error sensing for island " + islandId);
       }
     }
   }
 
   private void debugIslandComms() {
     if (Cache.PerTurn.ROUND_NUM % 20 == 0) {
-      for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
+      for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
         Printer.print("island " + i + " " + globalIslandInfo[i] + " " + localIslandInfo[i]);
       }
     }
@@ -413,7 +424,7 @@ public abstract class Robot {
       return;
     }
 
-    for (int i = 0; i < GameConstants.MAX_NUMBER_ISLANDS; ++i) {
+    for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
       IslandInfo globalInfo = globalIslandInfo[i];
       IslandInfo localInfo = localIslandInfo[i];
       if (localInfo != null) {

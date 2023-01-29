@@ -3,7 +3,9 @@ package basicbot.robots.micro;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.robots.Carrier;
+import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
+import basicbot.robots.pathfinding.SmitePathing;
 import basicbot.utils.Global;
 import basicbot.utils.Utils;
 import battlecode.common.*;
@@ -28,6 +30,7 @@ public class CarrierEnemyProtocol {
   }
 
   public static boolean doProtocol() throws GameActionException {
+    SmitePathing.forceOneBug = true;
     if (enemyExists()) {
       RobotInfo enemyToAttack = enemyToAttackIfWorth();
       if (enemyToAttack == null) enemyToAttack = attackEnemyIfCannotRun();
@@ -68,6 +71,7 @@ public class CarrierEnemyProtocol {
         fleeingCounter = 0;
       }
     }
+    SmitePathing.forceOneBug = false;
     return fleeingCounter > 0;
   }
 

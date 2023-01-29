@@ -77,7 +77,7 @@ public class SmitePathing {
     if (forceBugging
         || forceOneBug
         || Clock.getBytecodesLeft() <= MIN_BYTECODE_TO_BFS // not enough bytecode
-        || Clock.getBytecodeNum() <= 1000 // doing a move very early in the turn
+//        || Clock.getBytecodeNum() <= 1000 // doing a move very early in the turn
         || Cache.PerTurn.ALL_NEARBY_ROBOTS.length >= Cache.Permanent.ACTION_RADIUS_SQUARED // too many robots nearby, just bug
     ) {
       forceOneBug = false;
@@ -87,16 +87,15 @@ public class SmitePathing {
     // if i'm not a special pather or if i still have fuzzy moves left, fuzzy move
     if (doBuggingTurns > 0) {
       doBuggingTurns--;
-      return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
+//      return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
 //      if (!BugNav.checkDoneBugging()) {
 //        doBuggingTurns--;
-//        if (BugNav.tryBugging()) {
-//          markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
-//          if (BugNav.checkDoneBugging()) {
-//            doBuggingTurns = 0;
-//          }
-//          return true;
-//        }
+        if (BugNav.tryBugging()) {
+          if (BugNav.checkDoneBugging()) {
+            doBuggingTurns = 0;
+          }
+          return markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
+        }
 //        return false;
 //      } else {
 //        doBuggingTurns = 0;

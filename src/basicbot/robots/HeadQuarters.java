@@ -115,10 +115,10 @@ public class HeadQuarters extends Robot {
   protected int globalIslandInfoIterator = 0;
   private void rotateMyOwnedIslands() throws GameActionException {
     if (this.hqID + 1 == HqMetaInfo.hqCount) {
-      int tries = GameConstants.MAX_NUMBER_ISLANDS;
+      int tries = IslandInfo.MAX_ISLAND_COUNT;
       while (tries-- > 0) {
         IslandInfo islandInfo = globalIslandInfo[globalIslandInfoIterator];
-        globalIslandInfoIterator = (globalIslandInfoIterator + 1) % GameConstants.MAX_NUMBER_ISLANDS;
+        globalIslandInfoIterator = (globalIslandInfoIterator + 1) % IslandInfo.MAX_ISLAND_COUNT;
         if (islandInfo != null) {
           if (islandInfo.islandTeam == Cache.Permanent.OUR_TEAM) {
             CommsHandler.writeMyIslandsLocation(islandInfo.islandLocation);

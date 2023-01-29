@@ -895,8 +895,8 @@ public class Carrier extends MobileRobot {
       writer.writeWellCurrentWorkersIncrement(closestWellInd);
       targetWellIndexToDecrement = closestWellInd;
       targetWellTypeToDecrement = resourceType;
-    } else if (closestWellLocation != null){
-      Printer.print("Could not increment!!" + closestWellLocation + resourceType);
+//    } else if (closestWellLocation != null){
+//      Printer.print("Could not increment!!" + closestWellLocation + resourceType);
     }
     this.turnsStuckApproachingWell = 0;
 

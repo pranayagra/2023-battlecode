@@ -11,6 +11,7 @@ import basicbot.robots.micro.CarrierEnemyProtocol;
 import basicbot.robots.micro.CarrierWellMicro;
 import basicbot.robots.micro.CarrierWellPathing;
 import basicbot.knowledge.Cache;
+import basicbot.robots.micro.MicroConstants;
 import basicbot.robots.pathfinding.BugNav;
 import basicbot.utils.Global;
 import basicbot.utils.Printer;
@@ -129,6 +130,10 @@ public class Carrier extends MobileRobot {
 ////      Printer.print("checked assign " + HQAssignedTask);
 //      if (HQAssignedTask != null) return HQAssignedTask;
 //    }
+
+    if (rc.getAnchor() != null) {
+      return CarrierTask.ANCHOR_ISLAND;
+    }
 
     if (rc.getWeight() >= MAX_CARRYING_CAPACITY) {
       return CarrierTask.DELIVER_RSS_HOME;
@@ -455,8 +460,12 @@ public class Carrier extends MobileRobot {
       } while (pathing.moveTowards(hqWithAnchor));
     }
     if (rc.getAnchor() != null) {
-      if (currentTask.targetIsland == null) {
-        currentTask.targetIsland = findIslandLocationToClaim();
+//      if (currentTask.targetIsland == null) {
+      currentTask.targetIsland = findIslandLocationToClaim();
+//      }
+      if (currentTask.targetIsland != null && currentTask.turnsRunning > Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, currentTask.targetIsland.islandLocation) * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+        forcedNextTask = CarrierTask.ANCHOR_ISLAND;
+        return true;
       }
       return moveTowardsIslandAndClaim();
     }
@@ -897,8 +906,8 @@ public class Carrier extends MobileRobot {
       writer.writeWellCurrentWorkersIncrement(closestWellInd);
       targetWellIndexToDecrement = closestWellInd;
       targetWellTypeToDecrement = resourceType;
-    } else if (closestWellLocation != null){
-      Printer.print("Could not increment!!" + closestWellLocation + resourceType);
+//    } else if (closestWellLocation != null){
+//      Printer.print("Could not increment!!" + closestWellLocation + resourceType);
     }
     this.turnsStuckApproachingWell = 0;
 
@@ -928,29 +937,36 @@ public class Carrier extends MobileRobot {
    * @return the found location of the island
    * @throws GameActionException any errors while sensing
    */
-  private MapLocation findIslandLocationToClaim() throws GameActionException {
+  private IslandInfo findIslandLocationToClaim() throws GameActionException {
     // go to unclaimed island
-    IslandInfo commedIslandToClaim = getClosestUnclaimedIsland();
-    if (commedIslandToClaim != null) {
-      return commedIslandToClaim.updateLocationToClosestOpenLocation(Cache.PerTurn.CURRENT_LOCATION);
-    }
-    while (doIslandFindingMove()) {
-      int[] nearbyIslands = rc.senseNearbyIslands();
-      if (nearbyIslands.length > 0) {
-        MapLocation closestUnclaimedIsland = null;
-        int closestDistance = Integer.MAX_VALUE;
-        for (int islandID : nearbyIslands) {
-          if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {
-            MapLocation islandLocation = rc.senseNearbyIslandLocations(islandID)[0];
-            int candidateDistance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandLocation);
-            if (candidateDistance < closestDistance) {
-              closestUnclaimedIsland = islandLocation;
-              closestDistance = candidateDistance;
+    IslandInfo islandToClaim = getClosestUnclaimedIsland();
+    if (islandToClaim == null) {
+      // explore for island
+      while (doIslandFindingMove()) {
+        int[] nearbyIslands = rc.senseNearbyIslands();
+        if (nearbyIslands.length > 0) {
+          MapLocation closestUnclaimedIsland = null;
+          int closestIslandID = -1;
+          int closestDistance = Integer.MAX_VALUE;
+          for (int islandID : nearbyIslands) {
+            if (rc.senseTeamOccupyingIsland(islandID) == Team.NEUTRAL) {
+              MapLocation islandLocation = rc.senseNearbyIslandLocations(islandID)[0];
+              int candidateDistance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandLocation);
+              if (candidateDistance < closestDistance) {
+                closestUnclaimedIsland = islandLocation;
+                closestIslandID = islandID;
+                closestDistance = candidateDistance;
+              }
             }
           }
+          islandToClaim = new IslandInfo(closestUnclaimedIsland, closestIslandID, Cache.PerTurn.ROUND_NUM, Team.NEUTRAL);
+          break;
         }
-        return closestUnclaimedIsland;
       }
+    }
+    if (islandToClaim != null) {
+      islandToClaim.updateLocationToClosestOpenLocation(Cache.PerTurn.CURRENT_LOCATION);
+      return islandToClaim;
     }
     return null;
   }
@@ -994,17 +1010,20 @@ public class Carrier extends MobileRobot {
    */
   private boolean moveTowardsIslandAndClaim() throws GameActionException {
     // go to unclaimed island
-    MapLocation islandLocationToClaim = currentTask.targetIsland;
-    if (islandLocationToClaim == null) return false;
+    IslandInfo islandToClaim = currentTask.targetIsland;
+    if (islandToClaim == null) return false;
 
+    MapLocation islandLocationToClaim = islandToClaim.islandLocation;
     rc.setIndicatorString("attempt claim island: " + islandLocationToClaim + " -- trying for " + currentTask.turnsRunning + " turns");
 
     // someone else claimed it while we were moving to the unclaimed island
     if (rc.canSenseLocation(islandLocationToClaim)) {
-      if (rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim)) != Team.NEUTRAL) {
-        islandLocationToClaim = findIslandLocationToClaim();
-        if (islandLocationToClaim == null) return false;
-        currentTask.targetIsland = islandLocationToClaim;
+      Team occupyingTeam = rc.senseTeamOccupyingIsland(rc.senseIsland(islandLocationToClaim));
+      if (occupyingTeam != Team.NEUTRAL) {
+        localIslandInfo[islandToClaim.islandId].updateTeam(occupyingTeam);
+        islandToClaim = findIslandLocationToClaim();
+        if (islandToClaim == null) return false;
+        currentTask.targetIsland = islandToClaim;
       }
     }
 
@@ -1034,7 +1053,7 @@ public class Carrier extends MobileRobot {
     public MapLocation targetWell;
     // index in public comms array - TODO: this can be handled with a map in Communicator potentially
     final public ResourceType collectionType;
-    public MapLocation targetIsland;
+    public IslandInfo targetIsland;
     public int turnsRunning;
 
     CarrierTask(ResourceType resourceType) {

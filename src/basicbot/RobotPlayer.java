@@ -1,5 +1,6 @@
 package basicbot;
 
+import basicbot.knowledge.Cache;
 import basicbot.robots.Robot;
 import basicbot.utils.Printer;
 import battlecode.common.*;
@@ -35,7 +36,7 @@ public strictfp class RobotPlayer {
                 robot.runLoop();
             } catch (Exception e) {
                 System.out.println("FATAL ERROR - " + rc.getLocation());
-                System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + " FATAL ERROR");
+                System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " FATAL ERROR");
                 Printer.submitPrint();
                 e.printStackTrace();
                 if (RESIGN_ON_FATAL_ERROR) rc.resign();
