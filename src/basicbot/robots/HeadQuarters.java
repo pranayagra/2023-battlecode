@@ -307,22 +307,45 @@ public class HeadQuarters extends Robot {
    * @throws GameActionException any issues
    */
   private boolean normalSpawnOrder() throws GameActionException {
-    if (spawnAmplifierCooldown > 0) --spawnAmplifierCooldown;
-//    spawnAmplifier = false;
-    if (spawnAmplifier) {
-      if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length > 0 && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0].type != RobotType.HEADQUARTERS) {
-        spawnAmplifier = false;
-        spawnAmplifierCooldown = 50;
-      } else {
-        spawnAmplifierSafe++;
+    boolean spawned = false;
+
+
+//    if (spawnAmplifierCooldown > 0) --spawnAmplifierCooldown;
+
+    adamantiumToSave = 0;
+    manaToSave = 0;
+    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+      // consider anchor spawn
+      if (createAnchors()) {
+        numAnchorsMade++;
+        spawned = true;
       }
+      // can't afford, just reserve some resources
+//      System.out.println(Anchor.STANDARD.adamantiumCost);
+      adamantiumToSave = Anchor.STANDARD.adamantiumCost;
+      manaToSave = Anchor.STANDARD.manaCost;
     }
 
-    if (Cache.PerTurn.ROUND_NUM >= 60 && spawnAmplifierCooldown <= 0) {
-      if (Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 8) {
-        if (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 0 || (Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS.length == 1 && Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS[0].type == RobotType.HEADQUARTERS)) {
-          spawnAmplifier = true;
+//    spawnAmplifier = false;
+
+    if (Cache.PerTurn.ROUND_NUM >= (hqID + 1) * 30 && spawnAmplifierCooldown <= 0) {
+      spawnAmplifier = true;
+      if (true || Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 4) {
+        int numAttackingEnemies = 0;
+        for (RobotInfo ri : Cache.PerTurn.ALL_NEARBY_ENEMY_ROBOTS) {
+          switch (ri.type) {
+            case LAUNCHER:
+            case DESTABILIZER:
+              numAttackingEnemies++;
+              break;
+            default:
+              continue;
+          }
+        }
+        if (numAttackingEnemies > 0) {
           spawnAmplifierSafe = 0;
+        } else {
+          spawnAmplifierSafe++;
         }
       }
     }
@@ -331,32 +354,19 @@ public class HeadQuarters extends Robot {
       if (canAfford(RobotType.AMPLIFIER)) {
         if (spawnAmplifierTowardsEnemyHQ()) {
           spawnAmplifier = false;
-          spawnAmplifierCooldown = 200;
+          spawnAmplifierCooldown = 40;
           spawnAmplifierSafe = 0;
-          return true;
+          spawned = true;
         }
       }
-      return false;
     }
 
-    adamantiumToSave = 0;
-    manaToSave = 0;
-    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
-      // consider anchor spawn
-      if (createAnchors()) {
-        numAnchorsMade++;
-        return true;
-      }
-      // can't afford, just reserve some resources
-//      System.out.println(Anchor.STANDARD.adamantiumCost);
-      adamantiumToSave = Anchor.STANDARD.adamantiumCost;
-      manaToSave = Anchor.STANDARD.manaCost;
-    }
+
 
     if (canAfford(RobotType.LAUNCHER)) {
       if (spawnLauncherTowardsEnemyHQ()) {
         spawnAmplifierCooldown -= 2;
-        return true;
+        spawned = true;
       }
     }
 
@@ -366,17 +376,17 @@ public class HeadQuarters extends Robot {
       if (spawnAndCommCarrier(preferredSpawnLocation, nextSpawn)) {
         carrierSpawnOrderIdx = (carrierSpawnOrderIdx + 1) % carrierSpawnOrder.length;
         spawnAmplifierCooldown -= 2;
-        return true;
+        spawned = true;
       }
     }
 
     if (canAfford(Anchor.ACCELERATING) || canAfford(Anchor.STANDARD)) {
       if (createAnchors()) {
         numAnchorsMade++;
-        return true;
+        spawned = true;
       }
     }
-    return false;
+    return spawned;
   }
 
   /**
