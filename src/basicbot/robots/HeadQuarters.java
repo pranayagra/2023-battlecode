@@ -415,14 +415,36 @@ public class HeadQuarters extends Robot {
 
     adamantiumToSave = 0;
     manaToSave = 0;
-    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+    int numCommLaunchers = CommsHandler.readNumLaunchers();
+    if (numCommLaunchers >= 10 && Cache.PerTurn.ROUND_NUM >= 300 && numAnchorsMade < 1) {
+      if (createAnchors()) {
+        numAnchorsMade++;
+        spawned = true;
+      }
+      adamantiumToSave = Anchor.STANDARD.adamantiumCost;
+      manaToSave = Anchor.STANDARD.manaCost;
+    }
+
+    int numAnchorsToMake = 1 + (Cache.PerTurn.ROUND_NUM - 400) / 150;
+    if (Cache.PerTurn.ROUND_NUM >= 400 && numAnchorsMade <= numAnchorsToMake && numAnchorsMade <= NUM_FORCED_LATE_GAME_ANCHORS) {
+      // consider anchor spawn
+      if (numCommLaunchers >= 10) {
+        if (createAnchors()) {
+          numAnchorsMade++;
+          spawned = true;
+        }
+        adamantiumToSave = Anchor.STANDARD.adamantiumCost;
+        manaToSave = Anchor.STANDARD.manaCost;
+      }
+    }
+
+    numAnchorsToMake = Math.max(1, 4 + (Cache.PerTurn.ROUND_NUM - 1200) / 100);
+    if (Cache.PerTurn.ROUND_NUM >= 1250 && numAnchorsMade <= numAnchorsToMake && numAnchorsMade <= 15) {
       // consider anchor spawn
       if (createAnchors()) {
         numAnchorsMade++;
         spawned = true;
       }
-      // can't afford, just reserve some resources
-//      System.out.println(Anchor.STANDARD.adamantiumCost);
       adamantiumToSave = Anchor.STANDARD.adamantiumCost;
       manaToSave = Anchor.STANDARD.manaCost;
     }
