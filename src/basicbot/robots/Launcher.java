@@ -789,7 +789,7 @@ public class Launcher extends MobileRobot {
         isComplete = true;
       }
 
-      patrol_giveup: if (turnsSinceClosest > closestDistanceToPatrolLocation * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+      patrol_giveup: if (turnsSinceClosest > Math.max(50, closestDistanceToPatrolLocation * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
         // we've been stuck for a while, give up
         isComplete = true;
       }

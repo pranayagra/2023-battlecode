@@ -143,7 +143,7 @@ public abstract class MobileRobot extends Robot {
       if (distance < closestDistanceToExplorationTarget) {
         closestDistanceToExplorationTarget = distance;
         turnsSinceClosestDistanceToExplorationTarget = 0;
-      } else if (++turnsSinceClosestDistanceToExplorationTarget >= closestDistanceToExplorationTarget * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+      } else if (++turnsSinceClosestDistanceToExplorationTarget >= Math.max(50, closestDistanceToExplorationTarget * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
         MapLocation oldTarget = explorationTarget;
         randomizeExplorationTarget(true);
         rc.setIndicatorString("gave up on exploring " + oldTarget + " -- now: " + explorationTarget);

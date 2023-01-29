@@ -474,7 +474,7 @@ public class Carrier extends MobileRobot {
 //      if (currentTask.targetIsland == null) {
       currentTask.targetIsland = findIslandLocationToClaim();
 //      }
-      if (currentTask.targetIsland != null && currentTask.turnsRunning > Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, currentTask.targetIsland.islandLocation) * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
+      if (currentTask.targetIsland != null && currentTask.turnsRunning > Math.max(50, Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, currentTask.targetIsland.islandLocation) * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
         forcedNextTask = CarrierTask.ANCHOR_ISLAND;
         return true;
       }
@@ -520,15 +520,18 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException any issues with sensing/moving
    */
   private boolean approachWell(MapLocation wellLocation) throws GameActionException {
-    int distToWell = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, wellLocation);
-    if (distToWell < closestDistToWell) {
-      closestDistToWell = distToWell;
-      turnsSinceCloseToWell = 0;
-    } else if (distToWell >= 4) {
-      if (++turnsSinceCloseToWell >= closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH) {
-        // we've been stuck for a while, give up
-        Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
-        return false;
+    if (rc.getWeight() <= 4) {
+      int distToWell = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, wellLocation);
+      if (distToWell < closestDistToWell) {
+        closestDistToWell = distToWell;
+        turnsSinceCloseToWell = 0;
+      } else if (distToWell >= 4) {
+        if (++turnsSinceCloseToWell >= Math.max(100, closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
+          // we've been stuck for a while, give up
+          /*BASICBOT_ONLY*/Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
+          findNewWell(currentTask.collectionType, wellLocation);
+//          return false;
+        }
       }
     }
     if (wellQueueOrder == null) {
