@@ -1022,6 +1022,16 @@ public class Launcher extends MobileRobot {
 
   private boolean attemptCloudAttack() throws GameActionException {
     if (!rc.isActionReady()) return false;
+    MapLocation commedEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
+    if (commedEnemy != null && (!rc.canSenseLocation(commedEnemy) || (rc.canSenseRobotAtLocation(commedEnemy) && rc.senseRobotAtLocation(commedEnemy).team == Cache.Permanent.OPPONENT_TEAM))) {
+      if (rc.canAttack(commedEnemy)) {
+        lastEnemyLocation = commedEnemy;
+        lastAttackedLocation = commedEnemy;
+        rc.attack(commedEnemy);
+        return true;
+      }
+    }
+    if (!rc.isActionReady()) return false;
     if (lastAttackedLocation != null && (!rc.canSenseLocation(lastAttackedLocation) || (rc.canSenseRobotAtLocation(lastAttackedLocation) && rc.senseRobotAtLocation(lastAttackedLocation).team == Cache.Permanent.OPPONENT_TEAM)) && attack(lastAttackedLocation)) return true;
     if (!rc.isActionReady()) return false;
     if (lastEnemyLocation != null && (!rc.canSenseLocation(lastEnemyLocation) || (rc.canSenseRobotAtLocation(lastEnemyLocation) && rc.senseRobotAtLocation(lastEnemyLocation).team == Cache.Permanent.OPPONENT_TEAM)) && attack(lastEnemyLocation)) return true;
