@@ -653,10 +653,11 @@ public abstract class Robot {
   private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2, Utils.MapSymmetry symmetryToCheck) throws GameActionException {
     /*BASICBOT_ONLY*/rc.setIndicatorDot(test1, 211, 211, 211);
     /*BASICBOT_ONLY*/rc.setIndicatorDot(test2, 211, 211, 211);
+    int visionRadiusSq = Cache.PerTurn.IS_IN_CLOUD ? GameConstants.CLOUD_VISION_RADIUS_SQUARED : Cache.Permanent.VISION_RADIUS_SQUARED;
     if (rc.onTheMap(test1)
         && rc.onTheMap(test2)
-        && test1.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)
-        && test2.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED)) {
+        && test1.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, visionRadiusSq)
+        && test2.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, visionRadiusSq)) {
       if (rc.senseCloud(test1) != rc.senseCloud(test2)) {
         return true;
       }
