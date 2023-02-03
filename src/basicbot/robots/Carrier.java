@@ -247,18 +247,22 @@ public class Carrier extends MobileRobot {
     //TODO: fix naming of income. this is now semantically the # of carriers out getting that resource type.
     // TODO: check for existence of Elixir wells
     int maxAdamantiumCarriersBeforeManaSaturation = 2;
-    int singleAxisDistBetweenHQs = HqMetaInfo.getClosestSingleAxisDistBetweenOpposingHQs();
-    // Printer.print("singleAxisDistBetweenHQs" + singleAxisDistBetweenHQs);
-
-    if (singleAxisDistBetweenHQs < 20) {
+    if (Cache.PerTurn.ROUND_NUM <= 5) {
       maxAdamantiumCarriersBeforeManaSaturation = 0;
-    } else if (singleAxisDistBetweenHQs < 50) {
-      maxAdamantiumCarriersBeforeManaSaturation = 1;
+    } else {
+      int singleAxisDistBetweenHQs = HqMetaInfo.getClosestSingleAxisDistBetweenOpposingHQs();
+      // Printer.print("singleAxisDistBetweenHQs" + singleAxisDistBetweenHQs);
+
+      if (singleAxisDistBetweenHQs < 20) {
+        maxAdamantiumCarriersBeforeManaSaturation = 0;
+      } else if (singleAxisDistBetweenHQs < 50) {
+        maxAdamantiumCarriersBeforeManaSaturation = 1;
+      }
+      int adCapMultiplier = Math.min(HqMetaInfo.hqCount, Communicator.numWellsOfType(ResourceType.ADAMANTIUM));
+      adCapMultiplier = Math.max(adCapMultiplier, 1);
+      maxAdamantiumCarriersBeforeManaSaturation *= adCapMultiplier;
+      maxAdamantiumCarriersBeforeManaSaturation = Math.min(maxAdamantiumCarriersBeforeManaSaturation, 5);
     }
-    int adCapMultiplier = Math.min(HqMetaInfo.hqCount, Communicator.numWellsOfType(ResourceType.ADAMANTIUM));
-    adCapMultiplier = Math.max(adCapMultiplier, 1);
-    maxAdamantiumCarriersBeforeManaSaturation *= adCapMultiplier;
-    maxAdamantiumCarriersBeforeManaSaturation = Math.min(maxAdamantiumCarriersBeforeManaSaturation, 5);
     int adamantiumCarriers = Communicator.getTotalCarriersMiningType(ResourceType.ADAMANTIUM);
     int manaCarriers = Communicator.getTotalCarriersMiningType(ResourceType.MANA);
 
