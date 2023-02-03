@@ -59,6 +59,8 @@ public class RunningMemory {
 //    RunningMemory.symmetryInfoDirty = true;
     if (knownSymmetry != null) {
       Printer.print("ERROR: trying to mark invalid symmetry (" + symmetryToEliminate + ") when already known!" + knownSymmetry);
+      symmetryInfo = 0;
+      updateSymmetry();
       return;
     }
     switch (symmetryToEliminate) {
@@ -89,7 +91,7 @@ public class RunningMemory {
    * @throws GameActionException
    */
   public static boolean updateSymmetry() throws GameActionException {
-    int newSymmetryInfo = CommsHandler.readMapSymmetry();
+    int newSymmetryInfo = CommsHandler.readMapSymmetry() | symmetryInfo;
     if (newSymmetryInfo == symmetryInfo) return false;
     Utils.MapSymmetry newKnownSymmetry = SYMMETRY_KNOWN_MAP[newSymmetryInfo];
 //    if (knownSymmetry != null && knownSymmetry == newKnownSymmetry) return false;
