@@ -1,6 +1,7 @@
 package basicbot.robots;
 
 import basicbot.communications.CommsHandler;
+import basicbot.communications.Communicator;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
@@ -36,14 +37,28 @@ public abstract class MobileRobot extends Robot {
       case CARRIER:
         // TODO: make this more efficient (i.e. box around current location)
         int distBound = Cache.PerTurn.ROUND_NUM / 5 + 8;
+        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+        MapLocation explorationCenter = closestHq;
+        if (Communicator.numWellsOfType(ResourceType.MANA) == 0) {
+          MapLocation closestAD = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ADAMANTIUM);
+          if (closestAD != null) {
+            explorationCenter = closestAD;
+            distBound = Math.min(distBound, 100);
+          } else {
+            distBound = Math.min(distBound, 300);
+          }
+        }
+        if (Communicator.numWellsOfType(ResourceType.ADAMANTIUM) == 0) {
+          explorationCenter = closestHq;
+          distBound = Math.min(distBound, 100);
+        }
         if (distBound <= 300) {
           int tries = 50;
-          MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
           MapLocation loc;
           boolean valid;
           do {
             loc = Utils.randomMapLocation();
-            valid = (Utils.maxSingleAxisDist(loc, closestHQ) < distBound && (Cache.PerTurn.ROUND_NUM > 800 || !HqMetaInfo.isEnemyTerritory(loc)));
+            valid = (Utils.maxSingleAxisDist(loc, explorationCenter) < distBound && (Cache.PerTurn.ROUND_NUM > 800 || !HqMetaInfo.isEnemyTerritory(loc)));
           } while (!valid && --tries > 0);
           if (tries == 0) {
             loc = HqMetaInfo.getFurthestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
