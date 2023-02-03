@@ -32,8 +32,8 @@ public class Carrier extends MobileRobot {
   private static final int MAX_SCOUT_TURNS = 50;
   private static final int MAX_TURNS_TO_LOOK_FOR_WELL = 100;
   private static final int MIN_TURN_TO_EXPLORE = 30;
-  private static final int MIN_TURN_TO_SWITCH_HQ_FOR_WELL = 50;
-  private static final int SWITCH_HQ_FOR_WELL_DISTANCE = 250;
+  private static final int MIN_TURN_TO_SWITCH_HQ_FOR_WELL = 30;
+  public static final int SWITCH_HQ_FOR_WELL_DISTANCE = 20; // tile distance (not dist-sq)
 
   CarrierTask currentTask;
   ResourceType incrementedResource;
@@ -984,7 +984,7 @@ public class Carrier extends MobileRobot {
         continue;
       }
 
-      int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
+      int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, wellLocation);
       if (Cache.PerTurn.ROUND_NUM < MIN_TURN_TO_SWITCH_HQ_FOR_WELL && dist > SWITCH_HQ_FOR_WELL_DISTANCE) continue; // no HQ swapping early!
 
 //      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;

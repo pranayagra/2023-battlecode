@@ -19,15 +19,10 @@ public class SmartPathing extends Pathing {
   @Override
   public boolean moveTowards(MapLocation target) throws GameActionException {
     if (!rc.isMovementReady()) return false;
-//    int interestingTilesCounter = 0;
-//    for (MapInfo mapInfo : rc.senseNearbyMapInfos()) {
-//      if (!mapInfo.isPassable() || mapInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM) != 1) {
-//        interestingTilesCounter++;
-//      }
-//    }
-//    if (interestingTilesCounter <= 2) {
-//      return sp.cautiousGreedyMove(target);
-//    }
+    if (target.equals(Cache.PerTurn.CURRENT_LOCATION)) return false;
+    if (target.isAdjacentTo(Cache.PerTurn.CURRENT_LOCATION)) {
+      return moveToOrAdjacent(target);
+    }
     sp.updateDestination(target);
     if (Cache.PerTurn.ROUNDS_ALIVE == 0) {
       return BugNav.tryBugging();

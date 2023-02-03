@@ -39,30 +39,38 @@ public abstract class MobileRobot extends Robot {
         int distBound = Cache.PerTurn.ROUND_NUM / 5 + 8;
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
         MapLocation explorationCenter = closestHq;
-        if (Communicator.numWellsOfType(ResourceType.MANA) == 0) {
-          MapLocation closestAD = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ADAMANTIUM);
-          if (closestAD != null) {
+        MapLocation closestAD = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.ADAMANTIUM);
+        MapLocation closestMA = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, ResourceType.MANA);
+        if (closestMA == null || Utils.maxSingleAxisDist(closestMA, explorationCenter) >= Carrier.SWITCH_HQ_FOR_WELL_DISTANCE) {
+          if (closestAD != null && Utils.maxSingleAxisDist(closestAD, explorationCenter) < Carrier.SWITCH_HQ_FOR_WELL_DISTANCE) {
             explorationCenter = closestAD;
-            distBound = Math.min(distBound, 100);
-          } else {
-            distBound = Math.min(distBound, 300);
+            distBound = Math.min(distBound, 10);
           }
         }
-        if (Communicator.numWellsOfType(ResourceType.ADAMANTIUM) == 0) {
+        if (closestAD == null || Utils.maxSingleAxisDist(closestAD, explorationCenter) >= Carrier.SWITCH_HQ_FOR_WELL_DISTANCE) {
           explorationCenter = closestHq;
-          distBound = Math.min(distBound, 100);
+          distBound = Math.min(distBound, 10);
         }
-        if (distBound <= 300) {
+        int minDist = 5;
+        if (distBound <= 30) {
           int tries = 50;
           MapLocation loc;
           boolean valid;
+          int dist;
+          int minX = Math.max(0, explorationCenter.x - distBound);
+          int maxX = Math.min(Cache.Permanent.MAP_WIDTH-1, explorationCenter.x + distBound);
+          int xBound = maxX - minX + 1;
+          int minY = Math.max(0, explorationCenter.y - distBound);
+          int maxY = Math.min(Cache.Permanent.MAP_HEIGHT-1, explorationCenter.y + distBound);
+          int yBound = maxY - minY + 1;
           do {
-            loc = Utils.randomMapLocation();
-            valid = (Utils.maxSingleAxisDist(loc, explorationCenter) < distBound && (Cache.PerTurn.ROUND_NUM > 800 || !HqMetaInfo.isEnemyTerritory(loc)));
+            loc = new MapLocation(Utils.rng.nextInt(xBound)+minX, Utils.rng.nextInt(yBound)+minY);
+            dist = Utils.maxSingleAxisDist(loc, explorationCenter);
+            valid = (minDist <= dist && dist <= distBound && (Cache.PerTurn.ROUND_NUM > 800 || !HqMetaInfo.isEnemyTerritory(loc)));
           } while (!valid && --tries > 0);
-          if (tries == 0) {
-            loc = HqMetaInfo.getFurthestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-          }
+//          if (tries == 0) {
+//            loc = HqMetaInfo.getFurthestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+//          }
 //          Printer.print("Carrier early game exploration: " + loc);
           explorationTarget = loc;
           break;
