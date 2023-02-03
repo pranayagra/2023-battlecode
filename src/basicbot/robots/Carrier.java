@@ -348,11 +348,12 @@ public class Carrier extends MobileRobot {
     if (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(currentTask.targetHQLoc, (int) (distToClosestHq*1.25))) {
       currentTask.targetHQLoc = closestHqLoc;
     }
-    rc.setIndicatorString("Deliver rss home: " + currentTask.targetHQLoc);
     if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(currentTask.targetHQLoc)) {
+      Printer.appendToIndicator("-move:" + currentTask.targetHQLoc);
       pathing.moveTowards(currentTask.targetHQLoc);
     }
     if (!rc.isActionReady()) {
+      Printer.appendToIndicator("-stay:" + currentTask.targetHQLoc);
       pathing.goTowardsOrStayAtEmptiestLocationNextTo(currentTask.targetHQLoc);
     }
     return transferAllResources(currentTask.targetHQLoc);
@@ -370,7 +371,14 @@ public class Carrier extends MobileRobot {
     return false;
   }
 
+  /**
+   * attempts to transfer all resources to the given target
+   * @param targetLocation where to transfer to
+   * @return true if all resources have been transferred
+   * @throws GameActionException any issues with transferring
+   */
   public boolean transferAllResources(MapLocation targetLocation) throws GameActionException {
+    if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(targetLocation)) return false;
     for (ResourceType type : ResourceType.values()) {
       if (transferResource(targetLocation, type, rc.getResourceAmount(type)) && rc.getWeight() == 0) {
         return true;
@@ -556,17 +564,17 @@ public class Carrier extends MobileRobot {
    */
   private boolean approachWell(MapLocation wellLocation) throws GameActionException {
     if (wellQueueOrder == null) {
-      rc.setIndicatorString("no well queue cycle -- approaching=" + wellLocation + " dist=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
+      Printer.appendToIndicator("noQ->" + wellLocation + "d=" + Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation));
 //      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, wellLocation, 0, 255, 0);
       while (!Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(wellLocation, SET_WELL_PATH_DISTANCE)) {
         if (pathing.moveTowards(wellLocation)) {
 //          Printer.print("moved towards well: " + targetWell + " now=" + Cache.PerTurn.CURRENT_LOCATION);//, "new dir back: " + wellApproachDirection.get(targetWell));
 //        wellApproachDirection.setAlreadyContainedValue(wellLocation, wellLocation.directionTo(Cache.PerTurn.CURRENT_LOCATION));
-          rc.setIndicatorString("did pathing towards well@" + wellLocation);
+          Printer.appendToIndicator("moved:" + Cache.PerTurn.CURRENT_LOCATION);
         } else {
           if (rc.isMovementReady()) {
-            rc.setIndicatorString("could not path towards well@" + wellLocation);
             turnsStuckApproachingWell++;
+            Printer.appendToIndicator("couldn't move" + turnsStuckApproachingWell);
             if (turnsStuckApproachingWell >= MAX_TURNS_STUCK) {
               return false;
             }
@@ -630,17 +638,17 @@ public class Carrier extends MobileRobot {
         }
 
         if (wellEntryUndetermined) {
-          rc.setIndicatorString("couldn't find well entry for: " + wellLocation);
+          Printer.appendToIndicator("no entry@" + wellLocation);
           wellEntryPoint = wellQueueOrder[0];
 //          Printer.print("couldn't find well entry for: " + wellLocation, "well queue: " + Arrays.toString(wellQueueOrder));
           return false;
         }
 //        Printer.print("well queue: " + Arrays.toString(wellQueueOrder), "from direction: " + wellApproachDirection.get(wellLocation));
-        rc.setIndicatorString("set well queue:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
+        Printer.appendToIndicator("setQ:" + Cache.PerTurn.CURRENT_LOCATION + "->" + wellLocation);
       }
     }
     if (wellQueueOrder != null) {
-      rc.setIndicatorString("follow well queue: " + wellLocation);
+      Printer.appendToIndicator("followQ:" + wellLocation);
       if (!followWellQueue(wellLocation)) return false;
 //      } else {
 //        Printer.print("Cannot get to well! -- canMove=" + rc.isMovementReady());
@@ -676,7 +684,7 @@ public class Carrier extends MobileRobot {
       }
 
       if (numCarriersFarFromFull > wellQueueSize - MIN_SPOTS_LEFT_FROM_CARRIERS_FILLING_IN_FRONT) {
-        rc.setIndicatorString("there's " + numCarriersFarFromFull + "/" + wellQueueSize + " far from full so ima dip");
+        Printer.appendToIndicator("there's " + numCarriersFarFromFull + "/" + wellQueueSize + " far from full so ima dip");
         return false;
 //          findNewWell(currentTask.collectionType, currentTask.targetWell);
       }
@@ -694,18 +702,18 @@ public class Carrier extends MobileRobot {
       // we aren't there yet, so consider switching wells
       roundsWaitingForQueueSpot++;
       if (roundsWaitingForQueueSpot > MAX_ROUNDS_WAIT_FOR_WELL_PATH) {
-        rc.setIndicatorString("waiting too long (" + roundsWaitingForQueueSpot + "/" + MAX_ROUNDS_WAIT_FOR_WELL_PATH + ") for well@" + wellLocation + " so ima dip");
+        Printer.appendToIndicator("waiting too long (" + roundsWaitingForQueueSpot + "/" + MAX_ROUNDS_WAIT_FOR_WELL_PATH + ") for well@" + wellLocation + " so ima dip");
 //            findNewWell(currentTask.collectionType, currentTask.targetWell);
         return false;
       } else {
         do {
           if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellEntryPoint)) {
             if (pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(wellEntryPoint))) {
-              rc.setIndicatorString("moved towards well entry point");
+              Printer.appendToIndicator("moved towards well entry point");
             }
           }
         } while (pathing.goTowardsOrStayAtEmptiestLocationNextTo(wellEntryPoint));
-        rc.setIndicatorString("waiting @ well=" + wellLocation + ".entry@" + wellEntryPoint + "-turn#" + roundsWaitingForQueueSpot + " -emp=" + emptierRobotsSeen + "-ful=" + fullerRobotsSeen);
+        Printer.appendToIndicator("waiting @ well=" + wellLocation + ".entry@" + wellEntryPoint + "-turn#" + roundsWaitingForQueueSpot + " -emp=" + emptierRobotsSeen + "-ful=" + fullerRobotsSeen);
 //            rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, wellEntryPoint, 0, 255, 0);
       }
     }
@@ -713,12 +721,12 @@ public class Carrier extends MobileRobot {
     updateWellQueueTarget();
 
     if (wellQueueTargetIndex != -1) {  // we have a spot in the queue (wellQueueTargetIndex)
-      rc.setIndicatorString("well queue target position: " + wellQueueOrder[wellQueueTargetIndex]);
+      Printer.appendToIndicator("well queue target position: " + wellQueueOrder[wellQueueTargetIndex]);
 //      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, wellQueueOrder[wellQueueTargetIndex], 0, 255, 0);
       while (rc.isMovementReady() && !Cache.PerTurn.CURRENT_LOCATION.equals(wellQueueOrder[wellQueueTargetIndex])) {
         // not yet in the queue, just go to the entry point
         not_in_queue: if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)) {
-          rc.setIndicatorString("approaching well (" + wellLocation + ") via: " + wellEntryPoint);
+          Printer.appendToIndicator("approaching well (" + wellLocation + ") via: " + wellEntryPoint);
           while (pathing.moveTowards(wellEntryPoint)) {}
           if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)) {
             break not_in_queue;
@@ -734,7 +742,7 @@ public class Carrier extends MobileRobot {
               }
             }
             turnsStuckApproachingWell++;
-            rc.setIndicatorString("entry for " + wellLocation + " blocked (" + turnsStuckApproachingWell + " turns)-- new entry via " + wellEntryPoint);
+            Printer.appendToIndicator("entry for " + wellLocation + " blocked (" + turnsStuckApproachingWell + " turns)-- new entry via " + wellEntryPoint);
             if (turnsStuckApproachingWell >= MAX_TURNS_STUCK) {
               findNewWell(currentTask.collectionType, currentTask.targetWell);
               if (currentTask.targetWell != null) {
@@ -754,7 +762,7 @@ public class Carrier extends MobileRobot {
             break;
           }
         }
-        rc.setIndicatorString("moving in well queue: " + wellQueueTargetIndex + "=" + wellQueueOrder[wellQueueTargetIndex] + " -- currently at ind=" + currentPathIndex + "=" + wellQueueOrder[currentPathIndex]);
+        Printer.appendToIndicator("moving in well queue: " + wellQueueTargetIndex + "=" + wellQueueOrder[wellQueueTargetIndex] + " -- currently at ind=" + currentPathIndex + "=" + wellQueueOrder[currentPathIndex]);
 
 ////        Printer.print("following queue: " + Cache.PerTurn.CURRENT_LOCATION + "|" + rc.getLocation() + " --> " + wellPathToFollow[moveTrial]);
 ////        Printer.print("following queue: ->" + wellPathToFollow[moveTrial]);
@@ -1015,6 +1023,15 @@ public class Carrier extends MobileRobot {
     // go to unclaimed island
     IslandInfo islandToClaim = getClosestUnclaimedIsland();
     if (islandToClaim == null) {
+      islandToClaim = getClosestEnemyIsland();
+//      if (islandToClaim == null) {
+//        islandToClaim = getClosestFriendlyIsland();
+//        if (islandToClaim != null) {
+//          return new IslandInfo(Utils.applySymmetry(islandToClaim.islandLocation, RunningMemory.guessedSymmetry), islandToClaim.islandId, -1, Team.NEUTRAL);
+//        }
+//      }
+    }
+    if (islandToClaim == null) {
       // explore for island
       while (doIslandFindingMove()) {
         int[] nearbyIslands = rc.senseNearbyIslands();
@@ -1090,7 +1107,7 @@ public class Carrier extends MobileRobot {
     if (islandToClaim == null) return false;
 
     MapLocation islandLocationToClaim = islandToClaim.islandLocation;
-    rc.setIndicatorString("attempt claim island: " + islandLocationToClaim + " -- trying for " + currentTask.turnsRunning + " turns");
+    Printer.appendToIndicator("attempt claim island: " + islandLocationToClaim + " -- trying for " + currentTask.turnsRunning + " turns");
 
     // someone else claimed it while we were moving to the unclaimed island
     if (rc.canSenseLocation(islandLocationToClaim)) {
@@ -1117,14 +1134,14 @@ public class Carrier extends MobileRobot {
   }
 
   private enum CarrierTask {
-    FETCH_ADAMANTIUM(ResourceType.ADAMANTIUM),
-    FETCH_MANA(ResourceType.MANA),
-    FETCH_ELIXIR(ResourceType.ELIXIR),
-    DELIVER_RSS_HOME(ResourceType.NO_RESOURCE),
-    ANCHOR_ISLAND(ResourceType.NO_RESOURCE),
-    SCOUT(ResourceType.NO_RESOURCE),
-    REPORT_INFO(ResourceType.NO_RESOURCE),
-    ATTACK(ResourceType.NO_RESOURCE);
+    FETCH_ADAMANTIUM(ResourceType.ADAMANTIUM, "Ad"),
+    FETCH_MANA(ResourceType.MANA, "Ma"),
+    FETCH_ELIXIR(ResourceType.ELIXIR, "El"),
+    DELIVER_RSS_HOME(ResourceType.NO_RESOURCE, "Home"),
+    ANCHOR_ISLAND(ResourceType.NO_RESOURCE, "Anchor"),
+    SCOUT(ResourceType.NO_RESOURCE, "Scout"),
+    REPORT_INFO(ResourceType.NO_RESOURCE, "Report"),
+    ATTACK(ResourceType.NO_RESOURCE, "Atk");
 
     public MapLocation targetHQLoc;
     public MapLocation targetWell;
@@ -1132,9 +1149,11 @@ public class Carrier extends MobileRobot {
     final public ResourceType collectionType;
     public IslandInfo targetIsland;
     public int turnsRunning;
+    private String name;
 
-    CarrierTask(ResourceType resourceType) {
+    CarrierTask(ResourceType resourceType, String name) {
       collectionType = resourceType;
+      this.name = name;
     }
 
     public void onTaskStart(Carrier carrier) throws GameActionException {
@@ -1196,7 +1215,7 @@ public class Carrier extends MobileRobot {
      */
     public boolean execute(Carrier carrier) throws GameActionException {
       turnsRunning++;
-      carrier.rc.setIndicatorString("Carrier - current task: " + this + " - turns: " + turnsRunning);
+      Printer.appendToIndicator("task=" + this.name + ":" + turnsRunning + "R");
       switch (this) {
         case FETCH_ADAMANTIUM:
           return carrier.executeFetchResource(ResourceType.ADAMANTIUM);
@@ -1239,26 +1258,21 @@ public class Carrier extends MobileRobot {
     return false;
   }
 
-  private void tryCollectResource() throws GameActionException {
-    if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION, -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION, -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 0), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 0), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 0), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 0), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, 1), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, 1), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, -1), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(0, -1), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 1), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, 1), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, -1), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, -1), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, -1), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(1, -1), -1);
-    } else if (rc.canCollectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 1), -1)) {
-      rc.collectResource(Cache.PerTurn.CURRENT_LOCATION.translate(-1, 1), -1);
-    }
+  /**
+   * tries to collect from any adjacent well
+   * @return true if collected
+   * @throws GameActionException
+   */
+  private boolean tryCollectResource() throws GameActionException {
+    return collectResource(Cache.PerTurn.CURRENT_LOCATION, -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.NORTH), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.SOUTH), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.EAST), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.WEST), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.NORTHEAST), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.NORTHWEST), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.SOUTHEAST), -1)
+        || collectResource(Cache.PerTurn.CURRENT_LOCATION.add(Direction.SOUTHWEST), -1);
   }
 
   private boolean collectResource(MapLocation well, int amount) throws GameActionException {

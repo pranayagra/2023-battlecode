@@ -138,7 +138,7 @@ public class HeadQuarters extends Robot {
   protected void runTurn() throws GameActionException {
     // printDebugInfo();
 //    /*WORKFLOW_ONLY*///if (Cache.PerTurn.ROUND_NUM >= 1000) rc.resign();
-//     if (Cache.PerTurn.ROUND_NUM >= 700) rc.resign();
+//     if (Cache.PerTurn.ROUND_NUM >= 300) rc.resign();
     if (Cache.PerTurn.ROUNDS_ALIVE == 1) {
       Communicator.MetaInfo.reinitForHQ();
       afterTurnWhenMoved();
@@ -193,7 +193,7 @@ public class HeadQuarters extends Robot {
     if (!baseOverWhelmed) {
       int neededLauncherBombSize = neededLauncherBombSize();
       if (neededLauncherBombSize > 0) {
-        rc.setIndicatorString("need bomb=" + neededLauncherBombSize + "-mana:" + rc.getResourceAmount(ResourceType.MANA) + "-cost:" + RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize);
+        Printer.appendToIndicator("need bomb=" + neededLauncherBombSize + "-mana:" + rc.getResourceAmount(ResourceType.MANA) + "-cost:" + RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize);
         boolean canLauncherBomb = rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize;
         if (canLauncherBomb) {
           spawnLauncherBomb(Math.min(neededLauncherBombSize, 5));
@@ -209,7 +209,7 @@ public class HeadQuarters extends Robot {
         } while (spawned && rc.isActionReady());
       }
     } else {
-      rc.setIndicatorString("base overwhelmed");
+      Printer.appendToIndicator("base overwhelmed");
     }
     // store the resources at the end of the turn
     prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
@@ -311,7 +311,7 @@ public class HeadQuarters extends Robot {
   private void setDefaultIndicatorString() throws GameActionException {
     String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
     indString += ";kSym:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
-    rc.setIndicatorString(indString);
+    Printer.appendToIndicator(indString);
   }
 
   private void printDebugInfo() throws GameActionException {
@@ -354,7 +354,7 @@ public class HeadQuarters extends Robot {
     adamantiumIncome += newAd - adamantiumIncomeHistory[ind];
     manaIncome += newMana - manaIncomeHistory[ind];
     elixirIncome += newElixir - elixirIncomeHistory[ind];
-//    rc.setIndicatorString("Income: A:"+adamantiumIncome+" M:" + manaIncome + " E:" + elixirIncome);
+//    Printer.appendToIndicator("Income: A:"+adamantiumIncome+" M:" + manaIncome + " E:" + elixirIncome);
     // update the history
     adamantiumIncomeHistory[ind] = newAd;
     manaIncomeHistory[ind] = newMana;
@@ -524,7 +524,7 @@ public class HeadQuarters extends Robot {
   }
 
   private boolean spawnCarrierTowardsWell(WellInfo targetWell) throws GameActionException {
-    rc.setIndicatorString("closest well: " + targetWell);
+    Printer.appendToIndicator("closest well: " + targetWell);
     if (targetWell == null) return false;
     if (!rc.isActionReady()) return false;
     if (!canAfford(RobotType.CARRIER)) return false;
@@ -549,7 +549,7 @@ public class HeadQuarters extends Robot {
         goal = goal.add(dir).add(dir);
         toSpawn = goal;
       }
-//      rc.setIndicatorString("Attempted spawn at " + toSpawn);
+//      Printer.appendToIndicator("Attempted spawn at " + toSpawn);
     } while (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2);
     return buildRobotAtOrAround(RobotType.CARRIER, Cache.PerTurn.CURRENT_LOCATION);
   }

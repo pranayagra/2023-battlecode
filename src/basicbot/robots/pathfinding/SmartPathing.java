@@ -1,6 +1,7 @@
 package basicbot.robots.pathfinding;
 
 import basicbot.knowledge.Cache;
+import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public class SmartPathing extends Pathing {
@@ -17,6 +18,7 @@ public class SmartPathing extends Pathing {
 
   @Override
   public boolean moveTowards(MapLocation target) throws GameActionException {
+    if (!rc.isMovementReady()) return false;
 //    int interestingTilesCounter = 0;
 //    for (MapInfo mapInfo : rc.senseNearbyMapInfos()) {
 //      if (!mapInfo.isPassable() || mapInfo.getCooldownMultiplier(Cache.Permanent.OUR_TEAM) != 1) {
@@ -36,6 +38,6 @@ public class SmartPathing extends Pathing {
   @Override
   public boolean moveAwayFrom(MapLocation target) throws GameActionException {
     Direction away = target.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-    return moveTowards(Cache.PerTurn.CURRENT_LOCATION.translate(away.dx*5, away.dy*5));
+    return moveTowards(Utils.clampToMap(Cache.PerTurn.CURRENT_LOCATION.translate(away.dx*5, away.dy*5)));
   }
 }

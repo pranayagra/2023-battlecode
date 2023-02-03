@@ -33,7 +33,7 @@ public class HqMetaInfo {
         break;
       default:
 //          if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS) {
-//            Global.rc.setIndicatorString("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
+//            Printer.appendToIndicator("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
 //            Printer.print("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
 //          }
         if (Cache.Permanent.ROBOT_TYPE != RobotType.HEADQUARTERS || Cache.PerTurn.ROUNDS_ALIVE > 1) {
@@ -194,7 +194,7 @@ public class HqMetaInfo {
         break;
       default:
 //          if (Cache.Permanent.ROBOT_TYPE == RobotType.HEADQUARTERS) {
-//            Global.rc.setIndicatorString("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
+//            Printer.appendToIndicator("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
 //            Printer.print("HQ failing -- spawned" + Cache.Permanent.ROUND_SPAWNED + " -- round " + Cache.PerTurn.ROUND_NUM + " -- alive " + Cache.PerTurn.ROUNDS_ALIVE);
 //          }
         if (Cache.Permanent.ROBOT_TYPE != RobotType.HEADQUARTERS || Cache.PerTurn.ROUNDS_ALIVE > 1) {

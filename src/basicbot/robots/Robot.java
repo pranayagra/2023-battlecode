@@ -56,7 +56,7 @@ public abstract class Robot {
     AttackMicro.init(rc);
     CarrierWellMicro.init();
 
-    rc.setIndicatorString("Just spawned!");
+    Printer.appendToIndicator("Just spawned!");
     turnCount = -1;
   }
 
@@ -89,7 +89,6 @@ public abstract class Robot {
       // Try/catch blocks stop unhandled exceptions, which cause your robot to explode.
       try {
         this.runTurnWrapper();
-        if (Printer.indicator.toString().length() > 0) rc.setIndicatorString(Printer.indicator.toString());
         Printer.submitPrint();
       } catch (GameActionException e) {
         // something illegal in the Battlecode world
@@ -141,7 +140,7 @@ public abstract class Robot {
   private void runTurnWrapper() throws GameActionException {
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
     if (!dontYield) {
-      rc.setIndicatorString("ac: " + rc.getActionCooldownTurns() + " mc: " + rc.getMovementCooldownTurns());
+      Printer.appendToIndicator("a" + rc.getActionCooldownTurns() + "m" + rc.getMovementCooldownTurns());
     }
     dontYield = false;
 
@@ -272,6 +271,29 @@ public abstract class Robot {
     return closest;
   }
 
+  protected IslandInfo getClosestEnemyIsland() {
+    int closestDist = Integer.MAX_VALUE;
+    int closestEuclideanDist = Integer.MAX_VALUE;
+    IslandInfo closest = null;
+    for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
+      IslandInfo islandInfo = getIslandInformation(i);
+      if (islandInfo != null && islandInfo.islandTeam == Cache.Permanent.OPPONENT_TEAM) {
+        int dist = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, islandInfo.islandLocation);
+        int euclideanDist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(islandInfo.islandLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = islandInfo;
+          closestEuclideanDist = euclideanDist;
+        } else if (dist == closestDist && euclideanDist < closestEuclideanDist) {
+          closestEuclideanDist = euclideanDist;
+          closest = islandInfo;
+        }
+      }
+    }
+
+    return closest;
+  }
+
   // ID => [loc, roundNum, owner]
   class IslandInfo {
     public static final int MAX_ISLAND_COUNT = GameConstants.MAX_NUMBER_ISLANDS + 1;
@@ -371,6 +393,7 @@ public abstract class Robot {
   private void observeIslandsNearby() throws GameActionException {
     int[] islandIds = rc.senseNearbyIslands();
     for (int i = Math.min(islandIds.length, 3); --i >= 0;) {
+      if (Clock.getBytecodesLeft() < 100) break;
       int islandId = islandIds[i];
       try { // TODO: remove once they patch this
         if (localIslandInfo[islandId] != null) {

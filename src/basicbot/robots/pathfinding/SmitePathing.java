@@ -3,6 +3,7 @@ package basicbot.robots.pathfinding;
 import basicbot.containers.CharSet;
 import basicbot.robots.pathfinding.unitpathing.*;
 import basicbot.knowledge.Cache;
+import basicbot.utils.Printer;
 import battlecode.common.*;
 
 public class SmitePathing {
@@ -70,7 +71,6 @@ public class SmitePathing {
   }
 
   private boolean pathTo(MapLocation target) throws GameActionException {
-    if (!rc.isMovementReady()) return false;
     int cooldownCost = (int) (Cache.Permanent.ROBOT_TYPE == RobotType.CARRIER
         ? (GameConstants.CARRIER_MOVEMENT_INTERCEPT + rc.getWeight()*GameConstants.CARRIER_MOVEMENT_SLOPE)
         : Cache.Permanent.ROBOT_TYPE.movementCooldown);
@@ -121,6 +121,7 @@ public class SmitePathing {
     // get bfs best direction
     Direction dir = up.bestDir(target); // ~5000 bytecode (4700 avg&median)
 //    Utils.finishByteCodeCounting("unit-bfs");
+    Printer.appendToIndicator("bfs>"+target);
 
 
 //    if (dir == null || !rc.canMove(dir)) return false; // TODO: this checks null but if null should do something else
@@ -136,9 +137,10 @@ public class SmitePathing {
       windCurrentLoc = null;
     }
 
-//    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+    
+//    if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //      Printer.print("nav towards: " + destination, "best dir: " + dir, "bug can move: " + (dir == null ? "null" : BugNav.canMoveInDirection(dir)));
-//      Printer.print("visited: " + (dir == null ? "null" : tracker.contains(Cache.PerTurn.CURRENT_LOCATION.add(dir))), "wind current loc: " + windCurrentLoc, "visited wind current loc: " + (windCurrentLoc == null ? "null" : tracker.contains(windCurrentLoc)));
+//      Printer.print("visited: " + (dir == null ? "null" : visitedLocations.contains(Cache.PerTurn.CURRENT_LOCATION.add(dir))), "wind current loc: " + windCurrentLoc, "visited wind current loc: " + (windCurrentLoc == null ? "null" : visitedLocations.contains(windCurrentLoc)));
 //    }
     if (dir == null || !BugNav.canMoveInDirection(dir) || visitedLocations.contains(Cache.PerTurn.CURRENT_LOCATION.add(dir)) || (windCurrentLoc != null && visitedLocations.contains(windCurrentLoc))) {
 //      Printer.print((dir == null ? "dir is null" : ("Revisited " + Cache.PerTurn.CURRENT_LOCATION.add(dir))) + "-- try fuzzy movement for " + MAX_FUZZY_MOVES + " turns");
@@ -148,6 +150,7 @@ public class SmitePathing {
 //      BugNav.setTarget(target);
       return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
     } else {
+      Printer.appendToIndicator("sp="+dir);
       return smiteMove(dir);
       // rc.setIndicatorDot(rc.getLocation(), 255, 255, 255);
     }

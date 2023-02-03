@@ -106,6 +106,7 @@ public class AttackMicro {
         char lastRoundHealth = lastRoundFriendsHealth.getOrDefault((char) robot.ID);
         if (lastRoundHealth == CharCharMap.DEFAULT_CHAR) continue;
         if (lastRoundHealth <= robot.health) continue;
+        if (robot.health < 0.5 * robot.type.health) continue;
         // friend took damage
         Direction bestDir = Cache.PerTurn.CURRENT_LOCATION.directionTo(robot.location);
         {

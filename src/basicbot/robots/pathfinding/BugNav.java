@@ -2,6 +2,7 @@ package basicbot.robots.pathfinding;
 
 import basicbot.containers.CharSet;
 import basicbot.knowledge.Cache;
+import basicbot.utils.Printer;
 import battlecode.common.*;
 
 public class BugNav{
@@ -27,7 +28,7 @@ public class BugNav{
   static void setTarget(MapLocation newTarget) {
     //different target? ==> previous data does not help!
     if (currTarget == null || !currTarget.equals(newTarget)) {
-//      if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//      if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //        Printer.print("BUGNAV: Setting target to " + newTarget + " -- coming from current loc: " + Cache.PerTurn.CURRENT_LOCATION);
 //      }
       resetPathfinding();
@@ -118,14 +119,15 @@ public class BugNav{
    * @return true if we moved
    */
   static boolean tryBugging() throws GameActionException {
-//    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
-//      Printer.print("BUGNAV: Trying to bug");
+    Printer.appendToIndicator("BN>"+currTarget);
+//    if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
+//      Printer.print("BUGNAV: Trying to bug -> " + currTarget);
 //    }
     //If I'm at a minimum distance to the target, I'm free!
-    MapLocation myLoc = rc.getLocation();
+    MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
     int d = myLoc.distanceSquaredTo(currTarget);
     if (d <= minDistToTarget) {
-//      if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//      if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //        Printer.print("BUGNAV: as close as been -> reset");
 //      }
       resetPathfinding();
@@ -144,10 +146,11 @@ public class BugNav{
     Direction dir = myLoc.directionTo(currTarget);
     if (lastObstacleFound != null) dir = myLoc.directionTo(lastObstacleFound);
     if (canMoveInDirWithBuggingCheck(dir)) {
-//      if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
-//        Printer.print("BUGNAV: can move -> reset");
+//      if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
+//        Printer.print("BUGNAV: obstacle (" + lastObstacleFound + ") gone (" + dir + ") -> reset");
 //      }
       resetPathfinding();
+      return pathing.move(dir);
     }
 
     //I rotate clockwise or counterclockwise (depends on 'rotateRight'). If I try to go out of the map I change the orientation
@@ -155,9 +158,10 @@ public class BugNav{
 //    Direction startingDir = dir;
     for (int i = 16; --i >= 0;) {
       if (canMoveInDirWithBuggingCheck(dir)) {
-//        if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//        if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //          Printer.print("BUGNAV: can bug move -> move");
 //        }
+//        rc.setIndicatorDot(rc.adjacentLocation(dir), 255, 200, 100);
         return pathing.move(dir);
       }
       MapLocation newLoc = myLoc.add(dir);
@@ -166,7 +170,7 @@ public class BugNav{
 //        dir = startingDir;
       } else { //If I could not go in that direction and it was not outside of the map, then this is the latest obstacle found
         lastObstacleFound = myLoc.add(dir);
-//        rc.setIndicatorDot(lastObstacleFound, 255, 255, 0);
+        rc.setIndicatorDot(lastObstacleFound, 255, 255, 0);
       }
       if (rotateRight) dir = dir.rotateRight();
       else dir = dir.rotateLeft();
@@ -178,7 +182,7 @@ public class BugNav{
 
   //clear some of the previous data
   static void resetPathfinding() {
-//    if (Cache.Permanent.ID == 13825 && Cache.PerTurn.ROUND_NUM >= 350) {
+//    if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //      Printer.print("BUGNAV: Resetting pathfinding");
 //    }
     lastObstacleFound = null;

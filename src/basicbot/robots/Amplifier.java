@@ -4,6 +4,7 @@ import basicbot.communications.CommsHandler;
 import basicbot.communications.HqMetaInfo;
 import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -24,7 +25,7 @@ public class Amplifier extends MobileRobot {
       // if furthestDistance is >= 27, minimize distance
       MapLocation bestLocation = bestTileToMove(closestEnemyLocation, currDistance);
       pathing.move(Cache.PerTurn.CURRENT_LOCATION.directionTo(bestLocation));
-      rc.setIndicatorString("Running away from enemy @" + closestEnemyLocation);
+      Printer.appendToIndicator("Running away from enemy @" + closestEnemyLocation);
 //      if (rc.isMovementReady()) {
 //        if (currDistance <= 20) {
 //          // todo: consider trying to run even if we have to get closer to enemy
@@ -36,22 +37,23 @@ public class Amplifier extends MobileRobot {
 
     MapLocation targetLocation = locationToStayInFrontOfFriendlyLaunchers();
     if (targetLocation == null && lastTargetLocation == null) {
-      rc.setIndicatorString("Target location null, doing exploration");
+      Printer.appendToIndicator("Target location null, doing exploration");
       doExploration();
       return;
     }
     if (targetLocation == null) targetLocation = lastTargetLocation;
+    targetLocation = Utils.clampToMap(targetLocation);
     lastTargetLocation = targetLocation;
     MapLocation friendlyAmpTooClose = separateFromOtherAmplifiers(targetLocation);
     if (friendlyAmpTooClose != null) {
       MapLocation targetLauncher = farthestAllyLauncherFrom(friendlyAmpTooClose);
       if (targetLauncher != null) {
-        rc.setIndicatorString("friendly amp too close, going to launcher @" + targetLauncher);
+        Printer.appendToIndicator("friendly amp too close, going to launcher @" + targetLauncher);
         pathing.moveTowards(targetLauncher);
         return;
       }
 
-      rc.setIndicatorString("friendly amp too close @" + friendlyAmpTooClose);
+      Printer.appendToIndicator("friendly amp too close @" + friendlyAmpTooClose);
       pathing.moveAwayFrom(friendlyAmpTooClose);
 //        // todo: think of better logic to separate
 //        randomizeExplorationTarget(true);
@@ -59,7 +61,7 @@ public class Amplifier extends MobileRobot {
       return;
     }
 //      rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, targetLocation, 0, 255, 0);
-    rc.setIndicatorString("moving towards target @" + targetLocation);
+    Printer.appendToIndicator("moving towards target @" + targetLocation);
     pathing.moveTowards(targetLocation);
 
   }

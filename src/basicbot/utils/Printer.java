@@ -34,6 +34,8 @@ public class Printer {
       if (print.length() > 25) {
         System.out.println(print);
       }
+//      if (Printer.indicator.toString().length() > 0) Printer.appendToIndicator(Printer.indicator.toString());
+      Global.rc.setIndicatorString(Printer.indicator.toString());
       cleanPrint();
     }
 

@@ -7,6 +7,7 @@ import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.robots.pathfinding.SmitePathing;
 import basicbot.utils.Global;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -56,7 +57,7 @@ public class CarrierEnemyProtocol {
       updateLastEnemy();
     }
     MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
-    if (fleeingCounter > 0) {
+    if (fleeingCounter > 0 && rc.getWeight() > 0) {
       if (Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, closestHQ) <= MicroConstants.CARRIER_DIST_TO_HQ_TO_RUN_HOME) {
         fleeingCounter = MicroConstants.CARRIER_TURNS_TO_FLEE;
       }
@@ -68,11 +69,13 @@ public class CarrierEnemyProtocol {
       if (toHome == toEnemy || toHome == toEnemy.rotateLeft() || toHome == toEnemy.rotateRight()) {
         fleeTarget = Cache.PerTurn.CURRENT_LOCATION.subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy);
       }
+      fleeTarget = Utils.clampToMap(fleeTarget);
     }
     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
+      Printer.appendToIndicator("flee-" + fleeingCounter + ">" + fleeTarget);
       while (rc.isMovementReady() && pathing.moveTowards(fleeTarget) && --fleeingCounter >= 0) {
         if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(closestHQ)) {
           carrier.transferAllResources(closestHQ);

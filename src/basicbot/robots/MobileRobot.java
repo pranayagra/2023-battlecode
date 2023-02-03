@@ -136,7 +136,7 @@ public abstract class MobileRobot extends Robot {
     if (goToExplorationTarget()) {
       MapLocation oldTarget = explorationTarget;
       randomizeExplorationTarget(true);
-      rc.setIndicatorString("explored " + oldTarget + " -- now: " + explorationTarget);
+      Printer.appendToIndicator("explored " + oldTarget + " -- now: " + explorationTarget);
       return true;
     } else {
       int distance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, explorationTarget);
@@ -146,7 +146,7 @@ public abstract class MobileRobot extends Robot {
       } else if (++turnsSinceClosestDistanceToExplorationTarget >= Math.max(50, closestDistanceToExplorationTarget * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
         MapLocation oldTarget = explorationTarget;
         randomizeExplorationTarget(true);
-        rc.setIndicatorString("gave up on exploring " + oldTarget + " -- now: " + explorationTarget);
+        Printer.appendToIndicator("gave up on exploring " + oldTarget + " -- now: " + explorationTarget);
         return true;
       }
     }

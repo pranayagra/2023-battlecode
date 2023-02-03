@@ -9,6 +9,15 @@ import java.util.Random;
 
 public class Utils {
 
+  public static MapLocation clampToMap(MapLocation location) {
+    // make sure location is on the map by checking 0<x<mapWidth and 0<y<mapHeight
+    if (location.x < 0) location = new MapLocation(0, location.y);
+    if (location.y < 0) location = new MapLocation(location.x, 0);
+    if (location.x >= Cache.Permanent.MAP_WIDTH) location = new MapLocation(Cache.Permanent.MAP_WIDTH - 1, location.y);
+    if (location.y >= Cache.Permanent.MAP_HEIGHT) location = new MapLocation(location.x, Cache.Permanent.MAP_HEIGHT - 1);
+    return location;
+  }
+
   public enum MapSymmetry {
     ROTATIONAL,
     HORIZONTAL,

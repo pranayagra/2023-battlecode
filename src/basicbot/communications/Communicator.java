@@ -39,7 +39,7 @@ public class Communicator {
     }
 
     public static void reinitForHQ() throws GameActionException {
-//      Global.rc.setIndicatorString("HQ reinit!");
+//      Global.Printer.appendToIndicator("HQ reinit!");
       init();
     }
 

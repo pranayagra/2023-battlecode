@@ -4,6 +4,7 @@ import basicbot.communications.HqMetaInfo;
 import basicbot.robots.pathfinding.BugNav;
 import basicbot.robots.pathfinding.Pathing;
 import basicbot.knowledge.Cache;
+import basicbot.utils.Printer;
 import basicbot.utils.Utils;
 import battlecode.common.*;
 
@@ -216,7 +217,7 @@ public class AttackerFightingMicro {
 //    if (bestMicro.dir == Direction.CENTER) return true;
 
     indString = "best: " + bestMicro.dir + "," + (int) bestMicro.score() + " ||" + indString;
-    rc.setIndicatorString(indString);
+    Printer.appendToIndicator(indString);
     return bestMicro.dir == Direction.CENTER || pathing.move(bestMicro.dir);
 //      if (rc.canMove(bestMicro.dir)) {
 //        rc.move(bestMicro.dir);
