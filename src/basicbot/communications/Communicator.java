@@ -71,14 +71,12 @@ public class Communicator {
    */
   public static boolean writeNextWell(WellData well) throws GameActionException {
     if (!well.dirty) return true;
-    well.dirty = false;
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(well.type);
     if (well.type == ResourceType.ELIXIR) {
       if (!upgradedWellLocations.contains(well.loc)) {
         upgradedWellLocations.add(well.loc);
         removeWellAtLocation(well.loc, ResourceType.ADAMANTIUM);
         removeWellAtLocation(well.loc, ResourceType.MANA);
-
       }
     } else {
       // check that this well is already not upgraded

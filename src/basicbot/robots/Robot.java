@@ -217,7 +217,6 @@ public abstract class Robot {
     updateEnemyHQAvoidance();
     // write to comms
     broadcastMemoryToComms();
-
   }
 
   protected void broadcastMemoryToComms() throws GameActionException {

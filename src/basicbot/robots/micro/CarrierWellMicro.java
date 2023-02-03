@@ -82,21 +82,15 @@ public class CarrierWellMicro {
 //      Printer.print("\tmap:" + rc.onTheMap(queuePosition) + ",sense:" + rc.canSenseLocation(queuePosition) + ",pass:" + rc.senseMapInfo(queuePosition).isPassable());
 //      Printer.print("\tWadj:" + queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()).isAdjacentTo(wellLocation) + ",blk:" + BugNav.blockedLocations.contains(queuePosition) + ",Wblk:" + (rc.canSenseLocation(queuePosition) && BugNav.blockedLocations.contains(queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()))));
 //    }
-    local_checks: {
-      if (!rc.onTheMap(queuePosition)) return false;
-      if (!rc.canSenseLocation(queuePosition)) break local_checks; // assume it is valid if can't sense
-      MapInfo mapInfo = rc.senseMapInfo(queuePosition);
-      if (!mapInfo.isPassable()) return false; // isn't passable
-      if (!queuePosition.add(mapInfo.getCurrentDirection()).isAdjacentTo(wellLocation)) return false; // gets blown away
+    if (!rc.onTheMap(queuePosition)) return false;
+    MapInfo mapInfo = rc.canSenseLocation(queuePosition) ? rc.senseMapInfo(queuePosition) : null;
+    if (mapInfo == null) { // assume it is valid if can't sense
+      return !BugNav.blockedLocations.contains(queuePosition);
     }
     if (BugNav.blockedLocations.contains(queuePosition)) return false; // blocked by a bugnav
-    if (rc.canSenseLocation(queuePosition)
-        && BugNav.blockedLocations.contains(
-        queuePosition.add(rc.senseMapInfo(queuePosition).getCurrentDirection()
-        ))) return false; // pushed into a blocked location
-    return true;
+    if (!mapInfo.isPassable()) return false; // isn't passable
+    MapLocation nextPos = queuePosition.add(mapInfo.getCurrentDirection());
+    if (!nextPos.isAdjacentTo(wellLocation)) return false; // gets blown away
+    return !BugNav.blockedLocations.contains(nextPos); // pushed into a blocked location
   }
-
-
-
 }

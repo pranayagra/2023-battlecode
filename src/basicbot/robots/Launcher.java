@@ -145,6 +145,7 @@ public class Launcher extends MobileRobot {
       didAnyMicro = true;
       Printer.appendToIndicator("micro'd.");
       tryAttack(false);
+      if (!rc.isMovementReady()) break;
     }
     if (didAnyMicro) {
       currentTask.numTurnsNearTarget = 0;
@@ -1056,7 +1057,6 @@ public class Launcher extends MobileRobot {
   private MapLocation determinePatrollingTargetLocationOurHq() {
     return HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
   }
-
 
   /**
    * Attempts to move towards the given location -- only allows movement on even turns
