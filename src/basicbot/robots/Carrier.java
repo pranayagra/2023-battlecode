@@ -33,6 +33,7 @@ public class Carrier extends MobileRobot {
   private static final int MAX_TURNS_TO_LOOK_FOR_WELL = 100;
   private static final int MIN_TURN_TO_EXPLORE = 30;
   private static final int MIN_TURN_TO_SWITCH_HQ_FOR_WELL = 50;
+  private static final int SWITCH_HQ_FOR_WELL_DISTANCE = 250;
 
   CarrierTask currentTask;
   ResourceType incrementedResource;
@@ -238,7 +239,6 @@ public class Carrier extends MobileRobot {
             break;
         }
         incrementedResource = wellTask.collectionType;
-
       }
       return wellTask;
     }
@@ -985,7 +985,7 @@ public class Carrier extends MobileRobot {
       }
 
       int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-      if (Cache.PerTurn.ROUND_NUM < MIN_TURN_TO_SWITCH_HQ_FOR_WELL && dist > 200) continue; // no HQ swapping early!
+      if (Cache.PerTurn.ROUND_NUM < MIN_TURN_TO_SWITCH_HQ_FOR_WELL && dist > SWITCH_HQ_FOR_WELL_DISTANCE) continue; // no HQ swapping early!
 
 //      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
       int realCapacity = writer.readWellCapacity(i);
