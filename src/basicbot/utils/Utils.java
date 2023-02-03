@@ -8,16 +8,6 @@ import java.util.Map;
 import java.util.Random;
 
 public class Utils {
-
-  public static MapLocation clampToMap(MapLocation location) {
-    // make sure location is on the map by checking 0<x<mapWidth and 0<y<mapHeight
-    if (location.x < 0) location = new MapLocation(0, location.y);
-    if (location.y < 0) location = new MapLocation(location.x, 0);
-    if (location.x >= Cache.Permanent.MAP_WIDTH) location = new MapLocation(Cache.Permanent.MAP_WIDTH - 1, location.y);
-    if (location.y >= Cache.Permanent.MAP_HEIGHT) location = new MapLocation(location.x, Cache.Permanent.MAP_HEIGHT - 1);
-    return location;
-  }
-
   public enum MapSymmetry {
     ROTATIONAL,
     HORIZONTAL,
@@ -336,9 +326,35 @@ public class Utils {
     return new MapLocation(x + Cache.Permanent.CHUNK_WIDTH / 2, y + Cache.Permanent.CHUNK_HEIGHT / 2);
   }
 
+  public static MapLocation clampToMap(MapLocation location) {
+    // make sure location is on the map by checking 0<x<mapWidth and 0<y<mapHeight
+    if (location.x < 0) location = new MapLocation(0, location.y);
+    if (location.y < 0) location = new MapLocation(location.x, 0);
+    if (location.x >= Cache.Permanent.MAP_WIDTH) location = new MapLocation(Cache.Permanent.MAP_WIDTH - 1, location.y);
+    if (location.y >= Cache.Permanent.MAP_HEIGHT) location = new MapLocation(location.x, Cache.Permanent.MAP_HEIGHT - 1);
+    return location;
+  }
+
 
   public static int getInvWeight(RobotInfo ri) {
     return (ri.getResourceAmount(ResourceType.ADAMANTIUM) + ri.getResourceAmount(ResourceType.MANA) + ri.getResourceAmount(ResourceType.ELIXIR) + (ri.getTotalAnchors() * GameConstants.ANCHOR_WEIGHT));
+  }
+
+
+  /**
+   * Returns the actual saturation of a well depending on capacity and singleAxisMaxDist and well upgraded status
+   * @param capacity
+   * @param singleAxisMaxDist
+   * @return number of carriers per well
+   */
+  public static int maxCarriersPerWell(int capacity, int singleAxisMaxDist, boolean isUpgraded) {
+    int collectionTime = isUpgraded ? 14 : 40;
+    // carriers spend 40 / 3 turns @ well
+    double multiplier = ((singleAxisMaxDist * 2.5 + 1) / collectionTime) + 1;
+    return (int) (capacity * multiplier);
+  }
+  public static int maxCarriersPerWell(int capacity, int singleAxisMaxDist) {
+    return maxCarriersPerWell(capacity, singleAxisMaxDist, false);
   }
 
 
@@ -364,22 +380,6 @@ public class Utils {
     if (diff < 0) diff = end + (Cache.Permanent.ROBOT_TYPE.bytecodeLimit - start);
     System.out.printf("%s bytecode=%4d\n", reason, diff);
     byteCodeMap.remove(reason);
-  }
-
-  /**
-   * Returns the actual saturation of a well depending on capacity and singleAxisMaxDist and well upgraded status
-   * @param capacity
-   * @param singleAxisMaxDist
-   * @return number of carriers per well
-   */
-  public static int maxCarriersPerWell(int capacity, int singleAxisMaxDist, boolean isUpgraded) {
-    int collectionTime = isUpgraded ? 14 : 40;
-    // carriers spend 40 / 3 turns @ well
-    double multiplier = ((singleAxisMaxDist * 2.5 + 1) / collectionTime) + 1;
-    return (int) (capacity * multiplier);
-  }
-  public static int maxCarriersPerWell(int capacity, int singleAxisMaxDist) {
-    return maxCarriersPerWell(capacity, singleAxisMaxDist, false);
   }
   /*
 
