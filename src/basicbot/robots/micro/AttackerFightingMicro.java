@@ -218,7 +218,9 @@ public class AttackerFightingMicro {
 
     indString = "best: " + bestMicro.dir + "," + (int) bestMicro.score() + " ||" + indString;
     Printer.appendToIndicator(indString);
-    return bestMicro.dir == Direction.CENTER || pathing.move(bestMicro.dir);
+//    return bestMicro.dir == Direction.CENTER || pathing.move(bestMicro.dir);
+    pathing.move(bestMicro.dir);
+    return true;
 //      if (rc.canMove(bestMicro.dir)) {
 //        rc.move(bestMicro.dir);
 //        return true;

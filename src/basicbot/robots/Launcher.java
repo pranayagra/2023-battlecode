@@ -10,8 +10,6 @@ import basicbot.knowledge.Cache;
 import basicbot.knowledge.RunningMemory;
 import basicbot.robots.micro.AttackMicro;
 import basicbot.robots.micro.AttackerFightingMicro;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.robots.pathfinding.SmartPathing;
 import basicbot.robots.pathfinding.SmitePathing;
 import basicbot.utils.Constants;
 import basicbot.utils.Printer;
@@ -19,7 +17,7 @@ import basicbot.utils.Utils;
 import battlecode.common.*;
 
 public class Launcher extends MobileRobot {
-  private static final int MIN_TURN_TO_MOVE = 0;
+  private static final int TURNS_TO_WAIT_SINCE_ENEMY_SEEN = 6;
   private static int MIN_GROUP_SIZE_TO_MOVE = 3; // min group size to move out TODO: done hacky
   private static final int TURNS_TO_WAIT = 15; // turns to wait (without friends) until going back to nearest HQ
   private static final int TURNS_AT_TARGET = 8; // how long to delay at each patrol target
@@ -43,6 +41,7 @@ public class Launcher extends MobileRobot {
   private boolean carrierInAttackRange;
   private MapLocation lastAttackedLocation;
   private MapLocation lastEnemyLocation;
+  private int roundLastEnemySeen;
 
   private int turnsInCloud;
 
@@ -347,6 +346,7 @@ public class Launcher extends MobileRobot {
     }
     if (closestEnemy != null) {
       lastEnemyLocation = closestEnemy;
+      roundLastEnemySeen = Cache.PerTurn.ROUND_NUM;
     }
   }
 
@@ -382,6 +382,23 @@ public class Launcher extends MobileRobot {
    * @throws GameActionException any exception while calculating destination
    */
   private MapLocation getDestination() throws GameActionException {
+    if (lastEnemyLocation != null && (Cache.PerTurn.ROUND_NUM - roundLastEnemySeen) < TURNS_TO_WAIT_SINCE_ENEMY_SEEN) {
+      int avgX = Cache.PerTurn.CURRENT_LOCATION.x;
+      int avgY = Cache.PerTurn.CURRENT_LOCATION.y;
+      int num = 1;
+      for (RobotInfo robot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+        switch (robot.type) {
+          case LAUNCHER:
+          case DESTABILIZER:
+            avgX += robot.location.x;
+            avgY += robot.location.y;
+            num++;
+            break;
+        }
+      }
+      return new MapLocation(avgX / num, avgY / num);
+    }
+
     MapLocation destination = null;
     // If enemyHQ only enemy near us and we are in range, walk away from it.
     MapLocation closestEnemyHQ = getClosestEnemyHQIfNoEnemies();
@@ -1081,7 +1098,10 @@ public class Launcher extends MobileRobot {
     MapLocation commedEnemy = Communicator.getClosestEnemy(Cache.PerTurn.CURRENT_LOCATION);
     if (commedEnemy != null && (!rc.canSenseLocation(commedEnemy) || (rc.canSenseRobotAtLocation(commedEnemy) && rc.senseRobotAtLocation(commedEnemy).team == Cache.Permanent.OPPONENT_TEAM))) {
       if (rc.canAttack(commedEnemy)) {
-        lastEnemyLocation = commedEnemy;
+        if (commedEnemy.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, 2*Cache.Permanent.VISION_RADIUS_SQUARED)) {
+          lastEnemyLocation = commedEnemy;
+          roundLastEnemySeen = Cache.PerTurn.ROUND_NUM;
+        }
         lastAttackedLocation = commedEnemy;
         rc.attack(commedEnemy);
         return true;
