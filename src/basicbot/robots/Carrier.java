@@ -319,15 +319,16 @@ public class Carrier extends MobileRobot {
     }
 
     do_broadcast: if (CarrierEnemyProtocol.cachedLastEnemyForBroadcast != null) {
-      for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
-        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(CarrierEnemyProtocol.cachedLastEnemyForBroadcast.location, friendlyRobot.type.actionRadiusSquared)) {
-          CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
-          break do_broadcast;
-        }
-      }
-      if (rc.canWriteSharedArray(0,0)) {
+//      for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
+//        if (friendlyRobot.type == RobotType.LAUNCHER && friendlyRobot.location.isWithinDistanceSquared(CarrierEnemyProtocol.cachedLastEnemyForBroadcast.location, friendlyRobot.type.actionRadiusSquared)) {
+//          CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
+//          CarrierEnemyProtocol.cachedLastEnemyForBroadcastRound = CarrierEnemyProtocol.MAX_BROADCAST_TURNS;
+//          break do_broadcast;
+//        }
+//      }
+      if (rc.canWriteSharedArray(0,0) && CarrierEnemyProtocol.cachedLastEnemyBroadcastCount++ < CarrierEnemyProtocol.MAX_BROADCAST_TURNS) {
         Communicator.writeEnemy(CarrierEnemyProtocol.cachedLastEnemyForBroadcast);
-        CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
+//        CarrierEnemyProtocol.cachedLastEnemyForBroadcast = null;
       }
     }
 

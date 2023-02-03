@@ -13,6 +13,7 @@ import battlecode.common.*;
 
 public class CarrierEnemyProtocol {
 
+  public static final int MAX_BROADCAST_TURNS = 5;
   private static RobotController rc;
   private static Carrier carrier;
   private static Pathing pathing;
@@ -23,6 +24,7 @@ public class CarrierEnemyProtocol {
   public static MapLocation lastEnemyLocation;
   public static int lastEnemyLocationRound;
   public static RobotInfo cachedLastEnemyForBroadcast;
+  public static int cachedLastEnemyBroadcastCount;
 
   public static void init(Carrier carrier) {
     CarrierEnemyProtocol.carrier = carrier;
@@ -63,7 +65,7 @@ public class CarrierEnemyProtocol {
       }
     }
     MapLocation fleeTarget = closestHQ;
-    if (lastEnemyLocation != null) {
+    if (lastEnemyLocation != null && lastEnemyLocation.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED*2)) {
       Direction toHome = Cache.PerTurn.CURRENT_LOCATION.directionTo(closestHQ);
       Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation);
       if (toHome == toEnemy || toHome == toEnemy.rotateLeft() || toHome == toEnemy.rotateRight()) {
@@ -213,10 +215,11 @@ public class CarrierEnemyProtocol {
 //    Printer.print("updateLastEnemy()");
     if (nearestCombatEnemy != null) {
       lastEnemyLocation = nearestCombatEnemy.location;
-      lastEnemyLocationRound = rc.getRoundNum();
+      lastEnemyLocationRound = Cache.PerTurn.ROUND_NUM;
       fleeingCounter = MicroConstants.CARRIER_TURNS_TO_FLEE;
       // check if we need to cache the enemy for broadcasting (only if no friendly launchers nearby)
       cachedLastEnemyForBroadcast = nearestCombatEnemy;
+      cachedLastEnemyBroadcastCount = 0;
       for (RobotInfo friendlyRobot : Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS) {
         if (friendlyRobot.type == RobotType.LAUNCHER) {
           int distToEnemy = friendlyRobot.location.distanceSquaredTo(lastEnemyLocation);
