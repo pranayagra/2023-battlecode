@@ -1,21 +1,21 @@
-package basicbot.robots;
+package pathinglaunchers.robots;
 
-import basicbot.communications.CommsHandler;
-import basicbot.communications.Communicator;
-import basicbot.communications.HqMetaInfo;
-import basicbot.containers.CharSet;
-import basicbot.containers.HashMap;
-import basicbot.knowledge.RunningMemory;
-import basicbot.knowledge.WellData;
-import basicbot.robots.micro.CarrierEnemyProtocol;
-import basicbot.robots.micro.CarrierWellMicro;
-import basicbot.robots.micro.CarrierWellPathing;
-import basicbot.knowledge.Cache;
-import basicbot.robots.micro.MicroConstants;
-import basicbot.robots.pathfinding.BugNav;
-import basicbot.utils.Global;
-import basicbot.utils.Printer;
-import basicbot.utils.Utils;
+import pathinglaunchers.communications.CommsHandler;
+import pathinglaunchers.communications.Communicator;
+import pathinglaunchers.communications.HqMetaInfo;
+import pathinglaunchers.containers.CharSet;
+import pathinglaunchers.containers.HashMap;
+import pathinglaunchers.knowledge.RunningMemory;
+import pathinglaunchers.knowledge.WellData;
+import pathinglaunchers.robots.micro.CarrierEnemyProtocol;
+import pathinglaunchers.robots.micro.CarrierWellMicro;
+import pathinglaunchers.robots.micro.CarrierWellPathing;
+import pathinglaunchers.knowledge.Cache;
+import pathinglaunchers.robots.micro.MicroConstants;
+import pathinglaunchers.robots.pathfinding.BugNav;
+import pathinglaunchers.utils.Global;
+import pathinglaunchers.utils.Printer;
+import pathinglaunchers.utils.Utils;
 import battlecode.common.*;
 
 import java.util.Arrays;
@@ -593,7 +593,7 @@ public class Carrier extends MobileRobot {
         } else if (distToWell >= 4) {
           if (++turnsSinceCloseToWell >= Math.max(100, closestDistToWell * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
             // we've been stuck for a while, give up
-            /*BASICBOT_ONLY*/Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
+            /*BASICBOT_ONLY*///Printer.print("giving up on well: " + wellLocation + " dist=" + distToWell + " closest=" + closestDistToWell + " turns=" + turnsSinceCloseToWell);
             findNewWell(currentTask.collectionType, wellLocation);
 //          return false;
           }
@@ -668,8 +668,8 @@ public class Carrier extends MobileRobot {
     updateWellQueueTarget();
 
     Direction dirToWell = Cache.PerTurn.CURRENT_LOCATION.directionTo(wellLocation);
-//    int distanceToWell = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-    if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)
+    int distanceToWell = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
+    if (Utils.DSQ_1by1 < distanceToWell && distanceToWell < Cache.Permanent.VISION_RADIUS_SQUARED
         && rc.canSenseLocation(wellLocation)
         && rc.canSenseLocation(wellLocation.add(dirToWell))
         && rc.canSenseLocation(wellLocation.add(dirToWell.rotateLeft()))
