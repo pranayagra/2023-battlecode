@@ -397,9 +397,14 @@ public class HeadQuarters extends Robot {
     return false;
   }
 
+  private int randomCarrierCount = 0;
   private MapLocation getPreferredCarrierSpawnLocation(SpawnType nextSpawn) throws GameActionException {
     MapLocation closestWellLocation = Communicator.getClosestWellLocation(Cache.PerTurn.CURRENT_LOCATION, nextSpawn.getResourceType());
-    return closestWellLocation == null ? Utils.randomMapLocation() : closestWellLocation;
+    if (closestWellLocation != null) {
+      return closestWellLocation;
+    }
+    Direction dir = Utils.directions[randomCarrierCount++*3 % 8];
+    return Cache.PerTurn.CURRENT_LOCATION.translate(dir.dx * 8, dir.dy * 8);
   }
 
   /**
