@@ -47,4 +47,12 @@ public class CharSet {
   public void remove(MapLocation loc) {
     builder.deleteCharAt(builder.indexOf(String.valueOf((char) (loc.x * GameConstants.MAP_MAX_HEIGHT + loc.y))));
   }
+
+  /**
+   * Relies on the assumption that all elements are 1 char
+   * @return
+   */
+  public int size() {
+    return builder.length();
+  }
 }

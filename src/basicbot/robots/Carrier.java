@@ -245,21 +245,21 @@ public class Carrier extends MobileRobot {
   private CarrierTask determineNewWellTask() throws GameActionException {
     //TODO: fix naming of income. this is now semantically the # of carriers out getting that resource type.
     // TODO: check for existence of Elixir wells
-    int maxAdamantiumCarriersBeforeManaSaturation = 3;
+    int maxAdamantiumCarriersBeforeManaSaturation = 2;
     int singleAxisDistBetweenHQs = HqMetaInfo.getClosestSingleAxisDistBetweenOpposingHQs();
     // Printer.print("singleAxisDistBetweenHQs" + singleAxisDistBetweenHQs);
 
     if (singleAxisDistBetweenHQs < 20) {
       maxAdamantiumCarriersBeforeManaSaturation = 0;
-    } else if (singleAxisDistBetweenHQs < 40) {
+    } else if (singleAxisDistBetweenHQs < 50) {
       maxAdamantiumCarriersBeforeManaSaturation = 1;
-    } else if (singleAxisDistBetweenHQs < 60) {
-      maxAdamantiumCarriersBeforeManaSaturation = 2;
     }
+    int adCapMultiplier = Math.min(HqMetaInfo.hqCount, Communicator.numWellsOfType(ResourceType.ADAMANTIUM));
+    adCapMultiplier = Math.max(adCapMultiplier, 1);
+    maxAdamantiumCarriersBeforeManaSaturation *= adCapMultiplier;
     int adamantiumCarriers = Communicator.getTotalCarriersMiningType(ResourceType.ADAMANTIUM);
     int manaCarriers = Communicator.getTotalCarriersMiningType(ResourceType.MANA);
 
-//    if ((40 * adamantiumIncome) / 100 > 9) {
     if (adamantiumCarriers < maxAdamantiumCarriersBeforeManaSaturation) {
       // split 1:1
       if (manaCarriers < adamantiumCarriers) {
@@ -394,14 +394,26 @@ public class Carrier extends MobileRobot {
    * @throws GameActionException
    */
   private boolean shouldReportToComms() throws GameActionException {
-    if (alreadyReportedFirstManaWell) return false;
-    if (Communicator.numWellsOfType(ResourceType.MANA) == 0 && RunningMemory.containsWellOfType(ResourceType.MANA)) {
+    CharSet manaWellLocs = Communicator.getWellLocationSetOfType(ResourceType.MANA);
+    if (manaWellLocs.size() >= CommsHandler.ADAMANTIUM_WELL_SLOTS) return false;
+//    if (alreadyReportedFirstManaWell) return false;
+    if (manaWellLocs.size() == 0 && RunningMemory.containsWellOfType(ResourceType.MANA)) {
       for (WellData wellData : RunningMemory.wells.values) {
         if (wellData == null) continue;
         if (wellData.type != ResourceType.MANA) continue;
-        if(wellData.loc.isWithinDistanceSquared(HqMetaInfo.getClosestHqLocation(wellData.loc), 400))
+        if (wellData.loc.isWithinDistanceSquared(HqMetaInfo.getClosestHqLocation(wellData.loc), 400))
           return true;
       }
+      return false;
+    }
+    if (Cache.PerTurn.ROUND_NUM > 100) return false;
+    // report any mana wells not in comms
+    for (WellData wellData : RunningMemory.wells.values) {
+      if (wellData == null) continue;
+      if (wellData.type != ResourceType.MANA) continue;
+      if (HqMetaInfo.isEnemyTerritoryNoDangerRadius(wellData.loc)) continue;
+      if (manaWellLocs.contains(wellData.loc)) continue;
+      return true;
     }
     return false;
   }
@@ -963,13 +975,19 @@ public class Carrier extends MobileRobot {
       if (wellLocation.equals(toAvoid) || blackListWells.contains(wellLocation)) continue;
 //      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
       MapLocation loc = writer.readWellLocation(i);
-      int extraCapacity = Utils.maxCarriersPerWell(writer.readWellCapacity(i), Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc));
-      if (writer.readWellCurrentWorkers(i) >= extraCapacity) continue;
-      if (CarrierEnemyProtocol.lastEnemyLocation != null && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26) && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
+      int realCapacity = writer.readWellCapacity(i);
+      if (resourceType != ResourceType.ADAMANTIUM) {
+        realCapacity = Utils.maxCarriersPerWell(realCapacity, Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc));
+      }
+      if (writer.readWellCurrentWorkers(i) >= realCapacity) continue;
+      if (CarrierEnemyProtocol.lastEnemyLocation != null
+          && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26)
+          && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
         continue;
       }
 
       int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
+      if (Cache.PerTurn.ROUND_NUM < 80 && dist > 200) continue; // no HQ swapping early!
       if (dist < closestDist) {
         closestDist = dist;
         closestWellLocation = wellLocation;

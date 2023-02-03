@@ -71,6 +71,7 @@ public class Communicator {
    */
   public static boolean writeNextWell(WellData well) throws GameActionException {
     if (!well.dirty) return true;
+    well.dirty = false;
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(well.type);
     if (well.type == ResourceType.ELIXIR) {
       if (!upgradedWellLocations.contains(well.loc)) {
@@ -228,6 +229,26 @@ public class Communicator {
 
     }
     return numWells;
+  }
+
+  public static boolean wellTypeFull(ResourceType resourceType) throws GameActionException {
+    return numWellsOfType(resourceType) >= CommsHandler.ADAMANTIUM_WELL_SLOTS;
+  }
+
+  /**
+   *
+   * @param resourceType
+   * @return a charset of all the locations of wells of the specified type in comms
+   * @throws GameActionException
+   */
+  public static CharSet getWellLocationSetOfType(ResourceType resourceType) throws GameActionException {
+    CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
+    CharSet wellLocs = new CharSet();
+    for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
+      if (!writer.readWellExists(i)) continue;
+      wellLocs.add(writer.readWellLocation(i));
+    }
+    return wellLocs;
   }
 
   public static MapLocation getClosestEnemyWellLocation(MapLocation fromHere, ResourceType resourceType) throws GameActionException {

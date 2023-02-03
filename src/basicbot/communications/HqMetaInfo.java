@@ -226,4 +226,12 @@ public class HqMetaInfo {
     int friendlyDist = location.distanceSquaredTo(closestHQ);
     return enemyDist < friendlyDist;
   }
+
+  public static boolean isEnemyTerritoryNoDangerRadius(MapLocation location) {
+    MapLocation closestEnemyHQ = getClosestEnemyHqLocation(location);
+    int enemyDist = location.distanceSquaredTo(closestEnemyHQ);
+    MapLocation closestHQ = getClosestHqLocation(location);
+    int friendlyDist = location.distanceSquaredTo(closestHQ);
+    return enemyDist < friendlyDist;
+  }
 }
