@@ -58,7 +58,7 @@ public class BugNav{
     return false;
   }
 
-  static boolean canMoveInDirection(Direction dir) throws GameActionException {
+  public static boolean canMoveInDirection(Direction dir) throws GameActionException {
 //    Printer.print("BUGNAV: Checking if can move in direction " + dir);
     if (!rc.canMove(dir)) return false;
     MapLocation nextLoc = Cache.PerTurn.CURRENT_LOCATION.add(dir);
@@ -161,7 +161,7 @@ public class BugNav{
 //        if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //          Printer.print("BUGNAV: can bug move -> move");
 //        }
-//        rc.setIndicatorDot(rc.adjacentLocation(dir), 255, 200, 100);
+        /*BASICBOT_ONLY*///rc.setIndicatorDot(rc.adjacentLocation(dir), 255, 200, 100);
         return pathing.move(dir);
       }
       MapLocation newLoc = myLoc.add(dir);
@@ -170,7 +170,7 @@ public class BugNav{
 //        dir = startingDir;
       } else { //If I could not go in that direction and it was not outside of the map, then this is the latest obstacle found
         lastObstacleFound = myLoc.add(dir);
-        rc.setIndicatorDot(lastObstacleFound, 255, 255, 0);
+        /*BASICBOT_ONLY*///rc.setIndicatorDot(lastObstacleFound, 255, 255, 0);
       }
       if (rotateRight) dir = dir.rotateRight();
       else dir = dir.rotateLeft();

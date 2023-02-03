@@ -32,6 +32,7 @@ public class Carrier extends MobileRobot {
   private static final int MAX_SCOUT_TURNS = 50;
   private static final int MAX_TURNS_TO_LOOK_FOR_WELL = 100;
   private static final int MIN_TURN_TO_EXPLORE = 30;
+  private static final int MIN_TURN_TO_SWITCH_HQ_FOR_WELL = 50;
 
   CarrierTask currentTask;
   ResourceType incrementedResource;
@@ -257,6 +258,7 @@ public class Carrier extends MobileRobot {
     int adCapMultiplier = Math.min(HqMetaInfo.hqCount, Communicator.numWellsOfType(ResourceType.ADAMANTIUM));
     adCapMultiplier = Math.max(adCapMultiplier, 1);
     maxAdamantiumCarriersBeforeManaSaturation *= adCapMultiplier;
+    maxAdamantiumCarriersBeforeManaSaturation = Math.min(maxAdamantiumCarriersBeforeManaSaturation, 5);
     int adamantiumCarriers = Communicator.getTotalCarriersMiningType(ResourceType.ADAMANTIUM);
     int manaCarriers = Communicator.getTotalCarriersMiningType(ResourceType.MANA);
 
@@ -983,7 +985,7 @@ public class Carrier extends MobileRobot {
       }
 
       int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-      if (Cache.PerTurn.ROUND_NUM < 80 && dist > 200) continue; // no HQ swapping early!
+      if (Cache.PerTurn.ROUND_NUM < MIN_TURN_TO_SWITCH_HQ_FOR_WELL && dist > 200) continue; // no HQ swapping early!
 
 //      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
       int realCapacity = writer.readWellCapacity(i);

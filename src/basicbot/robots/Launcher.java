@@ -158,6 +158,10 @@ public class Launcher extends MobileRobot {
     }
 
     tryAttack(false);
+
+    if (Cache.PerTurn.ROUND_NUM >= 1800 && Cache.PerTurn.ALL_NEARBY_FRIENDLY_ROBOTS.length >= 40 && Utils.rng.nextInt(10) <= 3) {
+      rc.disintegrate();
+    }
   }
 
   private MapLocation closestNonAdjIslandFriend() throws GameActionException {
@@ -529,14 +533,13 @@ public class Launcher extends MobileRobot {
         }
       }
       // stay still, not enough friends
-      numTurnsWaitingForFriends++;
-      if (numTurnsWaitingForFriends > turnsToWaitUntilRetreat()) {
+      if (++numTurnsWaitingForFriends > turnsToWaitUntilRetreat()) {
         // go back to nearest HQ
-        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(myLocation);
         if (currentTask.numTurnsNearTarget > 0) {
           currentTask.numTurnsNearTarget -= (MIN_GROUP_SIZE_TO_MOVE - totalAllyLaunchers);
           if (currentTask.numTurnsNearTarget < 0) currentTask.numTurnsNearTarget = 0;
         }
+        MapLocation closestHq = HqMetaInfo.getClosestHqLocation(myLocation);
         Printer.appendToIndicator("retreating towards HQ: " + closestHq);
         return closestHq;
 //        Printer.appendToIndicator("no friends - just go to target");
