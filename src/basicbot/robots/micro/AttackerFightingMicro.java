@@ -336,7 +336,7 @@ public class AttackerFightingMicro {
       if (!canMove) return -1 * Double.MAX_VALUE;
 
       double score = netOutgoingDPS;
-//      if (bigWinning()) score += 100.0 / distToClosestEnemy;
+      if (bigWinning() && !haveAttacked) score -= distToClosestEnemy;
 //      if (bigLosing()) {
 //        if (distToClosestEnemy > RobotType.LAUNCHER.visionRadiusSquared) {
 //          score += 100;

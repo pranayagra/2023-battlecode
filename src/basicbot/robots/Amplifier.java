@@ -36,7 +36,7 @@ public class Amplifier extends MobileRobot {
     }
 
     MapLocation targetLocation = locationToStayInFrontOfFriendlyLaunchers();
-    if (targetLocation == null && lastTargetLocation == null) {
+    if ((targetLocation == null && lastTargetLocation == null) || Cache.PerTurn.CURRENT_LOCATION.equals(targetLocation)) {
       Printer.appendToIndicator("Target location null, doing exploration");
       doExploration();
       return;
