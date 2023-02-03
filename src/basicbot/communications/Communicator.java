@@ -147,7 +147,7 @@ public class Communicator {
     CommsHandler.ResourceTypeReaderWriter writer = CommsHandler.ResourceTypeReaderWriter.fromResourceType(resourceType);
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (writer.readWellExists(i)) {
-        Printer.print("" + writer.readWellLocation(i));
+        //Printer.print("" + writer.readWellLocation(i));
         return true;
       }
     }

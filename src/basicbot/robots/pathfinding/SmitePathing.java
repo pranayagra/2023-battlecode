@@ -121,7 +121,7 @@ public class SmitePathing {
     // get bfs best direction
     Direction dir = up.bestDir(target); // ~5000 bytecode (4700 avg&median)
 //    Utils.finishByteCodeCounting("unit-bfs");
-    Printer.appendToIndicator("bfs>"+target);
+    //Printer.appendToIndicator("bfs>"+target);
 
 
 //    if (dir == null || !rc.canMove(dir)) return false; // TODO: this checks null but if null should do something else
@@ -150,7 +150,7 @@ public class SmitePathing {
 //      BugNav.setTarget(target);
       return BugNav.tryBugging() && markVisitedAndRetTrue(Cache.PerTurn.CURRENT_LOCATION);
     } else {
-      Printer.appendToIndicator("sp="+dir);
+      //Printer.appendToIndicator("sp="+dir);
       return smiteMove(dir);
       // rc.setIndicatorDot(rc.getLocation(), 255, 255, 255);
     }

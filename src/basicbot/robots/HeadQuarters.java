@@ -124,7 +124,7 @@ public class HeadQuarters extends Robot {
             CommsHandler.writeMyIslandsLocation(islandInfo.islandLocation);
             CommsHandler.writeMyIslandsRoundNum(islandInfo.roundNum);
             CommsHandler.writeMyIslandsIslandId(islandInfo.islandId);
-            Printer.appendToIndicator("writing island " + islandInfo.islandLocation);
+            //Printer.appendToIndicator("writing island " + islandInfo.islandLocation);
 //            Printer.print("rotating island " + islandInfo);
 //            CommsHandler.writeMyIslandsTeam(teamToInt(islandInfo.islandTeam)); // not needed since we only rotate owned team islands
             return;
@@ -193,7 +193,7 @@ public class HeadQuarters extends Robot {
     if (!baseOverWhelmed) {
       int neededLauncherBombSize = neededLauncherBombSize();
       if (neededLauncherBombSize > 0) {
-        Printer.appendToIndicator("need bomb=" + neededLauncherBombSize + "-mana:" + rc.getResourceAmount(ResourceType.MANA) + "-cost:" + RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize);
+        //Printer.appendToIndicator("need bomb=" + neededLauncherBombSize + "-mana:" + rc.getResourceAmount(ResourceType.MANA) + "-cost:" + RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize);
         boolean canLauncherBomb = rc.getResourceAmount(ResourceType.MANA) >= RobotType.LAUNCHER.buildCostMana * neededLauncherBombSize;
         if (canLauncherBomb) {
           spawnLauncherBomb(Math.min(neededLauncherBombSize, 5));
@@ -208,8 +208,8 @@ public class HeadQuarters extends Robot {
           }
         } while (spawned && rc.isActionReady());
       }
-    } else {
-      Printer.appendToIndicator("base overwhelmed");
+//    } else {
+//      Printer.appendToIndicator("base overwhelmed");
     }
     // store the resources at the end of the turn
     prevAdamantium = rc.getResourceAmount(ResourceType.ADAMANTIUM);
@@ -309,9 +309,9 @@ public class HeadQuarters extends Robot {
   }
 
   private void setDefaultIndicatorString() throws GameActionException {
-    String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
-    indString += ";kSym:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
-    Printer.appendToIndicator(indString);
+//    String indString = "Inc-A:"+CommsHandler.readOurHqAdamantiumIncome(this.hqID)+" M:" + CommsHandler.readOurHqManaIncome(this.hqID) + " E:" + CommsHandler.readOurHqElixirIncome(this.hqID);
+//    indString += ";kSym:" + RunningMemory.knownSymmetry + ";gSym:" + RunningMemory.guessedSymmetry;
+//    Printer.appendToIndicator(indString);
   }
 
   private void printDebugInfo() throws GameActionException {
@@ -325,11 +325,11 @@ public class HeadQuarters extends Robot {
         int capacity = writer.readWellCapacity(i);
         int extraCapacity = Utils.maxCarriersPerWell(capacity, Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc));
         int currentWorkers = writer.readWellCurrentWorkers(i);
-        Printer.print("Well:" + loc + " " + currentWorkers +"/" + capacity + "/" + extraCapacity);
+        //Printer.print("Well:" + loc + " " + currentWorkers +"/" + capacity + "/" + extraCapacity);
       }
     }
-    Printer.print("Num Amps:" + CommsHandler.readNumAmps());
-    Printer.print("Num launchers:" + CommsHandler.readNumLaunchers());
+    //Printer.print("Num Amps:" + CommsHandler.readNumAmps());
+    //Printer.print("Num launchers:" + CommsHandler.readNumLaunchers());
   }
   /**
    * Handles the resource income information. Does the following actions:
@@ -529,7 +529,7 @@ public class HeadQuarters extends Robot {
   }
 
   private boolean spawnCarrierTowardsWell(WellInfo targetWell) throws GameActionException {
-    Printer.appendToIndicator("closest well: " + targetWell);
+    //Printer.appendToIndicator("closest well: " + targetWell);
     if (targetWell == null) return false;
     if (!rc.isActionReady()) return false;
     if (!canAfford(RobotType.CARRIER)) return false;

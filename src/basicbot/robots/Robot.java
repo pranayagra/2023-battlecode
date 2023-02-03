@@ -56,7 +56,7 @@ public abstract class Robot {
     AttackMicro.init(rc);
     CarrierWellMicro.init();
 
-    Printer.appendToIndicator("Just spawned!");
+    //Printer.appendToIndicator("Just spawned!");
     turnCount = -1;
   }
 
@@ -95,21 +95,21 @@ public abstract class Robot {
         System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " GameActionException");
         Printer.submitPrint();
         e.printStackTrace();
-        rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
+        //rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
         if (RESIGN_ON_GAME_EXCEPTION) die();
       } catch (Exception e) {
         // something bad
         System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " Exception");
         Printer.submitPrint();
         e.printStackTrace();
-        rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
+        //rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
         if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) die();
       } catch (AssertionError e) {
         // some assertion failed
         System.out.println(rc.getType() + "@" + rc.getLocation() + ".BC=" + Clock.getBytecodeNum() + ".TLE?=" + (rc.getRoundNum() != Cache.PerTurn.ROUND_NUM) + " AssertionError");
         Printer.submitPrint();
         e.printStackTrace();
-        rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
+        //rc.setIndicatorDot(Cache.PerTurn.CURRENT_LOCATION, 255,255,255);
         if (RESIGN_ON_GAME_EXCEPTION || RESIGN_ON_RUNTIME_EXCEPTION) die();
       } finally {
         // end turn - make code wait until next turn
@@ -139,9 +139,9 @@ public abstract class Robot {
    */
   private void runTurnWrapper() throws GameActionException {
 //        System.out.println("Age: " + turnCount + "; Location: " + Cache.PerTurn.CURRENT_LOCATION);
-    if (!dontYield) {
-      Printer.appendToIndicator("a" + rc.getActionCooldownTurns() + "m" + rc.getMovementCooldownTurns());
-    }
+//    if (!dontYield) {
+//      Printer.appendToIndicator("a" + rc.getActionCooldownTurns() + "m" + rc.getMovementCooldownTurns());
+//    }
     dontYield = false;
 
     Memory.updateOnTurn();
@@ -222,7 +222,6 @@ public abstract class Robot {
   protected void broadcastMemoryToComms() throws GameActionException {
     RunningMemory.broadcastMemorizedWells();
   }
-
 
   protected IslandInfo getClosestFriendlyIsland() {
     int closestDist = Integer.MAX_VALUE;
@@ -404,17 +403,17 @@ public abstract class Robot {
           localIslandInfo[islandId] = new IslandInfo(islandLocation, islandId, Cache.PerTurn.ROUND_NUM, team);
         }
       } catch (GameActionException e) {
-        /*BASICBOT_ONLY*/Printer.print("Error sensing for island " + islandId);
+        /*BASICBOT_ONLY*///Printer.print("Error sensing for island " + islandId);
       }
     }
   }
 
   private void debugIslandComms() {
-    if (Cache.PerTurn.ROUND_NUM % 20 == 0) {
-      for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
-        Printer.print("island " + i + " " + globalIslandInfo[i] + " " + localIslandInfo[i]);
-      }
-    }
+//    if (Cache.PerTurn.ROUND_NUM % 20 == 0) {
+//      for (int i = 0; i < IslandInfo.MAX_ISLAND_COUNT; ++i) {
+//        Printer.print("island " + i + " " + globalIslandInfo[i] + " " + localIslandInfo[i]);
+//      }
+//    }
   }
 
   protected void islandMobileBotsProtocol() throws GameActionException {
@@ -673,8 +672,8 @@ public abstract class Robot {
     RunningMemory.broadcastSymmetry();
   }
   private boolean checkFailsSymmetry(MapLocation test1, MapLocation test2, Utils.MapSymmetry symmetryToCheck) throws GameActionException {
-    /*BASICBOT_ONLY*/rc.setIndicatorDot(test1, 211, 211, 211);
-    /*BASICBOT_ONLY*/rc.setIndicatorDot(test2, 211, 211, 211);
+    /*BASICBOT_ONLY*///rc.setIndicatorDot(test1, 211, 211, 211);
+    /*BASICBOT_ONLY*///rc.setIndicatorDot(test2, 211, 211, 211);
     int visionRadiusSq = Cache.PerTurn.IS_IN_CLOUD ? GameConstants.CLOUD_VISION_RADIUS_SQUARED : Cache.Permanent.VISION_RADIUS_SQUARED;
     if (rc.onTheMap(test1)
         && rc.onTheMap(test2)

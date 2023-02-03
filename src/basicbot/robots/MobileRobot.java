@@ -97,7 +97,7 @@ public abstract class MobileRobot extends Robot {
         if (rc.canSenseLocation(explorationTarget)) {
           RobotInfo robot = rc.senseRobotAtLocation(explorationTarget);
           if (robot == null || robot.type != RobotType.HEADQUARTERS || robot.team != Cache.Permanent.OPPONENT_TEAM) {
-            Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
+            //Printer.print("ERROR: expected enemy HQ is not an HQ " + explorationTarget, "symmetry guess must be wrong, eliminating symmetry (" + RunningMemory.guessedSymmetry + ") and retrying...");
             RunningMemory.markInvalidSymmetry(RunningMemory.guessedSymmetry);
           }
         }
@@ -118,7 +118,7 @@ public abstract class MobileRobot extends Robot {
         }
         break;
       default:
-        Printer.print("No random exploration behavior defined for " + Cache.Permanent.ROBOT_TYPE);
+        //Printer.print("No random exploration behavior defined for " + Cache.Permanent.ROBOT_TYPE);
         explorationTarget = Utils.randomMapLocation();
         break;
     }
@@ -138,7 +138,7 @@ public abstract class MobileRobot extends Robot {
     turnsExploring++;
     if (!rc.isMovementReady()) {
       /*BASICBOT_ONLY*/if (explorationTarget != null) {
-      /*BASICBOT_ONLY*/  rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
+      /*BASICBOT_ONLY*/  //rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, explorationTarget, 255, 0, 0);
       /*BASICBOT_ONLY*/}
     } else {
       pathing.moveTowards(explorationTarget);
@@ -159,7 +159,7 @@ public abstract class MobileRobot extends Robot {
     if (goToExplorationTarget()) {
       MapLocation oldTarget = explorationTarget;
       randomizeExplorationTarget(true);
-      Printer.appendToIndicator("explored " + oldTarget + " -- now: " + explorationTarget);
+      //Printer.appendToIndicator("explored " + oldTarget + " -- now: " + explorationTarget);
       return true;
     } else {
       int distance = Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, explorationTarget);
@@ -169,7 +169,7 @@ public abstract class MobileRobot extends Robot {
       } else if (++turnsSinceClosestDistanceToExplorationTarget >= Math.max(50, closestDistanceToExplorationTarget * MicroConstants.TURNS_SCALAR_TO_GIVE_UP_ON_TARGET_APPROACH)) {
         MapLocation oldTarget = explorationTarget;
         randomizeExplorationTarget(true);
-        Printer.appendToIndicator("gave up on exploring " + oldTarget + " -- now: " + explorationTarget);
+        //Printer.appendToIndicator("gave up on exploring " + oldTarget + " -- now: " + explorationTarget);
         return true;
       }
     }

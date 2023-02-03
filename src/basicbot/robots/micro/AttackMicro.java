@@ -66,7 +66,7 @@ public class AttackMicro {
   }
 
   static MapLocation bestPositionToAimFrom(MapLocation target) throws GameActionException {
-    rc.setIndicatorDot(target, 0, 255, 0);
+    //rc.setIndicatorDot(target, 0, 255, 0);
     AimingPosition[] aims = new AimingPosition[9];
     for (Direction dir : Utils.directionsNine) aims[dir.ordinal()] = new AimingPosition(dir, target);
     double minCooldownMultiplier = aims[8].cooldownMultiplier;
@@ -145,7 +145,7 @@ public class AttackMicro {
       if (moveTowardsFriendCounter > 0) {
         // move towards friend
 //        Printer.print("move to friend that took damage " + moveTowardsFriendTarget);
-        rc.setIndicatorDot(moveTowardsFriendTarget, 0, 255, 255);
+        //rc.setIndicatorDot(moveTowardsFriendTarget, 0, 255, 255);
 //        target = moveTowardsFriendTarget.add(Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget));
         target = moveTowardsFriendTarget;
 //        Direction dir = Cache.PerTurn.CURRENT_LOCATION.directionTo(moveTowardsFriendTarget);

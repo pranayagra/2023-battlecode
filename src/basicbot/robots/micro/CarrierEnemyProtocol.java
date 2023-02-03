@@ -42,7 +42,7 @@ public class CarrierEnemyProtocol {
           if (!rc.isMovementReady()) break try_escape;
           MapLocation escapeTarget = getEscapeLocation();
           if (escapeTarget != null) {
-            Printer.appendToIndicator("xcp-" + escapeTarget);
+            //Printer.appendToIndicator("xcp-" + escapeTarget);
             while (rc.isMovementReady()
                 && pathing.moveTowards(escapeTarget)
                 && !Cache.PerTurn.CURRENT_LOCATION.equals(escapeTarget)) {
@@ -50,7 +50,7 @@ public class CarrierEnemyProtocol {
               if (escapeTarget == null) {
                 break attack_enemy;
               }
-              Printer.appendToIndicator("xcp-" + escapeTarget);
+              //Printer.appendToIndicator("xcp-" + escapeTarget);
             }
             break attack_enemy;
           }
@@ -86,7 +86,7 @@ public class CarrierEnemyProtocol {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      Printer.appendToIndicator("flee-" + fleeingCounter + "(" + lastEnemyLocation + ")>" + fleeTarget);
+      //Printer.appendToIndicator("flee-" + fleeingCounter + "(" + lastEnemyLocation + ")>" + fleeTarget);
       while (rc.isMovementReady() && pathing.moveTowards(fleeTarget) && --fleeingCounter >= 0) {
         if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(closestHQ)) {
           carrier.transferAllResources(closestHQ);

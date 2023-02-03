@@ -205,19 +205,19 @@ public class AttackerFightingMicro {
       microInfo[8].updateForAlly(friendly);
     }
 
-    String indString = "";
+//    String indString = "";
     MicroInfo bestMicro = microInfo[8];
     for (int i = 0; i < 8; ++i) {
 //      if (microInfo[i].score() > -1000)  indString += microInfo[i].dir + "," + (int) microInfo[i].score() +" ||";
-      if(microInfo[i].canMove) indString += microInfo[i].dir;
-      indString += microInfo[i].canMove;
+//      if(microInfo[i].canMove) indString += microInfo[i].dir;
+//      indString += microInfo[i].canMove;
       if (microInfo[i].isBetter(bestMicro)) bestMicro = microInfo[i];
     }
 
 //    if (bestMicro.dir == Direction.CENTER) return true;
 
-    indString = "best: " + bestMicro.dir + "," + (int) bestMicro.score() + " ||" + indString;
-    Printer.appendToIndicator(indString);
+//    indString = "best: " + bestMicro.dir + "," + (int) bestMicro.score() + " ||" + indString;
+//    Printer.appendToIndicator(indString);
 //    return bestMicro.dir == Direction.CENTER || pathing.move(bestMicro.dir);
     pathing.move(bestMicro.dir);
     return true;

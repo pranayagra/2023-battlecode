@@ -58,7 +58,7 @@ public class RunningMemory {
 //    RunningMemory.symmetryInfo = symmetryInfo;
 //    RunningMemory.symmetryInfoDirty = true;
     if (knownSymmetry != null) {
-      Printer.print("ERROR: trying to mark invalid symmetry (" + symmetryToEliminate + ") when already known!" + knownSymmetry);
+      //Printer.print("ERROR: trying to mark invalid symmetry (" + symmetryToEliminate + ") when already known!" + knownSymmetry);
       symmetryInfo = 0;
       updateSymmetry();
       return;

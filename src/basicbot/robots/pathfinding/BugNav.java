@@ -119,7 +119,7 @@ public class BugNav{
    * @return true if we moved
    */
   static boolean tryBugging() throws GameActionException {
-    Printer.appendToIndicator("BN>"+currTarget);
+    //Printer.appendToIndicator("BN>"+currTarget);
 //    if (Cache.Permanent.ID == 10596 && Cache.PerTurn.ROUND_NUM >= 180) {
 //      Printer.print("BUGNAV: Trying to bug -> " + currTarget);
 //    }

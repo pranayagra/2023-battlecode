@@ -63,7 +63,7 @@ public class Launcher extends MobileRobot {
 
   @Override
   protected void runTurn() throws GameActionException {
-    Printer.appendToIndicator("launcher");
+    //Printer.appendToIndicator("launcher");
     if (rc.canWriteSharedArray(0, 0)) {
       CommsHandler.writeNumLaunchersIncrement();
     }
@@ -135,15 +135,15 @@ public class Launcher extends MobileRobot {
     while (currentTask.update() && maxTaskChanges-- > 0) {
       popLauncherTask();
     }
-    if (maxTaskChanges <= 0) {
-      Printer.print("Launcher task stack looping too much");
-    }
+//    if (maxTaskChanges <= 0) {
+//      Printer.print("Launcher task stack looping too much");
+//    }
 
     // do micro -- returns true if we did micro -> should not do exploration/patrolling behavior
     boolean didAnyMicro = false;
     while (AttackerFightingMicro.doMicro()) {
       didAnyMicro = true;
-      Printer.appendToIndicator("micro'd.");
+      //Printer.appendToIndicator("micro'd.");
       tryAttack(false);
       break;
     }
@@ -153,7 +153,7 @@ public class Launcher extends MobileRobot {
     } else {
       MapLocation target = getDestination();
       if (target != null) {
-        /*BASICBOT_ONLY*/rc.setIndicatorDot(target, 0, 0, 255);
+        /*BASICBOT_ONLY*///rc.setIndicatorDot(target, 0, 0, 255);
         attemptMoveTowards(target);
       }
     }
@@ -409,7 +409,7 @@ public class Launcher extends MobileRobot {
     // If enemyHQ only enemy near us and we are in range, walk away from it.
     MapLocation closestEnemyHQ = getClosestEnemyHQIfNoEnemies();
     if (closestEnemyHQ != null && Cache.PerTurn.CURRENT_LOCATION.isWithinDistanceSquared(closestEnemyHQ, RobotType.HEADQUARTERS.actionRadiusSquared)) {
-      Printer.appendToIndicator("moving away from enemy HQ:" + closestEnemyHQ);
+      //Printer.appendToIndicator("moving away from enemy HQ:" + closestEnemyHQ);
       Direction awayFromEnemyHQ = closestEnemyHQ.directionTo(Cache.PerTurn.CURRENT_LOCATION);
       return Cache.PerTurn.CURRENT_LOCATION.translate(awayFromEnemyHQ.dx*5, awayFromEnemyHQ.dy*5);
     }
@@ -417,14 +417,14 @@ public class Launcher extends MobileRobot {
     // if one of our friends got hurt, go to him
 //    destination = AttackMicro.updateAndGetInjuredAllyTarget();
     if (destination != null) {
-      Printer.appendToIndicator("going to injured ally: " + destination);
+      //Printer.appendToIndicator("going to injured ally: " + destination);
       return destination;
     }
 
     // immediately adjacent location to consider -> will chase a valid enemy if necessary
     destination = AttackMicro.getBestMovementPosition();
     if (destination != null) {
-      Printer.appendToIndicator("chasing enemy: " + destination);
+      //Printer.appendToIndicator("chasing enemy: " + destination);
       return destination;
     }
 
@@ -439,8 +439,8 @@ public class Launcher extends MobileRobot {
                 200
             ))) {
 //          addFightTask(destination);
-          Printer.appendToIndicator("defending HQ " + closestHq + " from closest commed enemy: " + destination);
-          /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
+          //Printer.appendToIndicator("defending HQ " + closestHq + " from closest commed enemy: " + destination);
+          /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, destination, 255, 100, 100);
           return destination;
         }
 //        return destination;
@@ -525,11 +525,11 @@ public class Launcher extends MobileRobot {
       if (totalAllyLaunchers > 0) {
         if (!closestFriendToTargetLoc.isAdjacentTo(myLocation)) {
           // move towards friend closest to current target
-          Printer.appendToIndicator("moving towards friend (" + nearbyAllyLaunchers + "," + totalAllyLaunchers + "," + (MIN_GROUP_SIZE_TO_MOVE-1) + ") at " + closestFriendToTargetLoc + "-target: " + patrolTarget + " -type=" + currentTask.type.name);
+          //Printer.appendToIndicator("moving towards friend (" + nearbyAllyLaunchers + "," + totalAllyLaunchers + "," + (MIN_GROUP_SIZE_TO_MOVE-1) + ") at " + closestFriendToTargetLoc + "-target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
 //        attemptMoveTowards(closestFriendToTargetLoc);
         } else if (closestFriendToTargetLoc.equals(myLocation)) {
-          Printer.appendToIndicator("I'm the closest (" + nearbyAllyLaunchers + "," + totalAllyLaunchers + "," + (MIN_GROUP_SIZE_TO_MOVE-1) + "), staying still" + " -target: " + patrolTarget + " -type=" + currentTask.type.name);
+          //Printer.appendToIndicator("I'm the closest (" + nearbyAllyLaunchers + "," + totalAllyLaunchers + "," + (MIN_GROUP_SIZE_TO_MOVE-1) + "), staying still" + " -target: " + patrolTarget + " -type=" + currentTask.type.name);
           return closestFriendToTargetLoc;
         }
       }
@@ -541,13 +541,13 @@ public class Launcher extends MobileRobot {
           if (currentTask.numTurnsNearTarget < 0) currentTask.numTurnsNearTarget = 0;
         }
         MapLocation closestHq = HqMetaInfo.getClosestHqLocation(myLocation);
-        Printer.appendToIndicator("retreating towards HQ: " + closestHq);
+        //Printer.appendToIndicator("retreating towards HQ: " + closestHq);
         return closestHq;
 //        Printer.appendToIndicator("no friends - just go to target");
 //        return patrolTarget;
       } else {
 //        return explorationTarget; // explore? still while waiting
-        Printer.appendToIndicator("waiting for friends");
+        //Printer.appendToIndicator("waiting for friends");
         return closestFriendToTargetLoc;//Cache.PerTurn.CURRENT_LOCATION; // stay still while waiting
       }
     } else {
@@ -557,7 +557,7 @@ public class Launcher extends MobileRobot {
       Direction toTarget = myLocation.directionTo(patrolTarget);
       if (closestFriendDistToTargetDist < myDistToTarget) { // someone else is closer
 //        Printer.appendToIndicator("clump -" + currentTask.type.name + "@" + currentTask.targetLocation + "via-" + patrolTarget + "-turns@=" + currentTask.numTurnsNearTarget + "-turns close=" + currentTask.turnsSinceClosest);
-        Printer.appendToIndicator("follow: " + closestFriendToTargetLoc + " -target: " + patrolTarget + "-turns close=" + currentTask.turnsSinceClosest);
+        //Printer.appendToIndicator("follow: " + closestFriendToTargetLoc + " -target: " + patrolTarget + "-turns close=" + currentTask.turnsSinceClosest);
 ////        return closestFriendToTargetLoc.add(closestFriendToTargetLoc.directionTo(patrolTarget));
 //        MapLocation lineFormationCenter = closestFriendToTargetLoc;
 //        MapLocation lineFormationPointLeft = lineFormationCenter;//.add(toTarget.rotateLeft());
@@ -645,7 +645,7 @@ public class Launcher extends MobileRobot {
           }
         }
 
-        Printer.appendToIndicator("advance -> " + currentTask.type.name + "@" + currentTask.targetLocation + " - turns=" + currentTask.numTurnsNearTarget + " |line|=" + friendsInLine);
+        //Printer.appendToIndicator("advance -> " + currentTask.type.name + "@" + currentTask.targetLocation + " - turns=" + currentTask.numTurnsNearTarget + " |line|=" + friendsInLine);
         return MIN_GROUP_SIZE_TO_MOVE == 1 ? patrolTarget : myLocation; //adjacentAllyLaunchers >= (MIN_GROUP_SIZE_TO_MOVE - 1)*0.75 ? patrolTarget : myLocation;
 //        return friendsInLine >= (MIN_GROUP_SIZE_TO_MOVE - 1) ? patrolTarget : myLocation;
       }
@@ -699,10 +699,10 @@ public class Launcher extends MobileRobot {
     if (launcherTaskStackPointer < MAX_LAUNCHER_TASKS-1) {
       launcherTaskStack[++launcherTaskStackPointer] = launcherTask;
     } else {
-      Printer.print("launcher task stack overflow");
-      for (int i = launcherTaskStackPointer; --i >= 0;) {
-        Printer.print(i  + ": " + launcherTaskStack[i].type.name + " - " + launcherTaskStack[i].targetLocation);
-      }
+//      Printer.print("launcher task stack overflow");
+//      for (int i = launcherTaskStackPointer; --i >= 0;) {
+//        Printer.print(i  + ": " + launcherTaskStack[i].type.name + " - " + launcherTaskStack[i].targetLocation);
+//      }
 //      die();
       launcherTaskStack[launcherTaskStackPointer] = launcherTask;
     }
@@ -850,7 +850,7 @@ public class Launcher extends MobileRobot {
       }
 
       at_target: if (numTurnsNearTarget > 0 && patrolLocation != null && numTurnsNearTarget < type.numTurnsToStayAtTarget) {
-        Printer.appendToIndicator("Completing patrol " + type.name + "@" + targetLocation + " (via: " + patrolLocation + ")" + " --turns=" + numTurnsNearTarget);
+        //Printer.appendToIndicator("Completing patrol " + type.name + "@" + targetLocation + " (via: " + patrolLocation + ")" + " --turns=" + numTurnsNearTarget);
         return false; // exit early if we're near the patrol target -- finish patrolling
       }
 
@@ -897,7 +897,7 @@ public class Launcher extends MobileRobot {
             if (targetLocation != null) {
               Direction randomDir = Utils.randomDirection();
               setNewPatrolLocation(targetLocation.add(randomDir).add(randomDir));
-              Printer.appendToIndicator("patrolling our hq " + targetLocation + " - from " + patrolLocation);
+              //Printer.appendToIndicator("patrolling our hq " + targetLocation + " - from " + patrolLocation);
               break;
             }
           case OUR_WELL: our_well: {
@@ -907,7 +907,7 @@ public class Launcher extends MobileRobot {
             if (targetLocation != null) {
               Direction awayFromBase = HqMetaInfo.getClosestHqLocation(targetLocation).directionTo(targetLocation);
               setNewPatrolLocation(targetLocation.add(awayFromBase).add(awayFromBase));
-              Printer.appendToIndicator("patrolling our well " + targetLocation + " - from " + patrolLocation);
+              //Printer.appendToIndicator("patrolling our well " + targetLocation + " - from " + patrolLocation);
               break; // switch to enemy well if all our wells are visited
             }
           }
@@ -918,7 +918,7 @@ public class Launcher extends MobileRobot {
             if (targetLocation != null) {
               Direction towardsEnemyBase = targetLocation.directionTo(HqMetaInfo.getClosestEnemyHqLocation(targetLocation));
               setNewPatrolLocation(targetLocation.add(towardsEnemyBase).add(towardsEnemyBase));
-              Printer.appendToIndicator("patrolling enemy well " + targetLocation + " - from " + patrolLocation);
+              //Printer.appendToIndicator("patrolling enemy well " + targetLocation + " - from " + patrolLocation);
               break; // fall through to enemy HQ if no enemy well known
             }
           case ENEMY_HQ:
@@ -935,14 +935,14 @@ public class Launcher extends MobileRobot {
                 newPatrolLocation = targetLocation.translate(toSelf.dx*4, toSelf.dy*4);
               }
               setNewPatrolLocation(newPatrolLocation);
-              Printer.appendToIndicator("patrolling enemy HQ " + targetLocation + " - from " + patrolLocation);
+              //Printer.appendToIndicator("patrolling enemy HQ " + targetLocation + " - from " + patrolLocation);
               break;
             }
 //          Printer.print("ERROR: no closest enemy HQ found for patrol -- visited: " + visitedLocations);
           default:
             if (type.isHotSpot) {
               if (patrolLocation != null) {
-                Printer.appendToIndicator("patrolling hot spot: " + patrolLocation);
+                //Printer.appendToIndicator("patrolling hot spot: " + patrolLocation);
                 break;
               }
             } else {
@@ -959,11 +959,11 @@ public class Launcher extends MobileRobot {
             }
             break;
         }
-        if (patrolLocation == null) {
-          Printer.print("Failed to select patrol target for type: " + type);
-        }
+//        if (patrolLocation == null) {
+//          Printer.print("Failed to select patrol target for type: " + type);
+//        }
       }
-      /*BASICBOT_ONLY*/rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
+      /*BASICBOT_ONLY*///rc.setIndicatorLine(Cache.PerTurn.CURRENT_LOCATION, patrolLocation, 200,200,200);
       return false;
     }
 
