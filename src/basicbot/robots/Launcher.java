@@ -999,6 +999,21 @@ public class Launcher extends MobileRobot {
     MapLocation myLoc = Cache.PerTurn.CURRENT_LOCATION;
     int closestDist = Integer.MAX_VALUE;
     MapLocation closestEnemyWell = null;
+    for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
+      if (CommsHandler.readElixirWellExists(i)) {
+        MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
+        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
+        }
+        if (visitedLocations.contains(wellLocation)) continue;
+        int dist = myLoc.distanceSquaredTo(wellLocation);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestEnemyWell = wellLocation;
+        }
+      }
+    }
+    if (closestEnemyWell != null) return closestEnemyWell;
     for (int i = 0; i < CommsHandler.MANA_WELL_SLOTS; i++) {
       if (CommsHandler.readManaWellExists(i)) {
         MapLocation wellLocation = CommsHandler.readManaWellLocation(i);
@@ -1013,23 +1028,10 @@ public class Launcher extends MobileRobot {
         }
       }
     }
+    if (closestEnemyWell != null) return closestEnemyWell;
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (CommsHandler.readAdamantiumWellExists(i)) {
         MapLocation wellLocation = CommsHandler.readAdamantiumWellLocation(i);
-        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
-          wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
-        }
-        if (visitedLocations.contains(wellLocation)) continue;
-        int dist = myLoc.distanceSquaredTo(wellLocation);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestEnemyWell = wellLocation;
-        }
-      }
-    }
-    for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
-      if (CommsHandler.readElixirWellExists(i)) {
-        MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
         if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
           wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
         }
