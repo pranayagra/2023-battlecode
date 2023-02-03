@@ -220,7 +220,7 @@ public abstract class Robot {
   }
 
   protected void broadcastMemoryToComms() throws GameActionException {
-    int wellsBroadcast = RunningMemory.broadcastMemorizedWells();
+    RunningMemory.broadcastMemorizedWells();
   }
 
 
@@ -763,7 +763,7 @@ public abstract class Robot {
     // see all locations around well
     MapLocation wellLoc = wellInfo.getMapLocation();
     int capacity = 0;
-    if (Clock.getBytecodesLeft() >= 1000 && Cache.PerTurn.ROUND_NUM == rc.getRoundNum()) { // not enough bytecode to measure this
+    if (Clock.getBytecodesLeft() >= 1000 && Cache.PerTurn.ROUND_NUM == rc.getRoundNum() && Clock.getBytecodeNum() < 500) { // not enough bytecode to measure this
       final int visionRadiusSq = Cache.PerTurn.IS_IN_CLOUD ? GameConstants.CLOUD_VISION_RADIUS_SQUARED : Cache.Permanent.VISION_RADIUS_SQUARED;
       for (Direction dir : Utils.directionsNine) {
         MapLocation loc = wellLoc.add(dir);
@@ -773,7 +773,10 @@ public abstract class Robot {
         }
       }
     }
-    return RunningMemory.publishWell(new WellData(wellInfo, capacity));
+    if (Cache.Permanent.ROBOT_TYPE == RobotType.LAUNCHER && Clock.getBytecodesLeft() >= 100) {
+      return RunningMemory.publishWell(new WellData(wellInfo, capacity));
+    }
+    return false;
   }
 
   protected WellInfo getClosestWell(ResourceType type) throws GameActionException {

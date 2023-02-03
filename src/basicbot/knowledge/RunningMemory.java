@@ -156,7 +156,7 @@ public class RunningMemory {
   public static int broadcastMemorizedWells() throws GameActionException {
     if (wells.size == 0) return 0;
     if (!Global.rc.canWriteSharedArray(0,0)) return 0;
-    if (Clock.getBytecodesLeft() < wells.size * 500) return 0;
+    if (Clock.getBytecodesLeft() < wells.size * 500 || Cache.PerTurn.ROUND_NUM != Global.rc.getRoundNum()) return 0;
 //    int oldCount = wellCount;
 //    Printer.print("flushing " + wellCount + " wells - bc=" + Clock.getBytecodesLeft());
 //    while (wellCount > 0 && Communicator.writeNextWell(wells[wellCount-1])) {

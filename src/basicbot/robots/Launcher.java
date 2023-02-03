@@ -145,7 +145,7 @@ public class Launcher extends MobileRobot {
       didAnyMicro = true;
       Printer.appendToIndicator("micro'd.");
       tryAttack(false);
-      if (!rc.isMovementReady()) break;
+      break;
     }
     if (didAnyMicro) {
       currentTask.numTurnsNearTarget = 0;
