@@ -772,7 +772,7 @@ public abstract class Robot {
         }
       }
     }
-    if (Cache.Permanent.ROBOT_TYPE == RobotType.LAUNCHER && Clock.getBytecodesLeft() >= 100) {
+    if (Cache.Permanent.ROBOT_TYPE != RobotType.LAUNCHER || Clock.getBytecodesLeft() >= 100) {
       return RunningMemory.publishWell(new WellData(wellInfo, capacity));
     }
     return false;
