@@ -538,25 +538,46 @@ public class HeadQuarters extends Robot {
   }
 
   private boolean spawnCarrierTowardsWell(MapLocation targetWell) throws GameActionException {
-    if (rc.senseNearbyRobots(targetWell, RobotType.CARRIER.actionRadiusSquared, Cache.Permanent.OUR_TEAM).length > 12) return false;
+//    if (rc.senseNearbyRobots(targetWell, RobotType.CARRIER.actionRadiusSquared, Cache.Permanent.OUR_TEAM).length > 12) return false;
+//
+//    Direction dirToWell = Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell);
+//    MapLocation goal = Cache.PerTurn.CURRENT_LOCATION.translate(dirToWell.dx * 4, dirToWell.dy * 4);
+//    MapLocation toSpawn = goal;
+//    do {
+//      if (buildRobotAtOrAround(RobotType.CARRIER, toSpawn)) {
+//        return true;
+//      }
+//      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
+//      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
+//      if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
+//        Direction dir = Utils.randomDirection();
+//        goal = goal.add(dir).add(dir);
+//        toSpawn = goal;
+//      }
+////      Printer.appendToIndicator("Attempted spawn at " + toSpawn);
+//    } while (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2);
+//    return buildRobotAtOrAround(RobotType.CARRIER, Cache.PerTurn.CURRENT_LOCATION);
 
-    Direction dirToWell = Cache.PerTurn.CURRENT_LOCATION.directionTo(targetWell);
-    MapLocation goal = Cache.PerTurn.CURRENT_LOCATION.translate(dirToWell.dx * 4, dirToWell.dy * 4);
-    MapLocation toSpawn = goal;
-    do {
-      if (buildRobotAtOrAround(RobotType.CARRIER, toSpawn)) {
-        return true;
+    MapLocation bestSpawnLocation = null;
+    int bestMoveDistance = Integer.MAX_VALUE;
+    int bestEucDistance = Integer.MAX_VALUE;
+    for (int i = spawnLocations.length; --i >= 0;) {
+      MapLocation spawnLocation = spawnLocations[i];
+      if (rc.canBuildRobot(RobotType.CARRIER, spawnLocation)) {
+        int moveDistance = Utils.maxSingleAxisDist(spawnLocation, targetWell);
+        int euclideanDistance = spawnLocation.distanceSquaredTo(targetWell);
+        if (moveDistance < bestMoveDistance || (moveDistance == bestMoveDistance && euclideanDistance < bestEucDistance)) {
+          bestSpawnLocation = spawnLocation;
+          bestMoveDistance = moveDistance;
+          bestEucDistance = euclideanDistance;
+        }
       }
-      Direction toSelf = toSpawn.directionTo(Cache.PerTurn.CURRENT_LOCATION);
-      toSpawn = toSpawn.add(Utils.randomSimilarDirectionPrefer(toSelf));
-      if (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) <= 2) {
-        Direction dir = Utils.randomDirection();
-        goal = goal.add(dir).add(dir);
-        toSpawn = goal;
-      }
-//      Printer.appendToIndicator("Attempted spawn at " + toSpawn);
-    } while (toSpawn.distanceSquaredTo(Cache.PerTurn.CURRENT_LOCATION) > 2);
-    return buildRobotAtOrAround(RobotType.CARRIER, Cache.PerTurn.CURRENT_LOCATION);
+    }
+
+    if (bestSpawnLocation != null) {
+      return buildRobot(RobotType.CARRIER, bestSpawnLocation);
+    }
+    return false;
   }
 
   private boolean spawnLauncherTowardsEnemyHQ() throws GameActionException {
