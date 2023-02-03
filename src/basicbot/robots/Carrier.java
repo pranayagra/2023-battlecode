@@ -668,8 +668,8 @@ public class Carrier extends MobileRobot {
     updateWellQueueTarget();
 
     Direction dirToWell = Cache.PerTurn.CURRENT_LOCATION.directionTo(wellLocation);
-    int distanceToWell = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
-    if (Utils.DSQ_1by1 < distanceToWell && distanceToWell < Cache.Permanent.VISION_RADIUS_SQUARED
+//    int distanceToWell = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
+    if (!Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(wellLocation)
         && rc.canSenseLocation(wellLocation)
         && rc.canSenseLocation(wellLocation.add(dirToWell))
         && rc.canSenseLocation(wellLocation.add(dirToWell.rotateLeft()))
