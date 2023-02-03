@@ -1002,7 +1002,7 @@ public class Launcher extends MobileRobot {
     for (int i = 0; i < CommsHandler.ELIXIR_WELL_SLOTS; i++) {
       if (CommsHandler.readElixirWellExists(i)) {
         MapLocation wellLocation = CommsHandler.readElixirWellLocation(i);
-        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+        if (!HqMetaInfo.isEnemyTerritoryNoDangerRadius(wellLocation)) {
           wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
         }
         if (visitedLocations.contains(wellLocation)) continue;
@@ -1017,7 +1017,7 @@ public class Launcher extends MobileRobot {
     for (int i = 0; i < CommsHandler.MANA_WELL_SLOTS; i++) {
       if (CommsHandler.readManaWellExists(i)) {
         MapLocation wellLocation = CommsHandler.readManaWellLocation(i);
-        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+        if (!HqMetaInfo.isEnemyTerritoryNoDangerRadius(wellLocation)) {
           wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
         }
         if (visitedLocations.contains(wellLocation)) continue;
@@ -1032,7 +1032,7 @@ public class Launcher extends MobileRobot {
     for (int i = 0; i < CommsHandler.ADAMANTIUM_WELL_SLOTS; i++) {
       if (CommsHandler.readAdamantiumWellExists(i)) {
         MapLocation wellLocation = CommsHandler.readAdamantiumWellLocation(i);
-        if (!HqMetaInfo.isEnemyTerritory(wellLocation)) {
+        if (!HqMetaInfo.isEnemyTerritoryNoDangerRadius(wellLocation)) {
           wellLocation = Utils.applySymmetry(wellLocation, RunningMemory.guessedSymmetry);
         }
         if (visitedLocations.contains(wellLocation)) continue;
