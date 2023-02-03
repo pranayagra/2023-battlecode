@@ -408,8 +408,10 @@ public class Carrier extends MobileRobot {
     }
     if (Cache.PerTurn.ROUND_NUM > 100) return false;
     // report any mana wells not in comms
-    for (WellData wellData : RunningMemory.wells.values) {
-      if (wellData == null) continue;
+    WellData[] knownWells = RunningMemory.wells.values;
+    for (int i = RunningMemory.wells.size; --i >= 0;) {
+      WellData wellData = knownWells[i];
+//      if (wellData == null) continue;
       if (wellData.type != ResourceType.MANA) continue;
       if (HqMetaInfo.isEnemyTerritoryNoDangerRadius(wellData.loc)) continue;
       if (manaWellLocs.contains(wellData.loc)) continue;
@@ -973,13 +975,7 @@ public class Carrier extends MobileRobot {
       if (!writer.readWellExists(i)) continue;
       MapLocation wellLocation = writer.readWellLocation(i);
       if (wellLocation.equals(toAvoid) || blackListWells.contains(wellLocation)) continue;
-//      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
-      MapLocation loc = writer.readWellLocation(i);
-      int realCapacity = writer.readWellCapacity(i);
-      if (resourceType != ResourceType.ADAMANTIUM) {
-        realCapacity = Utils.maxCarriersPerWell(realCapacity, Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(loc), loc));
-      }
-      if (writer.readWellCurrentWorkers(i) >= realCapacity) continue;
+
       if (CarrierEnemyProtocol.lastEnemyLocation != null
           && wellLocation.isWithinDistanceSquared(CarrierEnemyProtocol.lastEnemyLocation, 26)
           && Cache.PerTurn.ROUND_NUM - CarrierEnemyProtocol.lastEnemyLocationRound <= 7) {
@@ -988,6 +984,14 @@ public class Carrier extends MobileRobot {
 
       int dist = Cache.PerTurn.CURRENT_LOCATION.distanceSquaredTo(wellLocation);
       if (Cache.PerTurn.ROUND_NUM < 80 && dist > 200) continue; // no HQ swapping early!
+
+//      if (writer.readWellCapacity(i) <= writer.readWellCurrentWorkers(i)) continue;
+      int realCapacity = writer.readWellCapacity(i);
+      if (resourceType != ResourceType.ADAMANTIUM) {
+        realCapacity = Utils.maxCarriersPerWell(realCapacity, Utils.maxSingleAxisDist(HqMetaInfo.getClosestHqLocation(wellLocation), wellLocation));
+      }
+      if (writer.readWellCurrentWorkers(i) >= realCapacity) continue;
+
       if (dist < closestDist) {
         closestDist = dist;
         closestWellLocation = wellLocation;
