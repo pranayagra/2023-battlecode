@@ -19,6 +19,8 @@ public class CarrierEnemyProtocol {
   private static Pathing pathing;
 
   private static int fleeingCounter;
+  private static MapLocation closestHQ;
+  private static MapLocation fleeTarget;
 
 
   public static MapLocation lastEnemyLocation;
@@ -58,26 +60,16 @@ public class CarrierEnemyProtocol {
       }
       updateLastEnemy();
     }
-    MapLocation closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
     if (fleeingCounter > 0 && rc.getWeight() > 0) {
       if (Utils.maxSingleAxisDist(Cache.PerTurn.CURRENT_LOCATION, closestHQ) <= MicroConstants.CARRIER_DIST_TO_HQ_TO_RUN_HOME) {
         fleeingCounter = MicroConstants.CARRIER_TURNS_TO_FLEE;
       }
     }
-    MapLocation fleeTarget = closestHQ;
-    if (lastEnemyLocation != null && lastEnemyLocation.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED*2)) {
-      Direction toHome = Cache.PerTurn.CURRENT_LOCATION.directionTo(closestHQ);
-      Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation);
-      if (toHome == toEnemy || toHome == toEnemy.rotateLeft() || toHome == toEnemy.rotateRight()) {
-        fleeTarget = Cache.PerTurn.CURRENT_LOCATION.subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy);
-      }
-      fleeTarget = Utils.clampToMap(fleeTarget);
-    }
     if (fleeingCounter > 0) {
       // run from lastEnemyLocation
 //      Direction away = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation).opposite();
 //      MapLocation fleeDirection = Cache.PerTurn.CURRENT_LOCATION.add(away).add(away).add(away).add(away).add(away);
-      Printer.appendToIndicator("flee-" + fleeingCounter + ">" + fleeTarget);
+      Printer.appendToIndicator("flee-" + fleeingCounter + "(" + lastEnemyLocation + ")>" + fleeTarget);
       while (rc.isMovementReady() && pathing.moveTowards(fleeTarget) && --fleeingCounter >= 0) {
         if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(closestHQ)) {
           carrier.transferAllResources(closestHQ);
@@ -91,6 +83,10 @@ public class CarrierEnemyProtocol {
       if (Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(closestHQ)) {
         carrier.transferAllResources(closestHQ);
         fleeingCounter = 0;
+      }
+      if (!fleeTarget.equals(closestHQ) && Cache.PerTurn.CURRENT_LOCATION.isAdjacentTo(fleeTarget)) {
+        fleeTarget = closestHQ;
+//        fleeingCounter = 0;
       }
     }
     SmitePathing.forceOneBug = false;
@@ -236,6 +232,16 @@ public class CarrierEnemyProtocol {
 //      if (cachedLastEnemyForBroadcast == null) { // we found friends nearby
 //        fleeingCounter /= 2;
 //      }
+      closestHQ = HqMetaInfo.getClosestHqLocation(Cache.PerTurn.CURRENT_LOCATION);
+      fleeTarget = closestHQ;
+      if (lastEnemyLocation != null && lastEnemyLocation.isWithinDistanceSquared(Cache.PerTurn.CURRENT_LOCATION, Cache.Permanent.VISION_RADIUS_SQUARED*2)) {
+        Direction toHome = Cache.PerTurn.CURRENT_LOCATION.directionTo(closestHQ);
+        Direction toEnemy = Cache.PerTurn.CURRENT_LOCATION.directionTo(lastEnemyLocation);
+        if (toHome == toEnemy || toHome == toEnemy.rotateLeft() || toHome == toEnemy.rotateRight()) {
+          fleeTarget = Cache.PerTurn.CURRENT_LOCATION.subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy).subtract(toEnemy);
+        }
+        fleeTarget = Utils.clampToMap(fleeTarget);
+      }
     }
   }
 

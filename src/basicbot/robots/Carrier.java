@@ -385,7 +385,7 @@ public class Carrier extends MobileRobot {
         return true;
       }
     }
-    return false;
+    return rc.getWeight() == 0;
   }
 
   /**
